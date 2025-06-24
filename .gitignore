@@ -402,3 +402,4 @@ FodyWeavers.xsd
 #Cusom settings
 .env
 data/
+/src/generated/
