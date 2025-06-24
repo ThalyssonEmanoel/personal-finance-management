@@ -1,0 +1,64 @@
+// //routes
+// import userPaths from "../routes/user.js";
+// // import authPaths from "../routes/auth.js";
+
+// //schemas
+// import userSchema from "../schemas/userSchemaDcs.js";
+// // import authSchema from "../schemas/authSchema.js";
+
+// // Function to define the server URLs depending on the environment
+// const getServersInCorrectOrder = () => {
+//   const devUrl = { url: process.env.SWAGGER_DEV_URL || "http://localhost:3100" };
+//   const prodUrl = { url: process.env.SWAGGER_PROD_URL || "https://blábláblá.app.fslab.dev" };
+
+//   if (process.env.NODE_ENV === "production") return [prodUrl];
+//   else return [devUrl];
+// };
+
+// // Function to obtain Swagger options
+// const getSwaggerOptions = () => {
+//   return {
+//     swaggerDefinition: {
+//       openapi: "3.0.0",
+//       info: {
+//         title: "Financial Record Back End",
+//         version: "1.0-alpha",
+//         description: "This is the backend for Financial Record, the capstone project of student Thalysson Emanoel. <br>Authentication is required, and a JWT token must be provided in the Authorization header.",
+//       },
+//       servers: getServersInCorrectOrder(),
+//       tags: [
+//         // {
+//         //   name: "Auth",
+//         //   description: "Authentication route."
+//         // },
+//         {
+//           name: "Users",
+//           description: "User management route."
+//         }
+//       ],
+//       paths: {
+//         // ...authPaths,
+//         ...userPaths,
+//       },
+//       components: {
+//         securitySchemes: {
+//           bearerAuth: {
+//             type: "http",
+//             scheme: "bearer",
+//             bearerFormat: "JWT"
+//           }
+//         },
+//         schemas: {
+//           // ...authSchema,
+//           ...userSchema,
+//         }
+//       },
+//       security: [{
+//         bearerAuth: []
+//       }]
+//     },
+//     apis: ["./src/routes/*.js"]
+//   };
+// };
+
+// export default getSwaggerOptions;
