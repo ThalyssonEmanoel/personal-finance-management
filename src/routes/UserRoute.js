@@ -5,8 +5,7 @@ import errorHandler from "../middlewares/errorHandler.js"; //Vem logo depois de 
 const router = e.Router();
 
 router
-  
-  // .post("/usuarios", UserController.CadastrarUsuario, errorHandler)
+  .post("/users", UserController.registerUser, errorHandler)
   .get("/users", UserController.listAllUsers, errorHandler)
   // .get("/usuarios/:id", UserController.ListarUsuarioPorId, errorHandler)
   // .put("/usuarios/:id", UserController.AtualizarUsuario, errorHandler)

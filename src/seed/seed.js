@@ -37,7 +37,7 @@ async function seedDatabase() {
   const users = await prisma.users.createMany({
     data: [
       { Nome: "Thalysson", Email: "thalysson140105@gmail.com", Senha: senhaHash.substring(0, 45), Avatar: null },//Tenho que colocar o refresh token do usuário aqui depois
-      { Nome: "Random", Email: faker.internet.email(), Senha: senhaHash.substring(0, 45), Avatar: null },
+      { Nome: "Random", Email: "random123@gmail.com", Senha: senhaHash.substring(0, 45), Avatar: null },
       { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: (await gerarSenhaSegura()).substring(0, 45), Avatar: null },
       { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: (await gerarSenhaSegura()).substring(0, 45), Avatar: null },
       { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: (await gerarSenhaSegura()).substring(0, 45), Avatar: null },
