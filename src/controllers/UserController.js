@@ -8,13 +8,22 @@ class UserController {
 
   static listAllUsers = async (req, res, next) => {
     try {
-      const { page = 1, limit = 10, ...filtros } = req.query;
-      const { usuarios, total } = await UserService.listUsers(filtros, page, limit, 'desc');
-      res.status(200).json(CommonResponse.success(usuarios, total));
+      const { page, limit = 10, ...filtros } = req.query;
+      const { usuarios, total, take } = await UserService.listUsers(filtros, page || 1, limit, 'desc');
+      res.status(200).json(CommonResponse.success(usuarios, total, page || 1, take));
     } catch (err) {
       next(err)
     }
   };
+  static registerUser = async (req, res, next) => {
+    try {
+      const { Nome, Email, Senha, Avatar } = req.body;
+      const user = await UserService.createUser({ Nome, Email, Senha, Avatar });
+      res.status(201).json(CommonResponse.success(user));
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export default UserController;

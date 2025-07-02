@@ -1,15 +1,18 @@
 import messages from "./messages.js";
 
 class CommonResponse {
-  constructor(error, code, message, data = []) {
+  constructor(error, code, message, page, data = [], total, limit) {
     this.error = error;
     this.code = code;
     this.message = message;
+    this.page = page;
     this.data = data;
+    this.total = total;
+    this.limite = limit;
   }
 
-  static success(data, message = messages.httpCodes[200]) {
-    return new CommonResponse(false, 200, message, data);
+  static success(data, total, page, limit, message = messages.httpCodes[200]) {
+    return new CommonResponse(false, 200, message, page, data, total, limit);
   }
 
   static created(data, message = messages.httpCodes[201]) {

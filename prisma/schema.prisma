@@ -9,7 +9,7 @@ datasource db {
 }
 
 model Despesas {
-  idDesp          Int      @default(autoincrement())
+  id              Int      @default(autoincrement())
   Nome            String   @db.VarChar(45)
   Valor_Total     Float    @unique(map: "Email_UNIQUE")
   Forma_pagamento String   @db.VarChar(45)
@@ -17,31 +17,31 @@ model Despesas {
   Numero_parcelas Int?     @db.SmallInt
   Parcela_atual   Int?     @db.SmallInt
   Valor_parcelas  Float?
-  Usu_rios_idUsu  Int      @map("Usuários_idUsu")
-  Usu_rios        Users    @relation(fields: [Usu_rios_idUsu], references: [idUsu], onDelete: NoAction, onUpdate: NoAction, map: "fk_Despesas_Usuários")
+  Usu_rios_id     Int      @map("Usuários_id")
+  Usu_rios        Users    @relation(fields: [Usu_rios_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_Despesas_Usuários")
 
-  @@id([idDesp, Usu_rios_idUsu])
-  @@index([Usu_rios_idUsu], map: "fk_Despesas_Usuários_idx")
+  @@id([id, Usu_rios_id])
+  @@index([Usu_rios_id], map: "fk_Despesas_Usuários_idx")
 }
 
 model Despesas_recorrentes {
-  idDesp           Int                                   @default(autoincrement())
+  id               Int                                   @default(autoincrement())
   Nome             String                                @db.VarChar(45)
   Valor            Float                                 @unique(map: "Email_UNIQUE")
   Tipo_recorrencia Despesas_recorrentes_Tipo_recorrencia
   Data_pagamento   DateTime                              @db.Date
-  Usu_rios_idUsu   Int                                   @map("Usuários_idUsu")
-  Usu_rios         Users                                 @relation(fields: [Usu_rios_idUsu], references: [idUsu], onDelete: NoAction, onUpdate: NoAction, map: "fk_Despesas_recorrentes_Usuários1")
+  Usu_rios_id      Int                                   @map("Usuários_id")
+  Usu_rios         Users                                 @relation(fields: [Usu_rios_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_Despesas_recorrentes_Usuários1")
 
-  @@id([idDesp, Usu_rios_idUsu])
-  @@index([Usu_rios_idUsu], map: "fk_Despesas_recorrentes_Usuários1_idx")
+  @@id([id, Usu_rios_id])
+  @@index([Usu_rios_id], map: "fk_Despesas_recorrentes_Usuários1_idx")
 }
 
 model Users {
-  idUsu                Int                    @id @default(autoincrement())
+  id                   Int                    @id @default(autoincrement())
   Nome                 String                 @db.VarChar(45)
   Email                String                 @unique(map: "Email_UNIQUE") @db.VarChar(45)
-  Senha                String                 @db.VarChar(45)
+  Senha                String                 @db.VarChar(255)
   Avatar               String?                @db.VarChar(45)
   Despesas             Despesas[]
   Despesas_recorrentes Despesas_recorrentes[]
