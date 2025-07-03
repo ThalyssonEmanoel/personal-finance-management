@@ -62,31 +62,6 @@ const userResponseSchema = parameterGenerator.getResponseSchema('Users', {
 });
 
 // ===========================================
-// 3. EXEMPLO DE SCHEMAS COMPLETOS
-// ===========================================
-
-// GERAR TODOS OS SCHEMAS DE UMA VEZ
-const allUserSchemas = parameterGenerator.getAllSchemas('Users', {
-  includeCreate: true,
-  includeUpdate: true,
-  includeResponse: true,
-  includeMultipart: true,
-  fileFields: ['Avatar'],
-  excludeFields: ['Despesas', 'Despesas_recorrentes'],
-  customDescriptions: {
-    Nome: "Nome completo do usuário",
-    Email: "Email único do usuário",
-    Senha: "Senha do usuário",
-    Avatar: "Avatar do usuário"
-  },
-  customValidations: {
-    Email: { format: "email" },
-    Senha: { minLength: 8 },
-    Nome: { minLength: 2, maxLength: 45 }
-  }
-});
-
-// ===========================================
 // 4. EXEMPLO DE USO EM ROTA SWAGGER
 // ===========================================
 

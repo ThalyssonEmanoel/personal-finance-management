@@ -43,6 +43,7 @@ model Users {
   Email                String                 @unique(map: "Email_UNIQUE") @db.VarChar(45)
   Senha                String                 @db.VarChar(255)
   Avatar               String?                @db.VarChar(45)
+  refreshToken         String?                @db.Text
   Despesas             Despesas[]
   Despesas_recorrentes Despesas_recorrentes[]
 }

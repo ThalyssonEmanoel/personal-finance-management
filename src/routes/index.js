@@ -1,6 +1,6 @@
 import express from "express";
 import users from "./UserRoute.js";
-// import login from "./loginRoute.js";
+import auth from "./authRoutes.js";
 import swaggerJsDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
 import getSwaggerOptions from "../docs/config/head.js";
@@ -16,7 +16,7 @@ const routes = (app) => {
     app.use(
         express.json(),
         // rotas
-        // login,
+        auth,
         users
     );
 

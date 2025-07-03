@@ -59,7 +59,7 @@ function getRandomAvatar(avatars) {
 async function seedDatabase() {
   let SALT = parseInt(process.env.SALT);
   let salt = await bcrypt.genSalt(SALT || 10);
-  const senhaHash = await bcrypt.hash("Senha12345", salt);
+  const senhaHash = await bcrypt.hash("Senha@12345", salt);
 
   // Obter avatares disponíveis
   const availableAvatars = getAvailableAvatars();
@@ -74,20 +74,20 @@ async function seedDatabase() {
 
   const users = await prisma.users.createMany({
     data: [
-      { Nome: "Thalysson", Email: "thalysson140105@gmail.com", Senha: senhaHash.substring(0, 45), Avatar: getRandomAvatar(availableAvatars) },//Tenho que colocar o refresh token do usuário aqui depois
-      { Nome: "Random", Email: "random123@gmail.com", Senha: senhaHash.substring(0, 45), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: (await gerarSenhaSegura()).substring(0, 45), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: (await gerarSenhaSegura()).substring(0, 45), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: (await gerarSenhaSegura()).substring(0, 45), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: (await gerarSenhaSegura()).substring(0, 45), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: (await gerarSenhaSegura()).substring(0, 45), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: (await gerarSenhaSegura()).substring(0, 45), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: (await gerarSenhaSegura()).substring(0, 45), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: (await gerarSenhaSegura()).substring(0, 45), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: (await gerarSenhaSegura()).substring(0, 45), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: (await gerarSenhaSegura()).substring(0, 45), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: (await gerarSenhaSegura()).substring(0, 45), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: (await gerarSenhaSegura()).substring(0, 45), Avatar: getRandomAvatar(availableAvatars) },
+      { Nome: "Thalysson", Email: "thalysson140105@gmail.com", Senha: senhaHash, Avatar: getRandomAvatar(availableAvatars) },//Tenho que colocar o refresh token do usuário aqui depois
+      { Nome: "Random", Email: "random123@gmail.com", Senha: senhaHash, Avatar: getRandomAvatar(availableAvatars) },
+      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
+      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
+      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
+      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
+      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
+      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
+      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
+      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
+      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
+      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
+      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
+      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
     ],
   });
 
