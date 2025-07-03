@@ -1,19 +1,23 @@
 import UserRepository from "../repositories/UserRepository.js"
-// import UsuarioSchema from "../schemas/usuarioSchema.js"
+import UserSchema from "../schemas/UserSchemas.js"
 import bcrypt from "bcryptjs";
 //TypeScript: Restart TS server
 
 class UserService {
 
   static async listUsers(filtros, page, limit, order = 'asc') {
-    // const validFiltros = UsuarioSchema.listUser.parse(filtros);// Usar quando o schema estiver pronto
-    if (filtros.id) {
-      filtros.id = parseInt(filtros.id, 10);
+    const validFiltros = UserSchema.listUser.parse(filtros);
+    
+    const { page: validPage, limit: validLimit, ...dbFilters } = validFiltros;
+
+    if (dbFilters.id) {
+      dbFilters.id = parseInt(dbFilters.id);
     }
+
     const skip = (page - 1) * limit;
     const take = parseInt(limit, 10);
     const [usuarios, total] = await Promise.all([
-      UserRepository.listUsers(filtros, skip, take, order),
+      UserRepository.listUsers(dbFilters, skip, take, order),
       UserRepository.contUsers()
     ]);
     if (!usuarios) {
@@ -22,22 +26,46 @@ class UserService {
     return { usuarios, total, take };
   };
   static async createUser(user) {
-    // const validUser = UsuarioSchema.createUser.parse(user); // Usar quando o schema estiver pronto
-    
-    // Criptografar a senha antes de salvar
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(user.Senha, saltRounds);
-    
+    const validUser = UserSchema.createUser.parse(user);
+
+    const saltRounds = parseInt(process.env.SALT_ROUNDS) || 10;
+    const hashedPassword = await bcrypt.hash(validUser.Senha, saltRounds);
+
     const userWithHashedPassword = {
-      ...user,
+      ...validUser,
       Senha: hashedPassword
     };
-    
+
     const newUser = await UserRepository.createUser(userWithHashedPassword);
     if (!newUser) {
       throw { code: 404 }
     }
     return newUser;
+  }
+
+  static async updateUser(id, userData) {
+    const validId = UserSchema.userIdParam.parse({ id });
+    const validUserData = UserSchema.updateUser.parse(userData);
+
+    if (validUserData.Senha) {
+      const saltRounds = parseInt(process.env.SALT_ROUNDS) || 10;
+      validUserData.Senha = await bcrypt.hash(validUserData.Senha, saltRounds);
+    }
+
+    const updatedUser = await UserRepository.updateUser(validId.id, validUserData);
+
+    if (!updatedUser) {
+      throw { code: 404 };
+    }
+
+    return updatedUser;
+  }
+
+  static async deleteUser(id) {
+    const validId = UserSchema.userIdParam.parse({ id });
+    const result = await UserRepository.deleteUser(validId.id);
+
+    return result;
   }
 }
 
