@@ -7,8 +7,7 @@ class UserService {
 
   static async listUsers(filtros, page, limit, order = 'asc') {
     const validFiltros = UserSchema.listUser.parse(filtros);
-
-    // Separate pagination parameters from database filters
+    
     const { page: validPage, limit: validLimit, ...dbFilters } = validFiltros;
 
     if (dbFilters.id) {
@@ -42,6 +41,31 @@ class UserService {
       throw { code: 404 }
     }
     return newUser;
+  }
+
+  static async updateUser(id, userData) {
+    const validId = UserSchema.userIdParam.parse({ id });
+    const validUserData = UserSchema.updateUser.parse(userData);
+
+    if (validUserData.Senha) {
+      const saltRounds = parseInt(process.env.SALT_ROUNDS) || 10;
+      validUserData.Senha = await bcrypt.hash(validUserData.Senha, saltRounds);
+    }
+
+    const updatedUser = await UserRepository.updateUser(validId.id, validUserData);
+
+    if (!updatedUser) {
+      throw { code: 404 };
+    }
+
+    return updatedUser;
+  }
+
+  static async deleteUser(id) {
+    const validId = UserSchema.userIdParam.parse({ id });
+    const result = await UserRepository.deleteUser(validId.id);
+
+    return result;
   }
 }
 

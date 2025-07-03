@@ -14,10 +14,17 @@ if (process.env.NODE_ENV === 'production') {
 async function clearDatabase() {
   try {
     console.log('Apagando dados existentes...');
+    
     // Limpar dados existentes (opcional)
     // await prisma.despesas.deleteMany();
     // await prisma.despesas_recorrentes.deleteMany();
     await prisma.users.deleteMany();
+    // Resetar AUTO_INCREMENT para começar do ID 1 novamente
+    console.log('Resetando contadores de ID...');
+    await prisma.$executeRaw`ALTER TABLE Users AUTO_INCREMENT = 1`;
+    // await prisma.$executeRaw`ALTER TABLE Despesas AUTO_INCREMENT = 1`;
+    // await prisma.$executeRaw`ALTER TABLE Despesas_recorrentes AUTO_INCREMENT = 1`;
+    
   } catch (error) {
     console.error('Erro ao limpar o banco de dados:', error);
   }
@@ -39,7 +46,7 @@ function getAvailableAvatars() {
   }
 
   return avatarPaths;
-} s
+}
 
 /**
 *@getRandomAvatar Função para selecionar avatar aleatório 

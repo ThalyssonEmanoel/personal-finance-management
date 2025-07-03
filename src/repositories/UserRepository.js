@@ -57,6 +57,70 @@ class UserRepository {
       }
     });
   }
+
+  static async updateUser(id, userData) {
+    const { Nome, Email, Senha, Avatar } = userData;
+
+    // Verificar se o usuário existe
+    const existingUser = await prisma.users.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!existingUser) {
+      throw { code: 404, message: "Usuário não encontrado" };
+    }
+
+    // Verificar se o email já existe em outro usuário
+    if (Email) {
+      const emailExists = await prisma.users.findFirst({
+        where: {
+          Email,
+          id: { not: parseInt(id) }
+        }
+      });
+
+      if (emailExists) {
+        throw { code: 409, message: "Email já cadastrado por outro usuário" };
+      }
+    }
+
+    // Atualizar o usuário
+    const updateData = {};
+    if (Nome) updateData.Nome = Nome;
+    if (Email) updateData.Email = Email;
+    if (Senha) updateData.Senha = Senha;
+    if (Avatar !== undefined) updateData.Avatar = Avatar;
+
+    return await prisma.users.update({
+      where: { id: parseInt(id) },
+      data: updateData,
+      select: {
+        id: true,
+        Nome: true,
+        Email: true,
+        Senha: false,
+        Avatar: true
+      }
+    });
+  }
+
+  static async deleteUser(id) {
+    // Verificar se o usuário existe
+    const existingUser = await prisma.users.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!existingUser) {
+      throw { code: 404, message: "Usuário não encontrado" };
+    }
+
+    // Deletar o usuário
+    await prisma.users.delete({
+      where: { id: parseInt(id) }
+    });
+
+    return { message: "Usuário deletado com sucesso" };
+  }
 }
 
 export default UserRepository;
