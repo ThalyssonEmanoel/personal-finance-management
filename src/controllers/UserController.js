@@ -17,7 +17,8 @@ class UserController {
   };
   static registerUser = async (req, res, next) => {
     try {
-      const { Nome, Email, Senha, Avatar } = req.body;
+      const { Nome, Email, Senha } = req.body;
+      const Avatar = req.file ? req.file.path : null;
       const user = await UserService.createUser({ Nome, Email, Senha, Avatar });
       res.status(201).json(CommonResponse.success(user));
     } catch (err) {

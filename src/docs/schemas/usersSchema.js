@@ -24,8 +24,8 @@ const UserSchemas = {
       }
     }
   },
-  CreateUserRequest: {
-    title: "CreateUserRequest",
+  CreateUserFormRequest: {
+    title: "CreateUserFormRequest",
     type: "object",
     required: ["Nome", "Email", "Senha"],
     properties: {
@@ -44,16 +44,16 @@ const UserSchemas = {
         type: "string",
         minLength: 6,
         description: "Senha do usuário (mínimo 6 caracteres)",
-        example: "123456"
+        example: "123ABC@abc"
       },
       Avatar: {
         type: "string",
-        nullable: true,
-        description: "URL do avatar do usuário (opcional)",
-        example: "https://example.com/avatar.jpg"
+        format: "binary",
+        description: "Arquivo de imagem para o avatar do usuário (opcional, máximo 2MB)",
+        nullable: true
       }
     },
-    description: "Schema para criação de um novo usuário"
+    description: "Schema para criação de um novo usuário com upload de arquivo"
   },
   CreateUserResponse: {
     title: "CreateUserResponse",
@@ -66,7 +66,11 @@ const UserSchemas = {
           id: { type: "integer" },
           Nome: { type: "string" },
           Email: { type: "string" },
-          Avatar: { type: "string", nullable: true }
+          Avatar: { 
+            type: "string", 
+            nullable: true,
+            description: "Caminho do arquivo de avatar salvo no servidor"
+          }
         }
       }
     },
@@ -76,7 +80,7 @@ const UserSchemas = {
         id: 1,
         Nome: "Thalysson Emanoel",
         Email: "thalysson@example.com",
-        Avatar: null
+        Avatar: "src/uploads/avatares/1699030930148-Avatar.jpg"
       }
     }
   }

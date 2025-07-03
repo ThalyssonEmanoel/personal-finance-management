@@ -53,7 +53,8 @@ const usersRoutes = {
       - Email must be unique in the system.
       - Password must have at least 6 characters.
       - All required fields (Nome, Email, Senha) must be provided.
-      - Avatar is optional.
+      - Avatar is optional and must be an image file (max 2MB).
+      - Only image files are allowed for avatar upload.
       - Password is automatically encrypted before storage.
 
       #### Expected Result
@@ -61,9 +62,9 @@ const usersRoutes = {
       requestBody: {
         required: true,
         content: {
-          "application/json": {
+          "multipart/form-data": {
             schema: {
-              $ref: "#/components/schemas/CreateUserRequest"
+              $ref: "#/components/schemas/CreateUserFormRequest"
             }
           }
         }
