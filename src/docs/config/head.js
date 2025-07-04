@@ -1,10 +1,10 @@
 //routes
 import userPaths from "../routes/user.js";
-// import authPaths from "../routes/auth.js";
+import authPaths from "../routes/auth.js";
 
 //schemas
 import userSchema from "../schemas/usersSchema.js";
-// import authSchema from "../schemas/authSchema.js";
+import authSchema from "../schemas/authSchema.js";
 
 // Function to define the server URLs depending on the environment
 const getServersInCorrectOrder = () => {
@@ -27,17 +27,17 @@ const getSwaggerOptions = () => {
       },
       servers: getServersInCorrectOrder(),
       tags: [
-        // {
-        //   name: "Auth",
-        //   description: "Authentication route."
-        // },
+        {
+          name: "Auth",
+          description: "Authentication route."
+        },
         {
           name: "Users",
           description: "User management route."
         }
       ],
       paths: {
-        // ...authPaths,
+        ...authPaths,
         ...userPaths,
       },
       components: {
@@ -49,7 +49,7 @@ const getSwaggerOptions = () => {
           }
         },
         schemas: {
-          // ...authSchema,
+          ...authSchema,
           ...userSchema,
         }
       },

@@ -8,47 +8,60 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Despesas {
-  id              Int      @default(autoincrement())
-  Nome            String   @db.VarChar(45)
-  Valor_Total     Float    @unique(map: "Email_UNIQUE")
-  Forma_pagamento String   @db.VarChar(45)
-  Data_pagamento  DateTime @db.Date
-  Numero_parcelas Int?     @db.SmallInt
-  Parcela_atual   Int?     @db.SmallInt
-  Valor_parcelas  Float?
-  Usu_rios_id     Int      @map("Usuários_id")
-  Usu_rios        Users    @relation(fields: [Usu_rios_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_Despesas_Usuários")
-
-  @@id([id, Usu_rios_id])
-  @@index([Usu_rios_id], map: "fk_Despesas_Usuários_idx")
-}
-
-model Despesas_recorrentes {
-  id               Int                                   @default(autoincrement())
-  Nome             String                                @db.VarChar(45)
-  Valor            Float                                 @unique(map: "Email_UNIQUE")
-  Tipo_recorrencia Despesas_recorrentes_Tipo_recorrencia
-  Data_pagamento   DateTime                              @db.Date
-  Usu_rios_id      Int                                   @map("Usuários_id")
-  Usu_rios         Users                                 @relation(fields: [Usu_rios_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_Despesas_recorrentes_Usuários1")
-
-  @@id([id, Usu_rios_id])
-  @@index([Usu_rios_id], map: "fk_Despesas_recorrentes_Usuários1_idx")
-}
-
 model Users {
-  id                   Int                    @id @default(autoincrement())
-  Nome                 String                 @db.VarChar(45)
-  Email                String                 @unique(map: "Email_UNIQUE") @db.VarChar(45)
-  Senha                String                 @db.VarChar(255)
-  Avatar               String?                @db.VarChar(45)
-  Despesas             Despesas[]
-  Despesas_recorrentes Despesas_recorrentes[]
+  id           Int         @id @default(autoincrement())
+  Nome         String      @db.VarChar(45)
+  Email        String      @unique(map: "Email_UNIQUE") @db.VarChar(45)
+  Senha        String      @db.VarChar(255)
+  Avatar       String?     @db.VarChar(100)
+  refreshToken String?     @db.Text
+
+  contas       Contas[]
+  transacoes   Transacoes[]
 }
 
-enum Despesas_recorrentes_Tipo_recorrencia {
-  semanal
-  mensal
-  anual
+model Contas {
+  id       Int      @id @default(autoincrement())
+  Nome     String   @db.VarChar(100)
+  Tipo     String   @db.VarChar(45)
+  Saldo    Decimal  @db.Decimal(10,2)
+  Icon     String   @db.VarChar(100)
+
+  userId   Int
+  usuario  Users    @relation(fields: [userId], references: [id])
+
+  transacoes Transacoes[]
+}
+
+model FormasPagamento {
+  id          Int          @id @default(autoincrement())
+  nome        String       @db.VarChar(100)
+  transacoes  Transacoes[]
+}
+
+model Transacoes {
+  id                   Int           @id @default(autoincrement())
+  tipo                 TipoTransacao
+  nome                 String        @db.VarChar(255)
+  categoria            String        @db.VarChar(100)
+  subcategoria         String?       @db.VarChar(100)
+  valor                Decimal       @db.Decimal(10,2)
+  data_pagamento       DateTime      @db.Date
+  dia_cobranca         Int?
+  quantidade_parcelas  Int?
+  recorrente           Boolean       @default(false)
+
+  contaId              Int
+  conta                Contas        @relation(fields: [contaId], references: [id])
+
+  formaPagamentoId     Int
+  formaPagamento       FormasPagamento @relation(fields: [formaPagamentoId], references: [id])
+
+  userId               Int
+  usuario              Users         @relation(fields: [userId], references: [id])
+}
+
+enum TipoTransacao {
+  despesa
+  receita
 }
