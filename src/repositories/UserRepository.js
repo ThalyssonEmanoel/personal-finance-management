@@ -59,7 +59,7 @@ class UserRepository {
   }
 
   static async updateUser(id, userData) {
-    const { Nome, Email, Senha, Avatar } = userData;
+    const { Nome, Email, Senha, Avatar, refreshToken } = userData;
 
     // Verificar se o usuário existe
     const existingUser = await prisma.users.findUnique({
@@ -90,6 +90,7 @@ class UserRepository {
     if (Email) updateData.Email = Email;
     if (Senha) updateData.Senha = Senha;
     if (Avatar !== undefined) updateData.Avatar = Avatar;
+    if (refreshToken !== undefined) updateData.refreshToken = refreshToken;
 
     return await prisma.users.update({
       where: { id: parseInt(id) },
@@ -120,6 +121,30 @@ class UserRepository {
     });
 
     return { message: "Usuário deletado com sucesso" };
+  }
+
+  static async invalidateRefreshToken(userId) {
+    // Verificar se o usuário existe
+    const existingUser = await prisma.users.findUnique({
+      where: { id: parseInt(userId) }
+    });
+
+    if (!existingUser) {
+      throw { code: 404, message: "Usuário não encontrado" };
+    }
+
+    // Verificar se o usuário tem refresh token
+    if (!existingUser.refreshToken) {
+      throw { code: 401, message: "Usuário já está sem refresh token" };
+    }
+
+    // Invalidar o refresh token
+    await prisma.users.update({
+      where: { id: parseInt(userId) },
+      data: { refreshToken: null }
+    });
+
+    return { message: "Refresh token invalidado com sucesso" };
   }
 }
 
