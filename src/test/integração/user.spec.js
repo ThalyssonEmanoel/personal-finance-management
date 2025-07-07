@@ -3,13 +3,18 @@ import { expect, it, describe, beforeAll } from "@jest/globals";
 import app from "../../app.js";
 import { faker } from '@faker-js/faker';
 
+let user_faker = faker.person.fullName();
+let email_faker = faker.internet.email();
+let senha_faker = faker.internet.password({
+  length: 10,
+  memorable: false,
+  pattern: /[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
+});
 let token
 let userInformation
-const user_faker = faker.person.fullName();
-const id_faker = faker.string.numeric(13);
 let turmaValida
 let cursoValido
-let estudantecadastrado
+let Usercadastrado
 
 // Coloquei isso para conseguir obter o token antes de rodar todos os testes...
 beforeAll(async () => {
@@ -30,15 +35,20 @@ beforeAll(async () => {
   // expect(turma.status).toBe(200);
   // turmaValida = turma.body.data.data[0]._id
 
-  // const curso = await request(app)
-  //   .get("/cursos")
-  //   .set("Content-Type", "application/json")
-  //   .set("Authorization", `Bearer ${token}`);
-  // expect(turma.status).toBe(200);
-  // cursoValido = curso.body.data.data[0]._id
-
 }, 1000);// Posso colocar um tempo de espera aqui
 
+function gerarSenhaForte() {
+  const maiuscula = faker.string.fromCharacters('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+  const minuscula = faker.string.fromCharacters('abcdefghijklmnopqrstuvwxyz');
+  const numero = faker.string.fromCharacters('0123456789');
+  const especial = faker.string.fromCharacters('!@#$%^&*()_+-=[]{}|;:,.<>?');
+  // Gera mais caracteres aleatórios para completar o tamanho mínimo
+  const resto = faker.internet.password({ length: 4, memorable: false });
+
+  // Embaralha a senha para não ficar sempre na mesma ordem
+  const senha = [maiuscula, minuscula, numero, especial, ...resto].join('');
+  return senha.split('').sort(() => 0.5 - Math.random()).join('');
+}
 
 describe("GET: Listar usuários", () => {
   describe("Caminho feliz", () => {
@@ -50,7 +60,6 @@ describe("GET: Listar usuários", () => {
       expect(response.status).toBe(200);
       expect(response.error).toBe(false);
       userInformation = response.body.data[0]
-      console.log("User Information:", userInformation);
     });
     it("deve listar um usuário com base no Nome", async () => {
       const response = await request(app)
@@ -95,9 +104,9 @@ describe("GET: Listar usuários", () => {
     });
   })
   describe("Caminho triste", () => {
-    it("deve retornar erro ao tentar listar um user com status inválido", async () => {
+    it("deve retornar erro ao tentar listar um usuário com Nome inválido", async () => {
       const response = await request(app)
-        .get(`/users?ativo=asd`)
+        .get(`/users?Nome=123`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
       expect(response.body).toHaveProperty("code", 400);
@@ -105,81 +114,15 @@ describe("GET: Listar usuários", () => {
       expect(response.body.message).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            path: "ativo",
-            message: "O campo 'ativo' deve ser 'true' ou 'false'.",
-          }),
-        ])
-      );
-    });
-    it("deve retornar erro ao tentar listar um user com matrícula menor que 13 caracteres", async () => {
-      const response = await request(app)
-        .get(`/users?matricula=123`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`);
-      expect(response.body).toHaveProperty("code", 400);
-      expect(response.body).toHaveProperty("message");
-      expect(response.body.message).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            path: "matricula",
-            message: "Matrícula deve ter no mínimo 13 caracteres",
-          }),
-        ])
-      );
-    });
-    it("deve retornar erro ao tentar listar um user com matrícula maior que 18 caracteres", async () => {
-      const response = await request(app)
-        .get(`/users?matricula=12312321312313131312321123123`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`);
-      expect(response.body).toHaveProperty("code", 400);
-      expect(response.body).toHaveProperty("message");
-      expect(response.body.message).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            path: "matricula",
-            message: "Matrícula deve ter no máximo 18 caracteres",
-          }),
-        ])
-      );
-    });
-    it("deve retornar erro ao tentar listar um user com uma matrícula não existente.", async () => {
-      const response = await request(app)
-        .get(`/users?matricula=12312313221313`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`);
-      expect(response.body).toHaveProperty("code", 404);
-      expect(response.body).toHaveProperty("message");
-      expect(response.body.message).toEqual("O recurso solicitado não foi encontrado no servidor.");
-    });
-    it("deve retornar erro ao tentar listar um user com nome com apenas números", async () => {
-      const response = await request(app)
-        .get(`/users?nome=12312313212`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`);
-      expect(response.body).toHaveProperty("code", 400);
-      expect(response.body).toHaveProperty("message");
-      expect(response.body.message).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            path: "nome",
+            path: "Nome",
             message: "O nome precisa ser em palavras e não números.",
           }),
         ])
       );
     });
-    it("deve retornar erro ao tentar listar um user com um nome não existente.", async () => {
+    it("deve retornar erro ao tentar listar um usuário com o ID inválido.", async () => {
       const response = await request(app)
-        .get(`/users?nome=filipiiiino`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`);
-      expect(response.body).toHaveProperty("code", 404);
-      expect(response.body).toHaveProperty("message");
-      expect(response.body.message).toEqual("O recurso solicitado não foi encontrado no servidor.");
-    });
-    it("deve retornar erro ao tentar listar um user com uma turma no formato inválido.", async () => {
-      const response = await request(app)
-        .get(`/users?turma=123`)
+        .get(`/users?id=abc`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
       expect(response.body).toHaveProperty("code", 400);
@@ -187,73 +130,87 @@ describe("GET: Listar usuários", () => {
       expect(response.body.message).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            path: "turma",
-            message: "O campo 'turma' deve ser um ID válido (HEXADECIMAL COM 24 CARACTERES).",
+            path: "id",
+            message: "O campo 'id' deve ser um número inteiro.",
           }),
         ])
       );
     });
-    it("deve retornar erro ao tentar listar um user com uma turma não existente", async () => {
+    it("deve retornar erro ao tentar listar um usuário com Email inválido.", async () => {
       const response = await request(app)
-        .get(`/users?turma=67f941218ec90b300c697c77`)
+        .get(`/users?Email=123`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
-      expect(response.body).toHaveProperty("code", 404);
+      expect(response.body).toHaveProperty("code", 400);
       expect(response.body).toHaveProperty("message");
-      expect(response.body.message).toEqual("O recurso solicitado não foi encontrado no servidor.");
+      expect(response.body.message).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: "Email",
+            message: "Email invalido",
+          }),
+        ])
+      );
     });
   });
 });
 
-describe("Cadastrar users POST/", () => {
+describe("Cadastrar usuários POST/", () => {
+  let senha_faker = gerarSenhaForte();
   describe("Caminho feliz", () => {
-    it("deve cadastrar um user", async () => {
+    it("deve cadastrar um usuário", async () => {
       const response = await request(app)
         .post("/users")
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          nome: estudante_faker,
-          matricula: matricula_faker,
-          turma: turmaValida,
-          curso: cursoValido,
-          ativo: true,
+          Nome: user_faker,
+          Email: email_faker,
+          Senha: senha_faker,
+          Avatar: null,
         });
 
+      console.log("User Information:", response.body.message);
+
       expect(response.status).toBe(201);
-      estudantecadastrado = response.body.data
+      Usercadastrado = response.body.data
     });
   });
   describe("Caminho triste", () => {
-    it("deve retornar erro ao tentar cadastrar um user com a matrícula já existente", async () => {
+    it("deve retornar erro ao tentar cadastrar um usuários com o Email já existente", async () => {
       const response = await request(app)
         .post("/users")
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          nome: estudante_faker,
-          matricula: matricula_faker,
-          turma: turmaValida,
-          curso: cursoValido,
-          ativo: true,
+          Nome: user_faker,
+          Email: email_faker,
+          Senha: senha_faker,
+          Avatar: null,
         });
       expect(response.status).toBe(409);
-      expect(response.body.message).toEqual("matricula");
+      expect(response.body.message).toEqual("Email já cadastrado");
     });
-    it("deve retornar erro ao tentar cadastrar um user com uma turma inexistente", async () => {
+    it("deve retornar erro ao tentar cadastrar um usuários com uma senha inválida", async () => {
       const response = await request(app)
         .post("/users")
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          nome: estudante_faker,
-          matricula: matricula_faker,
-          turma: "67fe7919879e77c0cd3f2dff",
-          curso: cursoValido,
-          ativo: true,
+          Nome: user_faker,
+          Email: "RobertoCarlos123231@gmail.com",
+          Senha: "abc",
+          Avatar: null,
         });
-      expect(response.status).toBe(404);
-      expect(response.body.message).toEqual("turma");
+      expect(response.status).toBe(400);
+      expect(response.body.message).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: "Senha",
+            message: "A senha deve conter no mínimo 8 caracteres, uma letra maiúscula, uma letra minúscula, um número e um caractere especial.",
+          }),
+        ])
+      );
     });
   });
 });
@@ -261,17 +218,24 @@ describe("Cadastrar users POST/", () => {
 describe("Atualizar users PUT/:ID", () => {
   let data;
   describe("Caminho feliz", () => {
-    it("deve atualizar um user", async () => {
+    it("deve atualizar um usuário", async () => {
       const matricula_faker_att = faker.string.numeric(13);
+      let user_faker2 = faker.person.fullName();
+      let email_faker2 = faker.internet.email();
+      let senha_faker2 = faker.internet.password({
+        length: 10,
+        memorable: false,
+        pattern: /[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
+      });
       const response = await request(app)
-        .put(`/users/${estudantecadastrado._id}`)
+        .put(`/users/${Usercadastrado.id}`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          nome: estudante_faker,
-          matricula: matricula_faker_att,
-          turma: turmaValida,
-          ativo: false,
+          Nome: user_faker2,
+          Email: email_faker2,
+          Senha: senha_faker2,
+          Avatar: null,
         });
       expect(response.status).toBe(200);
       expect(response.body.data.nome).toEqual(estudante_faker);
