@@ -7,37 +7,6 @@ class ParameterGenerator {
   }
 
   /**
-   * @getPaginationParameters Gera parâmetros de paginação padrão
-   */
-  getPaginationParameters() {
-    return [
-      {
-        name: "page",
-        in: "query",
-        description: "Número da página para paginação",
-        required: false,
-        schema: {
-          type: "integer",
-          minimum: 1,
-          default: 1
-        }
-      },
-      {
-        name: "limit",
-        in: "query",
-        description: "Limite de registros por página",
-        required: false,
-        schema: {
-          type: "integer",
-          minimum: 1,
-          maximum: 100,
-          default: 10
-        }
-      }
-    ];
-  }
-
-  /**
    * @getFilterParameters Gera parâmetros de filtro para um model específico
    */
   getFilterParameters(modelName, excludeFields = []) {
@@ -113,16 +82,11 @@ class ParameterGenerator {
   getCustomParameters(modelName, config = {}) {
     const {
       excludeFields = [],
-      includePagination = true,
       customDescriptions = {},
       customValidations = {}
     } = config;
 
     let parameters = [];
-
-    if (includePagination) {
-      parameters = [...parameters, ...this.getPaginationParameters()];
-    }
 
     const filterParams = this.getFilterParameters(modelName, excludeFields);
 

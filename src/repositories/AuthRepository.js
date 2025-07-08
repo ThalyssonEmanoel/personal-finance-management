@@ -21,7 +21,29 @@ class AuthRepository {
   static async updateTokens(userId, refreshToken) {
     await UserRepository.updateUser(userId, { refreshToken });
   }
+  static async invalidateRefreshToken(userId) {
+    // Verificar se o usuário existe
+    const existingUser = await prisma.users.findUnique({
+      where: { id: parseInt(userId) }
+    });
 
+    if (!existingUser) {
+      throw { code: 404, message: "Usuário não encontrado" };
+    }
+
+    // Verificar se o usuário tem refresh token
+    if (!existingUser.refreshToken) {
+      throw { code: 401, message: "Usuário já está sem refresh token" };
+    }
+
+    // Invalidar o refresh token
+    await prisma.users.update({
+      where: { id: parseInt(userId) },
+      data: { refreshToken: null }
+    });
+
+    return { message: "Refresh token invalidado com sucesso" };
+  }
   static async removeTokens(userId) {
     await UserRepository.invalidateRefreshToken(userId);
   }
@@ -40,7 +62,7 @@ class AuthRepository {
     if (!usuario) {
       throw { code: 404, message: "Usuário não encontrado." };
     }
-    
+
     if (!usuario.refreshToken || usuario.refreshToken !== refreshToken) {
       throw { code: 401, message: "Refresh token inválido." };
     }

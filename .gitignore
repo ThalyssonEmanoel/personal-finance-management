@@ -403,3 +403,5 @@ FodyWeavers.xsd
 .env
 data/
 /src/generated/
+
+/coverage

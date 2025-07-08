@@ -78,9 +78,18 @@ class UserRepository {
           id: { not: parseInt(id) }
         }
       });
-
       if (emailExists) {
         throw { code: 409, message: "Email já cadastrado por outro usuário" };
+      }
+    }
+    if (Email) {
+      const emailExists = await prisma.users.findFirst({
+        where: {
+          Email,
+        }
+      });
+      if (emailExists) {
+        throw { code: 409, message: "Email a ser atualizado não pode ser o mesmo que o existente no sistema." };
       }
     }
 
@@ -121,30 +130,6 @@ class UserRepository {
     });
 
     return { message: "Usuário deletado com sucesso" };
-  }
-
-  static async invalidateRefreshToken(userId) {
-    // Verificar se o usuário existe
-    const existingUser = await prisma.users.findUnique({
-      where: { id: parseInt(userId) }
-    });
-
-    if (!existingUser) {
-      throw { code: 404, message: "Usuário não encontrado" };
-    }
-
-    // Verificar se o usuário tem refresh token
-    if (!existingUser.refreshToken) {
-      throw { code: 401, message: "Usuário já está sem refresh token" };
-    }
-
-    // Invalidar o refresh token
-    await prisma.users.update({
-      where: { id: parseInt(userId) },
-      data: { refreshToken: null }
-    });
-
-    return { message: "Refresh token invalidado com sucesso" };
   }
 }
 

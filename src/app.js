@@ -4,6 +4,9 @@ import routes from "./routes/index.js";
 // import path from "path";
 // import { fileURLToPath } from "url";
 
+/**
+ * Implementar o cron job para fazer a cobrança recorrente https://youtu.be/4qZd5nhajmg?si=clMi9a0wRCvQiKTy
+ */
 //Tudo que está comentado abaixo é para servir arquivos estáticos, como imagens, do diretório 'uploads'.
 const app = express();
 

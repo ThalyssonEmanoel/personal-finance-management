@@ -1,6 +1,7 @@
 import express from "express";
 import users from "./UserRoute.js";
 import auth from "./authRoutes.js";
+import account from "./AccountRoutes.js";
 import swaggerJsDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
 import getSwaggerOptions from "../docs/config/head.js";
@@ -17,7 +18,8 @@ const routes = (app) => {
         express.json(),
         // rotas
         auth,
-        users
+        users,
+        account
     );
 
     // Se não é nenhuma rota válida, produz 404

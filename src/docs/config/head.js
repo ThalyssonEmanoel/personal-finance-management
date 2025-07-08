@@ -1,9 +1,11 @@
 //routes
 import userPaths from "../routes/user.js";
+import accountPaths from "../routes/account.js";
 import authPaths from "../routes/auth.js";
 
 //schemas
 import userSchema from "../schemas/usersSchema.js";
+import accountSchema from "../schemas/accountsSchema.js";
 import authSchema from "../schemas/authSchema.js";
 
 // Function to define the server URLs depending on the environment
@@ -38,6 +40,7 @@ const getSwaggerOptions = () => {
       ],
       paths: {
         ...authPaths,
+        ...accountPaths,
         ...userPaths,
       },
       components: {
@@ -50,6 +53,7 @@ const getSwaggerOptions = () => {
         },
         schemas: {
           ...authSchema,
+          ...accountSchema,
           ...userSchema,
         }
       },

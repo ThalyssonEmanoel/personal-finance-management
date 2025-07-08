@@ -8,7 +8,6 @@ class AuthSchema {
   static logout = z.object({
     id: z
       .string({ required_error: "O campo 'id' é obrigatório." })
-      .regex(/^[a-fA-F0-9]{24}$/, "O campo 'id' deve ser um ID válido (HEXADECIMAL COM 24 CARACTERES)."),
   });
 
   static refreshToken = z.object({

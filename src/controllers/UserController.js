@@ -1,8 +1,5 @@
-import env from "dotenv";
 import UserService from '../services/UserService.js';
 import CommonResponse from "../utils/commonResponse.js";
-
-env.config();
 
 class UserController {
 

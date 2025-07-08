@@ -16,11 +16,11 @@ model Users {
   Avatar       String?     @db.VarChar(100)
   refreshToken String?     @db.Text
 
-  contas       Contas[]
+  contas       Accounts[]
   transacoes   Transacoes[]
 }
 
-model Contas {
+model Accounts {
   id       Int      @id @default(autoincrement())
   Nome     String   @db.VarChar(100)
   Tipo     String   @db.VarChar(45)
@@ -52,7 +52,7 @@ model Transacoes {
   recorrente           Boolean       @default(false)
 
   contaId              Int
-  conta                Contas        @relation(fields: [contaId], references: [id])
+  conta                Accounts        @relation(fields: [contaId], references: [id])
 
   formaPagamentoId     Int
   formaPagamento       FormasPagamento @relation(fields: [formaPagamentoId], references: [id])
