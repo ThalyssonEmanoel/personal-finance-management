@@ -20,10 +20,6 @@ class SwaggerGenerator {
     this.schemaCollectionGenerator = new SchemaCollectionGenerator(models);
   }
 
-  getPaginationParameters() {
-    return this.parameterGenerator.getPaginationParameters();
-  }
-
   getFilterParameters(modelName, excludeFields = []) {
     return this.parameterGenerator.getFilterParameters(modelName, excludeFields);
   }

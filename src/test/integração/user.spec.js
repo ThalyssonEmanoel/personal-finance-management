@@ -1,5 +1,5 @@
 import request from "supertest";
-import { expect, it, describe, beforeAll } from "@jest/globals";
+import { expect, it, describe, beforeAll, jest } from "@jest/globals";
 import app from "../../app.js";
 import { faker } from '@faker-js/faker';
 
@@ -12,8 +12,6 @@ let senha_faker = faker.internet.password({
 });
 let token
 let userInformation
-let turmaValida
-let cursoValido
 let Usercadastrado
 
 // Coloquei isso para conseguir obter o token antes de rodar todos os testes...
@@ -27,13 +25,6 @@ beforeAll(async () => {
 
   expect(response.status).toBe(200);
   token = response.body.data.accessToken;
-
-  // const turma = await request(app)
-  //   .get("/turmas")
-  //   .set("Content-Type", "application/json")
-  //   .set("Authorization", `Bearer ${token}`);
-  // expect(turma.status).toBe(200);
-  // turmaValida = turma.body.data.data[0]._id
 
 }, 1000);// Posso colocar um tempo de espera aqui
 
@@ -50,7 +41,7 @@ function gerarSenhaForte() {
   return senha.split('').sort(() => 0.5 - Math.random()).join('');
 }
 
-describe("GET: Listar usuários", () => {
+describe("Listar usuários GET", () => {
   describe("Caminho feliz", () => {
     it("Deve listar todos os usuários com sucesso", async () => {
       const response = await request(app)
@@ -152,6 +143,15 @@ describe("GET: Listar usuários", () => {
         ])
       );
     });
+    it("deve retornar erro ao tentar listar sem ter usuários existents.", async () => {
+      const response = await request(app)
+        .get(`/users?page=123`)
+        .set("Content-Type", "application/json")
+        .set("Authorization", `Bearer ${token}`);
+      expect(response.body).toHaveProperty("code", 404);
+      expect(response.body).toHaveProperty("message");
+      expect(response.body.message).toEqual("Nenhum usuário encontrado");
+    });
   });
 });
 
@@ -170,10 +170,9 @@ describe("Cadastrar usuários POST/", () => {
           Avatar: null,
         });
 
-      console.log("User Information:", response.body.message);
-
       expect(response.status).toBe(201);
       Usercadastrado = response.body.data
+
     });
   });
   describe("Caminho triste", () => {
@@ -215,20 +214,15 @@ describe("Cadastrar usuários POST/", () => {
   });
 });
 
-describe("Atualizar users PUT/:ID", () => {
+describe("Atualizar users patch/:ID", () => {
   let data;
   describe("Caminho feliz", () => {
     it("deve atualizar um usuário", async () => {
-      const matricula_faker_att = faker.string.numeric(13);
       let user_faker2 = faker.person.fullName();
       let email_faker2 = faker.internet.email();
-      let senha_faker2 = faker.internet.password({
-        length: 10,
-        memorable: false,
-        pattern: /[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
-      });
+      let senha_faker2 = gerarSenhaForte();
       const response = await request(app)
-        .put(`/users/${Usercadastrado.id}`)
+        .patch(`/users/${Usercadastrado.id}`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
@@ -238,56 +232,70 @@ describe("Atualizar users PUT/:ID", () => {
           Avatar: null,
         });
       expect(response.status).toBe(200);
-      expect(response.body.data.nome).toEqual(estudante_faker);
-      expect(response.body.data.matricula).toEqual(matricula_faker_att);
-      expect(response.body.data.ativo).toEqual(false);
+      expect(response.body.data.Nome).toEqual(user_faker2);
+      expect(response.body.data.Email).toEqual(email_faker2);
       data = response.body.data
     });
   });
   describe("Caminho triste", () => {
-    it("deve retornar erro ao tentar atualizar um user com a matrícula já existente", async () => {
+    it("deve retornar erro ao tentar atualizar um usuário com o Email já existente em outro usuário", async () => {
       const response = await request(app)
-        .put(`/users/${estudantecadastrado._id}`)
+        .patch(`/users/1`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          nome: data.nome,
-          matricula: data.matricula,
-          turma: data.turma._id,
-          ativo: data.ativo,
+          Nome: data.Nome,
+          Email: data.Email,
         });
 
       expect(response.status).toBe(409);
-      expect(response.body.message).toEqual("Dados iguais aos presentes no banco de dados");
+      expect(response.body.message).toEqual("Email já cadastrado por outro usuário");
     });
-    it("deve retornar erro ao tentar atualizar um user com uma turma inexistente",
-      async () => {
-        const response = await request(app)
-          .put(`/users/${estudantecadastrado._id}`)
-          .set("Content-Type", "application/json")
-          .set("Authorization", `Bearer ${token}`)
-          .send({
-            nome: estudante_faker,
-            matricula: matricula_faker,
-            turma: "67fe7919879e77c0cd3f2dff",
-            ativo: true,
-          });
-        expect(response.status).toBe(404);
-        expect(response.body.message).toEqual("turma");
-      });
-    it("deve retornar erro ao tentar atualizar um user com um id não existente", async () => {
+    it("deve retornar erro ao tentar atualizar um usuário com o mesmo email já cadastrado", async () => {
       const response = await request(app)
-        .put(`/users/67fe7919879e77c0cd3f2dff`)
+        .patch(`/users/${Usercadastrado.id}`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          nome: estudante_faker,
-          matricula: matricula_faker,
-          turma: turmaValida,
-          ativo: true,
+          Nome: data.Nome,
+          Email: data.Email,
         });
+
+      expect(response.status).toBe(409);
+      expect(response.body.message).toEqual("Email a ser atualizado não pode ser o mesmo que o existente no sistema.");
+    });
+    it("deve retornar erro ao tentar atualizar um user com um id não existente", async () => {
+      const response = await request(app)
+        .patch(`/users/67fe7919879e77c0cd3f2dff`)
+        .set("Content-Type", "application/json")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          Nome: data.Nome,
+          Email: data.Email,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: "id",
+            message: "O campo 'id' deve ser um número inteiro.",
+          }),
+        ])
+      );
+    });
+    it("deve retornar erro ao tentar atualizar um user com um id não existente", async () => {
+      const response = await request(app)
+        .patch(`/users/123456789987456123`)
+        .set("Content-Type", "application/json")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          Nome: data.Nome,
+          Email: data.Email,
+        });
+
       expect(response.status).toBe(404);
-      expect(response.body.message).toEqual("User não encontrado");
+      expect(response.body.message).toEqual("Usuário não encontrado");
     });
   });
 });
@@ -296,21 +304,21 @@ describe("Deletar users DELETE/:ID", () => {
   describe("Caminho feliz", () => {
     it("deve deletar um user", async () => {
       const response = await request(app)
-        .delete(`/users/${estudantecadastrado._id}`)
+        .delete(`/users/${Usercadastrado.id}`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
       expect(response.status).toBe(200);
-      expect(response.body.message).toEqual("Requisição bem-sucedida");
+      expect(response.body.message).toEqual("Requisição bem sucedida.");
     });
   });
   describe("Caminho triste", () => {
     it("deve retornar erro ao tentar deletar um user com um id não existente", async () => {
       const response = await request(app)
-        .delete(`/users/${estudantecadastrado._id}`)
+        .delete(`/users/${Usercadastrado.id}`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
       expect(response.status).toBe(404);
-      expect(response.body.message).toEqual("O recurso solicitado não foi encontrado no servidor.");
+      expect(response.body.message).toEqual("Usuário não encontrado");
     });
   });
 });
