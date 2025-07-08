@@ -50,6 +50,7 @@ const AccountSchemas = {
       },
       Icon: {
         type: "string",
+        format: "binary",
         description: "Ícone da conta (opcional)",
         nullable: true
       },
@@ -111,6 +112,7 @@ const AccountSchemas = {
       },
       Icon: {
         type: "string",
+        format: "binary",
         description: "Ícone da conta (opcional)",
         nullable: true
       },

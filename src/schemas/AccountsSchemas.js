@@ -23,14 +23,16 @@ class AccountSchemas {
   });
 
   static createAccount = z.object({
-    Nome: z.string({ message: "O nome da conta precisa ser definido como uma string/texto." })
-      .refine((val) => !/^[0-9]+$/.test(val), { message: "O nome da conta precisa ser em palavras e não números." }),
-    Tipo: z.string({ message: "O tipo precisa ser definido como uma string/texto." }),
-    Saldo: z.coerce.number({ message: "O saldo precisa ser um número." }),
-    Icon: z.string({ message: "O ícone precisa ser definido como uma string/texto." }).optional(),
-    userId: z.coerce.number({ message: "O campo 'userId' deve ser um número inteiro." })
-      .int({ message: "O campo 'userId' deve ser um número inteiro." })
-      .positive({ message: "O campo 'userId' deve ser no mínimo 1." })
+    Nome: z.string({ message: "Account name must be a string." })
+      .refine((val) => !/^[0-9]+$/.test(val), { message: "Account name must be words, not only numbers." }),
+    Tipo: z.string({ message: "Account type must be a string." }),
+    Saldo: z.coerce.number({ message: "Account balance must be a number." }),
+    Icon: z.string({ message: "Account icon must be a string (image path)." })
+      .regex(/\.(jpg|jpeg|png|gif|bmp|webp)$/i, { message: "Icon must be an image file (jpg, jpeg, png, gif, bmp, webp)." })
+      .optional(),
+    userId: z.coerce.number({ message: "User ID must be an integer." })
+      .int({ message: "User ID must be an integer." })
+      .positive({ message: "User ID must be at least 1." })
   });
 
   static updateAccount = z.object({

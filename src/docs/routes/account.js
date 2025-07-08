@@ -22,7 +22,7 @@ const accountsRoutes = {
       `,
       security: [{ bearerAuth: [] }],
       parameters: parameterGenerator.getCustomParameters('Accounts', {
-        excludeFields: [],
+        excludeFields: ['Icon', 'usuario', 'transacoes'],
         customDescriptions: {
           id: "Filtrar por ID da conta",
           Nome: "Filtrar por nome da conta",
@@ -41,31 +41,32 @@ const accountsRoutes = {
     },
     post: {
       tags: ["Accounts"],
-      summary: "Cadastra uma nova conta",
+      summary: "Register a new account",
       description: `
-        #### Caso de Uso
-        Permite ao sistema cadastrar uma nova conta para um usuário.
+        #### Use Case
+        Allows the system to register a new account for a user.
 
-        #### Regra de Negócio
-        Cria uma nova conta com as informações fornecidas.
+        #### Business Rule
+        Creates a new account with the provided information.
 
-        #### Regras de Negócio Envolvidas
-        - Todos os campos obrigatórios devem ser fornecidos.
-        - O usuário dono da conta deve existir.
+        #### Business Rules Involved
+        - All required fields must be provided.
+        - The account owner user must exist.
 
-        #### Resultado Esperado
-        Retorna os dados da conta criada e status 201.
+        #### Expected Result
+        Returns the created account data and status 201.
       `,
       requestBody: parameterGenerator.getMultipartRequestBody('Accounts', {
         excludeFields: ['id'],
         fileFields: ['Icon'],
-        requiredFields: ['Nome', 'Tipo'],
+        requiredFields: ['Nome', 'Tipo', 'Saldo', 'userId'],
         title: 'CreateAccountFormRequest',
         customDescriptions: {
-          Nome: "Nome completo do usuário",
-          Tipo: "Tipo da conta (ex: Corrente, Poupança)",
-          Saldo: "Senha do usuário (mínimo 8 caracteres)",
-          Icon: "Arquivo de imagem para o ícone da conta (opcional, máximo 2MB)"
+          Nome: "Full name of the account.",
+          Tipo: "Type of the account (e.g., Checking, Savings)",
+          Saldo: "Initial balance of the account.",
+          Icon: "Image file for the account icon (optional, max 2MB, image only)",
+          userId: "ID of the user who owns the account."
         },
       }),
       responses: {
@@ -97,16 +98,19 @@ const accountsRoutes = {
       `,
       security: [{ bearerAuth: [] }],
       parameters: parameterGenerator.getPathIdParameter("ID da conta a ser atualizada"),
-      requestBody: {
-        required: false,
-        content: {
-          "application/json": {
-            schema: {
-              $ref: "#/components/schemas/UpdateAccountFormRequest"
-            }
-          }
-        }
-      },
+      requestBody: parameterGenerator.getMultipartRequestBody('Accounts', {
+        excludeFields: ['id'],
+        fileFields: ['Icon'],
+        requiredFields: ['Nome', 'Tipo', 'Saldo', 'userId'],
+        title: 'CreateAccountFormRequest',
+        customDescriptions: {
+          Nome: "Full name of the account.",
+          Tipo: "Type of the account (e.g., Checking, Savings)",
+          Saldo: "Initial balance of the account.",
+          Icon: "Image file for the account icon (optional, max 2MB, image only)",
+          userId: "ID of the user who owns the account."
+        },
+      }),
       responses: {
         200: commonResponses[200]("#/components/schemas/UpdateAccountResponse"),
         400: commonResponses[400](),

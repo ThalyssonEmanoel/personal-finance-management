@@ -13,9 +13,15 @@ class AccountController {
     }
   };
 
+
   static registerAccount = async (req, res, next) => {
     try {
-      const { Nome, Tipo, Saldo, Icon, userId } = req.body;
+      const { Nome, Tipo, Saldo, userId } = req.body;
+      let Icon = req.body.Icon;
+      if (req.file) {
+        // Salva o caminho relativo do arquivo
+        Icon = `uploads/avatares/${req.file.filename}`;
+      }
       const account = await AccountService.createAccount({ Nome, Tipo, Saldo, Icon, userId });
       res.status(201).json(CommonResponse.success(account));
     } catch (err) {
@@ -26,7 +32,11 @@ class AccountController {
   static updateAccount = async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { Nome, Tipo, Saldo, Icon, userId } = req.body;
+      const { Nome, Tipo, Saldo, userId } = req.body;
+      let Icon = req.body.Icon;
+      if (req.file) {
+        Icon = `uploads/avatares/${req.file.filename}`;
+      }
       const accountData = { Nome, Tipo, Saldo, Icon, userId };
       const updatedAccount = await AccountService.updateAccount(id, accountData);
       res.status(200).json(CommonResponse.success(updatedAccount));

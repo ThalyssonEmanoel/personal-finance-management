@@ -1,3 +1,5 @@
+import AccountRepository from '../repositories/AccountRepository.js';
+import AccountSchemas from '../schemas/AccountsSchemas.js';
 //TypeScript: Restart TS server
 
 class AccountService {
