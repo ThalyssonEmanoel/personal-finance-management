@@ -2,19 +2,19 @@ import { prisma } from "../config/prismaClient.js";
 import bcrypt from "bcryptjs";
 import UserRepository from "../repositories/UserRepository.js"
 class AuthRepository {
-  static async login(Email, Senha) {
+  static async login(email, password) {
     const usuario = await prisma.users.findUnique({
-      where: { Email: Email }
+      where: { email: email }
     });
 
-    if (!usuario || !(await bcrypt.compare(Senha, usuario.Senha))) {
+    if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
       throw {
         code: 401,
         message: "Email ou senha inválidos.",
       };
     }
-    const { Senha: _, ...usuarioSemSenha } = usuario;
-
+    const { password: _, refreshToken: s, ...usuarioSemSenha } = usuario;
+    
     return usuarioSemSenha;
   }
 
@@ -54,7 +54,7 @@ class AuthRepository {
       select: {
         id: true,
         Nome: true,
-        Email: true,
+        email: true,
         refreshToken: true
       }
     });

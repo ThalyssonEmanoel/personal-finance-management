@@ -1,55 +1,58 @@
-
 import { z } from "zod";
 
 class AccountSchemas {
   static listAccount = z.object({
-    Nome: z.string({ message: "O nome da conta precisa ser definido como uma string/texto." })
-      .refine((val) => !/^[0-9]+$/.test(val), { message: "O nome da conta precisa ser em palavras e não números." })
+    name: z.string({ message: "The account name must be a string/text." })
+      .refine((val) => !/^[0-9]+$/.test(val), { message: "The account name must contain words, not only numbers." })
       .optional(),
-    Tipo: z.string({ message: "O tipo precisa ser definido como uma string/texto." }).optional(),
-    id: z.coerce.number({ message: "O campo 'id' deve ser um número inteiro." })
-      .int({ message: "O campo 'id' deve ser um número inteiro." })
-      .positive({ message: "O campo 'id' deve ser no mínimo 1." })
+    type: z.string({ message: "The type must be a string/text." }).optional(),
+    balance: z.coerce.number({ message: "The balance must be a number." }).optional(),
+    userName: z.string({ message: "The user name must be a string/text." })
+      .refine((val) => !/^[0-9]+$/.test(val), { message: "The user name must contain words, not only numbers." })
       .optional(),
-    page: z.number({ message: "A page precisa ser um número inteiro positivo." })
-      .int({ message: "A page precisa ser um número inteiro positivo." })
-      .positive({ message: "A page precisa ser um número inteiro positivo." })
+    id: z.coerce.number({ message: "The 'id' field must be an integer." })
+      .int({ message: "The 'id' field must be an integer." })
+      .positive({ message: "The 'id' field must be at least 1." })
+      .optional(),
+    page: z.number({ message: "The page must be a positive integer." })
+      .int({ message: "The page must be a positive integer." })
+      .positive({ message: "The page must be a positive integer." })
       .optional()
       .default(1),
-    limit: z.number({ message: "A limit precisa ser um número inteiro positivo." })
-      .int({ message: "O campo 'limit' deve ser um número inteiro." })
-      .positive({ message: "O campo 'limit' deve ser no mínimo 1." })
+    limit: z.number({ message: "The limit must be a positive integer." })
+      .int({ message: "The 'limit' field must be an integer." })
+      .positive({ message: "The 'limit' field must be at least 1." })
       .default(10),
   });
 
   static createAccount = z.object({
-    Nome: z.string({ message: "O nome da conta precisa ser definido como uma string/texto." })
-      .refine((val) => !/^[0-9]+$/.test(val), { message: "O nome da conta precisa ser em palavras e não números." }),
-    Tipo: z.string({ message: "O tipo precisa ser definido como uma string/texto." }),
-    Saldo: z.coerce.number({ message: "O saldo precisa ser um número." }),
-    Icon: z.string({ message: "O ícone precisa ser definido como uma string/texto." }).optional(),
-    userId: z.coerce.number({ message: "O campo 'userId' deve ser um número inteiro." })
-      .int({ message: "O campo 'userId' deve ser um número inteiro." })
-      .positive({ message: "O campo 'userId' deve ser no mínimo 1." })
+    name: z.string({ message: "The account name must be a string/text." })
+      .refine((val) => !/^[0-9]+$/.test(val), { message: "The account name must be a string/text." }),
+    type: z.string({ message: "Account type must be a string." }),
+    balance: z.coerce.number({ message: "Account balance must be a number." }),
+    icon: z.string({ message: "Account icon must be a string (image path)." })
+      .regex(/\.(jpg|jpeg|png|gif|bmp|webp)$/i, { message: "Icon must be an image file (jpg, jpeg, png, gif, bmp, webp)." })
+      .optional()
+      .nullable()
+      .or(z.literal("")),
+    userId: z.coerce.number({ message: "User ID must be an integer." })
+      .int({ message: "User ID must be an integer." })
+      .positive({ message: "User ID must be at least 1." })
   });
 
   static updateAccount = z.object({
-    Nome: z.string({ message: "O nome da conta precisa ser definido como uma string/texto." })
-      .refine((val) => !/^[0-9]+$/.test(val), { message: "O nome da conta precisa ser em palavras e não números." })
+    name: z.string({ message: "The account name must be a string/text." })
+      .refine((val) => !/^[0-9]+$/.test(val), { message: "The account name must contain words, not only numbers." })
       .optional(),
-    Tipo: z.string({ message: "O tipo precisa ser definido como uma string/texto." }).optional(),
-    Saldo: z.coerce.number({ message: "O saldo precisa ser um número." }).optional(),
-    Icon: z.string({ message: "O ícone precisa ser definido como uma string/texto." }).optional(),
-    userId: z.coerce.number({ message: "O campo 'userId' deve ser um número inteiro." })
-      .int({ message: "O campo 'userId' deve ser um número inteiro." })
-      .positive({ message: "O campo 'userId' deve ser no mínimo 1." })
-      .optional(),
+    type: z.string({ message: "The type must be a string/text." }).optional(),
+    balance: z.coerce.number({ message: "The balance must be a number." }).optional(),
+    icon: z.string({ message: "The icon must be a string/text." }).optional(),
   });
 
   static accountIdParam = z.object({
-    id: z.coerce.number({ message: "O campo 'id' deve ser um número inteiro." })
-      .int({ message: "O campo 'id' deve ser um número inteiro." })
-      .positive({ message: "O campo 'id' deve ser no mínimo 1." })
+    id: z.coerce.number({ message: "The 'id' field must be an integer." })
+      .int({ message: "The 'id' field must be an integer." })
+      .positive({ message: "The 'id' field must be at least 1." })
   });
 }
 

@@ -14,17 +14,20 @@ if (process.env.NODE_ENV === 'production') {
 async function clearDatabase() {
   try {
     console.log('Apagando dados existentes...');
-    
+
     // Limpar dados existentes (opcional)
     // await prisma.despesas.deleteMany();
     // await prisma.despesas_recorrentes.deleteMany();
+    // await prisma.transacoes.deleteMany();
+    await prisma.accounts.deleteMany();
     await prisma.users.deleteMany();
     // Resetar AUTO_INCREMENT para começar do ID 1 novamente
     console.log('Resetando contadores de ID...');
     await prisma.$executeRaw`ALTER TABLE Users AUTO_INCREMENT = 1`;
+    await prisma.$executeRaw`ALTER TABLE Accounts AUTO_INCREMENT = 1`;
     // await prisma.$executeRaw`ALTER TABLE Despesas AUTO_INCREMENT = 1`;
     // await prisma.$executeRaw`ALTER TABLE Despesas_recorrentes AUTO_INCREMENT = 1`;
-    
+
   } catch (error) {
     console.error('Erro ao limpar o banco de dados:', error);
   }
@@ -61,7 +64,6 @@ async function seedDatabase() {
   let salt = await bcrypt.genSalt(SALT || 10);
   const senhaHash = await bcrypt.hash("Senha@12345", salt);
 
-  // Obter avatares disponíveis
   const availableAvatars = getAvailableAvatars();
   console.log(`Encontrados ${availableAvatars.length} avatares disponíveis:`, availableAvatars);
 
@@ -74,24 +76,42 @@ async function seedDatabase() {
 
   const users = await prisma.users.createMany({
     data: [
-      { Nome: "Thalysson", Email: "thalysson140105@gmail.com", Senha: senhaHash, Avatar: getRandomAvatar(availableAvatars) },//Tenho que colocar o refresh token do usuário aqui depois
-      { Nome: "Random", Email: "random123@gmail.com", Senha: senhaHash, Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
-      { Nome: faker.person.fullName(), Email: faker.internet.email(), Senha: await gerarSenhaSegura(), Avatar: getRandomAvatar(availableAvatars) },
+      { name: "Thalysson", email: "thalysson140105@gmail.com", password: senhaHash, avatar: getRandomAvatar(availableAvatars) },
+      { name: "Random", email: "random123@gmail.com", password: senhaHash, avatar: getRandomAvatar(availableAvatars) },
+      { name: faker.person.fullName(), email: faker.internet.email(), password: await gerarSenhaSegura(), avatar: getRandomAvatar(availableAvatars) },
+      { name: faker.person.fullName(), email: faker.internet.email(), password: await gerarSenhaSegura(), avatar: getRandomAvatar(availableAvatars) },
+      { name: faker.person.fullName(), email: faker.internet.email(), password: await gerarSenhaSegura(), avatar: getRandomAvatar(availableAvatars) },
+      { name: faker.person.fullName(), email: faker.internet.email(), password: await gerarSenhaSegura(), avatar: getRandomAvatar(availableAvatars) },
+      { name: faker.person.fullName(), email: faker.internet.email(), password: await gerarSenhaSegura(), avatar: getRandomAvatar(availableAvatars) },
+      { name: faker.person.fullName(), email: faker.internet.email(), password: await gerarSenhaSegura(), avatar: getRandomAvatar(availableAvatars) },
+      { name: faker.person.fullName(), email: faker.internet.email(), password: await gerarSenhaSegura(), avatar: getRandomAvatar(availableAvatars) },
+      { name: faker.person.fullName(), email: faker.internet.email(), password: await gerarSenhaSegura(), avatar: getRandomAvatar(availableAvatars) },
+      { name: faker.person.fullName(), email: faker.internet.email(), password: await gerarSenhaSegura(), avatar: getRandomAvatar(availableAvatars) },
+      { name: faker.person.fullName(), email: faker.internet.email(), password: await gerarSenhaSegura(), avatar: getRandomAvatar(availableAvatars) },
+      { name: faker.person.fullName(), email: faker.internet.email(), password: await gerarSenhaSegura(), avatar: getRandomAvatar(availableAvatars) },
+      { name: faker.person.fullName(), email: faker.internet.email(), password: await gerarSenhaSegura(), avatar: getRandomAvatar(availableAvatars) },
     ],
   });
 
   console.log(` Criados ${users.count} usuários`);
+
+  const allUsers = await prisma.users.findMany();
+
+  const accountTypes = ["corrente", "poupanca", "investimento", "carteira", "digital"];
+
+  const accountsData = allUsers.flatMap(user => {
+    const numAccounts = faker.number.int({ min: 1, max: 3 });
+    return Array.from({ length: numAccounts }, () => ({
+      name: faker.finance.accountName(),
+      type: faker.helpers.arrayElement(accountTypes),
+      balance: parseFloat(faker.finance.amount(0, 10000, 2)),
+      icon: getRandomAvatar(availableAvatars),
+      userId: user.id
+    }));
+  });
+
+  const createdAccounts = await prisma.accounts.createMany({ data: accountsData });
+  console.log(` Criadas ${createdAccounts.count} contas para os usuários.`);
   console.log(' Seed concluído com sucesso!');
 }
 

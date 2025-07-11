@@ -7,7 +7,7 @@ class ParameterGenerator {
   }
 
   /**
-   * @getFilterParameters Gera parâmetros de filtro para um model específico
+   * @getFilterParameters Gera parâmetros de filtro para um model específico, incluindo page e limit por padrão
    */
   getFilterParameters(modelName, excludeFields = []) {
     const model = this.models[modelName];
@@ -43,6 +43,24 @@ class ParameterGenerator {
 
       parameters.push(parameter);
     });
+
+    // Adiciona page e limit como parâmetros padrão
+    parameters.push(
+      {
+        name: "page",
+        in: "query",
+        description: "Número da página para paginação (padrão: 1)",
+        required: false,
+        schema: { type: "integer", default: 1, minimum: 1 }
+      },
+      {
+        name: "limit",
+        in: "query",
+        description: "Quantidade de itens por página (padrão: 10)",
+        required: false,
+        schema: { type: "integer", default: 10, minimum: 1 }
+      }
+    );
 
     return parameters;
   }
@@ -83,7 +101,8 @@ class ParameterGenerator {
     const {
       excludeFields = [],
       customDescriptions = {},
-      customValidations = {}
+      customValidations = {},
+      extraParameters = []
     } = config;
 
     let parameters = [];
@@ -101,7 +120,14 @@ class ParameterGenerator {
       }
     });
 
-    return [...parameters, ...filterParams];
+    // Adiciona parâmetros extras manualmente
+    if (Array.isArray(extraParameters) && extraParameters.length > 0) {
+      parameters = [...filterParams, ...extraParameters];
+    } else {
+      parameters = filterParams;
+    }
+
+    return parameters;
   }
 }
 

@@ -22,13 +22,21 @@ const accountsRoutes = {
       `,
       security: [{ bearerAuth: [] }],
       parameters: parameterGenerator.getCustomParameters('Accounts', {
-        excludeFields: [],
+        excludeFields: ['icon', 'usuario', 'transacoes', 'userId'],
         customDescriptions: {
           id: "Filtrar por ID da conta",
-          Nome: "Filtrar por nome da conta",
-          Tipo: "Filtrar por tipo da conta",
-          userId: "Filtrar por ID do usuário dono da conta"
-        }
+          name: "Filtrar por nome da conta",
+          type: "Filtrar por tipo da conta"
+        },
+        extraParameters: [
+          {
+            name: "userName",
+            in: "query",
+            description: "Filtrar por nome do usuário dono da conta",
+            required: false,
+            schema: { type: "string" }
+          }
+        ]
       }),
       responses: {
         200: commonResponses[200]("#/components/schemas/AccountResponse"),
@@ -41,33 +49,31 @@ const accountsRoutes = {
     },
     post: {
       tags: ["Accounts"],
-      summary: "Cadastra uma nova conta",
+      summary: "Register a new account",
       description: `
-        #### Caso de Uso
-        Permite ao sistema cadastrar uma nova conta para um usuário.
+        #### Use Case
+        Allows the system to register a new account for a user.
 
-        #### Regra de Negócio
-        Cria uma nova conta com as informações fornecidas.
+        #### Business Rule
+        Creates a new account with the provided information.
 
-        #### Regras de Negócio Envolvidas
-        - Todos os campos obrigatórios devem ser fornecidos.
-        - O usuário dono da conta deve existir.
+        #### Business Rules Involved
+        - All required fields must be provided.
+        - The account owner user must exist.
 
-        #### Resultado Esperado
-        Retorna os dados da conta criada e status 201.
+        #### Expected Result
+        Returns the created account data and status 201.
       `,
-      requestBody: parameterGenerator.getMultipartRequestBody('Accounts', {
-        excludeFields: ['id'],
-        fileFields: ['Icon'],
-        requiredFields: ['Nome', 'Tipo'],
-        title: 'CreateAccountFormRequest',
-        customDescriptions: {
-          Nome: "Nome completo do usuário",
-          Tipo: "Tipo da conta (ex: Corrente, Poupança)",
-          Saldo: "Senha do usuário (mínimo 8 caracteres)",
-          Icon: "Arquivo de imagem para o ícone da conta (opcional, máximo 2MB)"
-        },
-      }),
+      requestBody: {
+        required: true,
+        content: {
+          "multipart/form-data": {
+            schema: {
+              $ref: "#/components/schemas/CreateAccountFormRequest"
+            }
+          }
+        }
+      },
       responses: {
         201: commonResponses[201]("#/components/schemas/CreateAccountResponse"),
         400: commonResponses[400](),
@@ -100,7 +106,7 @@ const accountsRoutes = {
       requestBody: {
         required: false,
         content: {
-          "application/json": {
+          "multipart/form-data": {
             schema: {
               $ref: "#/components/schemas/UpdateAccountFormRequest"
             }

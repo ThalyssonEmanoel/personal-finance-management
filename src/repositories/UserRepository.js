@@ -13,10 +13,10 @@ class UserRepository {
       orderBy: { id: order },
       select: {
         id: true,
-        Nome: true,
-        Email: true,
-        Senha: false,
-        Avatar: true
+        name: true,
+        email: true,
+        password: false,
+        avatar: true
       },
     });
     if (!result || result.length === 0) {
@@ -29,11 +29,11 @@ class UserRepository {
   }
 
   static async createUser(userData) {
-    const { Nome, Email, Senha, Avatar } = userData;
+    const { name, email, password, avatar } = userData;
 
     // Verificar se o email já existe
     const existingUser = await prisma.users.findUnique({
-      where: { Email }
+      where: { email }
     });
 
     if (existingUser) {
@@ -43,23 +43,23 @@ class UserRepository {
     // Criar o novo usuário
     return await prisma.users.create({
       data: {
-        Nome: Nome,
-        Email,
-        Senha,
-        Avatar: Avatar || null
+        name: name,
+        email,
+        password,
+        avatar: avatar || null
       },
       select: {
         id: true,
-        Nome: true,
-        Email: true,
-        Senha: false,
-        Avatar: true
+        name: true,
+        email: true,
+        password: false,
+        avatar: true
       }
     });
   }
 
   static async updateUser(id, userData) {
-    const { Nome, Email, Senha, Avatar, refreshToken } = userData;
+    const { name, email, password, avatar, refreshToken } = userData;
 
     // Verificar se o usuário existe
     const existingUser = await prisma.users.findUnique({
@@ -71,10 +71,10 @@ class UserRepository {
     }
 
     // Verificar se o email já existe em outro usuário
-    if (Email) {
+    if (email) {
       const emailExists = await prisma.users.findFirst({
         where: {
-          Email,
+          email,
           id: { not: parseInt(id) }
         }
       });
@@ -82,10 +82,10 @@ class UserRepository {
         throw { code: 409, message: "Email já cadastrado por outro usuário" };
       }
     }
-    if (Email) {
+    if (email) {
       const emailExists = await prisma.users.findFirst({
         where: {
-          Email,
+          email,
         }
       });
       if (emailExists) {
@@ -95,10 +95,10 @@ class UserRepository {
 
     // Atualizar o usuário
     const updateData = {};
-    if (Nome) updateData.Nome = Nome;
-    if (Email) updateData.Email = Email;
-    if (Senha) updateData.Senha = Senha;
-    if (Avatar !== undefined) updateData.Avatar = Avatar;
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (password) updateData.password = password;
+    if (avatar !== undefined) updateData.avatar = avatar;
     if (refreshToken !== undefined) updateData.refreshToken = refreshToken;
 
     return await prisma.users.update({
@@ -106,10 +106,10 @@ class UserRepository {
       data: updateData,
       select: {
         id: true,
-        Nome: true,
-        Email: true,
-        Senha: false,
-        Avatar: true
+        name: true,
+        email: true,
+        password: false,
+        avatar: true
       }
     });
   }

@@ -3,93 +3,122 @@ import { prisma } from "../config/prismaClient.js";
 class AccountRepository {
 
   static async listAccounts(filtros, skip, take, order) {
-    const where = {
-      ...filtros,
-    };
-    const result = await prisma.contas.findMany({
+    const { userName, ...otherFilters } = filtros;
+    let where = { ...otherFilters };
+    if (userName) {
+      where.usuario = {
+        name: { contains: userName }
+      };
+    }
+    const result = await prisma.accounts.findMany({
       where,
       skip: skip,
       take: take,
       orderBy: { id: order },
       select: {
         id: true,
-        Nome: true,
-        Tipo: true,
-        Saldo: true,
-        Icon: true,
+        name: true,
+        type: true,
+        balance: true,
+        icon: true,
         userId: true
       },
     });
-    if (!result || result.length === 0) {
+    if (result.length === 0) {
       throw { code: 404, message: "Nenhuma conta encontrada" };
     }
     return result;
   }
 
   static async contAccounts() {
-    return await prisma.contas.count();
+    return await prisma.accounts.count();
   }
 
   static async createAccount(accountData) {
-    const { Nome, Tipo, Saldo, Icon, userId } = accountData;
-    return await prisma.contas.create({
-      data: {
-        Nome,
-        Tipo,
-        Saldo,
-        Icon: Icon || null,
-        userId
-      },
+    const { name, type, balance, icon, userId } = accountData;
+    
+    const normalize = (str) => str.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+    const normalizedNome = normalize(name);
+    const existingAccounts = await prisma.accounts.findMany({
+      where: {
+        type,
+        usuario: { id: userId }
+      }
+    });
+    const similar = existingAccounts.find(acc => normalize(acc.name) === normalizedNome);
+    if (similar) {
+      throw { code: 409, message: "Já existe uma conta com nome semelhante para este usuário." };
+    }
+    const data = {
+      name,
+      type,
+      balance,
+      usuario: { connect: { id: userId } },
+      icon: icon !== undefined ? icon : ""
+    };
+    return await prisma.accounts.create({
+      data,
       select: {
         id: true,
-        Nome: true,
-        Tipo: true,
-        Saldo: true,
-        Icon: true,
+        name: true,
+        type: true,
+        balance: true,
+        icon: true,
         userId: true
       }
     });
   }
 
   static async updateAccount(id, accountData) {
-    // Verificar se a conta existe
-    const existingAccount = await prisma.contas.findUnique({
+    const existingAccount = await prisma.accounts.findUnique({
       where: { id: parseInt(id) }
     });
     if (!existingAccount) {
       throw { code: 404, message: "Conta não encontrada" };
     }
-    // Atualizar a conta
+    if (accountData.name && accountData.type && accountData.userId) {
+      const normalize = (str) => str.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+      const normalizedNome = normalize(accountData.name);
+      const existingAccounts = await prisma.accounts.findMany({
+        where: {
+          type: accountData.type,
+          usuario: { id: accountData.userId },
+          NOT: { id: parseInt(id) }
+        }
+      });
+      const similar = existingAccounts.find(acc => normalize(acc.name) === normalizedNome);
+      if (similar) {
+        throw { code: 409, message: "Já existe uma conta com nome semelhante para este usuário." };
+      }
+    }
     const updateData = {};
-    if (accountData.Nome) updateData.Nome = accountData.Nome;
-    if (accountData.Tipo) updateData.Tipo = accountData.Tipo;
-    if (accountData.Saldo !== undefined) updateData.Saldo = accountData.Saldo;
-    if (accountData.Icon !== undefined) updateData.Icon = accountData.Icon;
+    if (accountData.name) updateData.name = accountData.name;
+    if (accountData.type) updateData.type = accountData.type;
+    if (accountData.balance !== undefined) updateData.balance = accountData.balance;
+    if (accountData.icon !== undefined) updateData.icon = accountData.icon;
     if (accountData.userId !== undefined) updateData.userId = accountData.userId;
-    return await prisma.contas.update({
+    return await prisma.accounts.update({
       where: { id: parseInt(id) },
       data: updateData,
       select: {
         id: true,
-        Nome: true,
-        Tipo: true,
-        Saldo: true,
-        Icon: true,
+        name: true,
+        type: true,
+        balance: true,
+        icon: true,
         userId: true
       }
     });
   }
 
   static async deleteAccount(id) {
-    // Verificar se a conta existe
-    const existingAccount = await prisma.contas.findUnique({
+    const existingAccount = await prisma.accounts.findUnique({
       where: { id: parseInt(id) }
     });
     if (!existingAccount) {
       throw { code: 404, message: "Conta não encontrada" };
     }
-    // Deletar a conta
-    await prisma.contas.delete({
+    await prisma.accounts.delete({
       where: { id: parseInt(id) }
     });
     return { message: "Conta deletada com sucesso" };

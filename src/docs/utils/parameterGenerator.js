@@ -1,6 +1,5 @@
 import SchemaParser from './core/SchemaParser.js';
 import ParameterGenerator from './core/ParameterGenerator.js';
-import RequestBodyGenerator from './core/RequestBodyGenerator.js';
 import ResponseSchemaGenerator from './core/ResponseSchemaGenerator.js';
 import SchemaCollectionGenerator from './core/SchemaCollectionGenerator.js';
 /**
@@ -15,7 +14,6 @@ class SwaggerGenerator {
 
     // Inicializar geradores
     this.parameterGenerator = new ParameterGenerator(models);
-    this.requestBodyGenerator = new RequestBodyGenerator(models);
     this.responseSchemaGenerator = new ResponseSchemaGenerator(models);
     this.schemaCollectionGenerator = new SchemaCollectionGenerator(models);
   }
@@ -34,22 +32,6 @@ class SwaggerGenerator {
 
   getCustomParameters(modelName, config = {}) {
     return this.parameterGenerator.getCustomParameters(modelName, config);
-  }
-
-  generateRequestBodySchema(modelName, config = {}) {
-    return this.requestBodyGenerator.generateRequestBodySchema(modelName, config);
-  }
-
-  getCreateRequestBody(modelName, config = {}) {
-    return this.requestBodyGenerator.getCreateRequestBody(modelName, config);
-  }
-
-  getUpdateRequestBody(modelName, config = {}) {
-    return this.requestBodyGenerator.getUpdateRequestBody(modelName, config);
-  }
-
-  getMultipartRequestBody(modelName, config = {}) {
-    return this.requestBodyGenerator.getMultipartRequestBody(modelName, config);
   }
 
   getResponseSchema(modelName, config = {}) {
@@ -94,10 +76,6 @@ class SwaggerGenerator {
 
   get parameters() {
     return this.parameterGenerator;
-  }
-
-  get requestBodies() {
-    return this.requestBodyGenerator;
   }
 
   get responses() {

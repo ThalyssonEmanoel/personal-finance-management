@@ -8,10 +8,10 @@ const AccountSchemas = {
         description: "Dados da conta.",
         properties: {
           id: { type: "integer" },
-          Nome: { type: "string" },
-          Tipo: { type: "string" },
-          Saldo: { type: "number" },
-          Icon: { type: "string", nullable: true },
+          name: { type: "string" },
+          type: { type: "string" },
+          balance: { type: "number" },
+          icon: { type: "string", nullable: true },
           userId: { type: "integer" }
         }
       }
@@ -20,10 +20,10 @@ const AccountSchemas = {
     example: {
       account: {
         id: 1,
-        Nome: "Conta Corrente",
-        Tipo: "Corrente",
-        Saldo: 1000.00,
-        Icon: null,
+        name: "Conta Corrente",
+        type: "Corrente",
+        balance: 1000.00,
+        icon: null,
         userId: 1
       }
     }
@@ -31,31 +31,32 @@ const AccountSchemas = {
   CreateAccountFormRequest: {
     title: "CreateAccountFormRequest",
     type: "object",
-    required: ["Nome", "Tipo", "Saldo", "userId"],
+    required: ["name", "type", "balance", "userId"],
     properties: {
-      Nome: {
+      name: {
         type: "string",
         description: "Nome da conta",
         example: "Conta Corrente"
       },
-      Tipo: {
+      type: {
         type: "string",
         description: "Tipo da conta",
         example: "Corrente"
       },
-      Saldo: {
+      balance: {
         type: "number",
         description: "Saldo inicial da conta",
         example: 1000.00
       },
-      Icon: {
+      icon: {
         type: "string",
+        format: "binary",
         description: "Ícone da conta (opcional)",
         nullable: true
       },
       userId: {
         type: "integer",
-        description: "ID do usuário dono da conta",
+        description: "Id do usuário dono da conta",
         example: 1
       }
     },
@@ -70,10 +71,10 @@ const AccountSchemas = {
         description: "Dados da conta criada.",
         properties: {
           id: { type: "integer" },
-          Nome: { type: "string" },
-          Tipo: { type: "string" },
-          Saldo: { type: "number" },
-          Icon: { type: "string", nullable: true },
+          name: { type: "string" },
+          type: { type: "string" },
+          balance: { type: "number" },
+          icon: { type: "string", nullable: true },
           userId: { type: "integer" }
         }
       }
@@ -82,10 +83,10 @@ const AccountSchemas = {
     example: {
       account: {
         id: 1,
-        Nome: "Conta Corrente",
-        Tipo: "Corrente",
-        Saldo: 1000.00,
-        Icon: null,
+        name: "Conta Corrente",
+        type: "Corrente",
+        balance: 1000.00,
+        icon: null,
         userId: 1
       }
     }
@@ -94,30 +95,26 @@ const AccountSchemas = {
     title: "UpdateAccountFormRequest",
     type: "object",
     properties: {
-      Nome: {
+      name: {
         type: "string",
         description: "Nome da conta (opcional)",
         example: "Conta Corrente"
       },
-      Tipo: {
+      type: {
         type: "string",
         description: "Tipo da conta (opcional)",
         example: "Corrente"
       },
-      Saldo: {
+      balance: {
         type: "number",
         description: "Saldo da conta (opcional)",
         example: 1200.00
       },
-      Icon: {
+      icon: {
         type: "string",
+        format: "binary",
         description: "Ícone da conta (opcional)",
         nullable: true
-      },
-      userId: {
-        type: "integer",
-        description: "ID do usuário dono da conta (opcional)",
-        example: 1
       }
     },
     description: "Schema para atualização de conta"
@@ -131,11 +128,10 @@ const AccountSchemas = {
         description: "Dados da conta atualizada.",
         properties: {
           id: { type: "integer" },
-          Nome: { type: "string" },
-          Tipo: { type: "string" },
-          Saldo: { type: "number" },
-          Icon: { type: "string", nullable: true },
-          userId: { type: "integer" }
+          name: { type: "string" },
+          type: { type: "string" },
+          balance: { type: "number" },
+          icon: { type: "string", nullable: true }
         }
       }
     },
@@ -143,10 +139,10 @@ const AccountSchemas = {
     example: {
       account: {
         id: 1,
-        Nome: "Conta Corrente",
-        Tipo: "Corrente",
-        Saldo: 1200.00,
-        Icon: null,
+        name: "Conta Corrente",
+        type: "Corrente",
+        balance: 1200.00,
+        icon: null,
         userId: 1
       }
     }

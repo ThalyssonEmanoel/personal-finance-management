@@ -8,8 +8,8 @@ const router = e.Router();
 
 router
   .get("/account", authMiddleware, AccountController.listAllAccounts, errorHandler)
-  .post("/account", authMiddleware, AccountController.registerAccount, errorHandler)
-  .patch("/account/:id", authMiddleware, AccountController.updateAccount, errorHandler)
+  .post( "/account", authMiddleware, upload.single("Icon"), AccountController.registerAccount, errorHandler)
+  .patch( "/account/:id", authMiddleware, upload.single("Icon"), AccountController.updateAccount, errorHandler )
   .delete("/account/:id", authMiddleware, AccountController.deleteAccount, errorHandler)
-  
+
 export default router;

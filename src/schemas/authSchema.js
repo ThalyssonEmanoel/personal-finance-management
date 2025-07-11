@@ -2,8 +2,8 @@ import { z } from "zod";
 
 class AuthSchema {
   static login = z.object({
-    Email: z.string().email("Email deve ter um formato válido"),
-    Senha: z.string().min(1, "Senha é obrigatória"),
+    email: z.string().email("Email deve ter um formato válido"),
+    password: z.string().min(1, "Senha é obrigatória"),
   });
   static logout = z.object({
     id: z

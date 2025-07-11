@@ -29,11 +29,11 @@ class UserService {
     const validUser = UserSchema.createUser.parse(user);
 
     const saltRounds = parseInt(process.env.SALT) || 10;
-    const hashedPassword = await bcrypt.hash(validUser.Senha, saltRounds);
+    const hashedPassword = await bcrypt.hash(validUser.password, saltRounds);
 
     const userWithHashedPassword = {
       ...validUser,
-      Senha: hashedPassword
+      password: hashedPassword
     };
 
     const newUser = await UserRepository.createUser(userWithHashedPassword);
@@ -47,9 +47,9 @@ class UserService {
     const validId = UserSchema.userIdParam.parse({ id });
     const validUserData = UserSchema.updateUser.parse(userData);
 
-    if (validUserData.Senha) {
+    if (validUserData.password) {
       const saltRounds = parseInt(process.env.SALT) || 10;
-      validUserData.Senha = await bcrypt.hash(validUserData.Senha, saltRounds);
+      validUserData.password = await bcrypt.hash(validUserData.password, saltRounds);
     }
 
     const updatedUser = await UserRepository.updateUser(validId.id, validUserData);
