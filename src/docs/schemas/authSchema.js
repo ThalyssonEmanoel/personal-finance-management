@@ -2,15 +2,15 @@ const AuthSchemas = {
   LoginRequest: {
     title: "LoginRequest",
     type: "object",
-    required: ["Email", "Senha"],
+    required: ["email", "password"],
     properties: {
-      Email: {
+      email: {
         type: "string",
         format: "Email",
         description: "Email do usuário para autenticação",
         example: "thalysson140105@gmail.com"
       },
-      Senha: {
+      password: {
         type: "string",
         minLength: 1,
         description: "Senha do usuário",
@@ -19,8 +19,8 @@ const AuthSchemas = {
     },
     description: "Schema para requisição de login",
     example: {
-      Email: "thalysson140105@gmail.com",
-      Senha: "Senha@12345"
+      email: "thalysson140105@gmail.com",
+      password: "Senha@12345"
     }
   },
   LoginResponse: {
@@ -45,16 +45,16 @@ const AuthSchemas = {
             type: "integer",
             description: "ID único do usuário"
           },
-          Nome: { 
+          name: { 
             type: "string",
             description: "Nome completo do usuário"
           },
-          Email: { 
+          email: { 
             type: "string",
             format: "Email",
             description: "Email do usuário"
           },
-          Avatar: { 
+          avatar: { 
             type: "string",
             nullable: true,
             description: "Caminho do avatar do usuário"
@@ -68,9 +68,9 @@ const AuthSchemas = {
       refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsImlhdCI6MTYxNjkyNDAwMH0...",
       usuario: {
         id: 1,
-        Nome: "Thalysson Emanoel",
-        Email: "admin123@gmail.com",
-        Avatar: null
+        name: "Thalysson Emanoel",
+        email: "admin123@gmail.com",
+        avatar: null
       }
     }
   },

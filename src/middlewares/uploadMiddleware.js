@@ -12,10 +12,13 @@ const __dirname = path.dirname(__filename);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "src/uploads/avatares");// a pasta 'uploads' guardará os arquivos enviados
+    cb(null, "src/uploads");// a pasta 'uploads' guardará os arquivos enviados
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (![".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"].includes(ext)) {
+      return cb(new Error("Invalid file extension."));
+    }
     const filename = `${Date.now()}-${file.fieldname}${ext}`;
     cb(null, filename);
   },

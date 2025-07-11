@@ -6,23 +6,23 @@ class AccountService {
   static async listAccounts(filtros, page, limit, order = 'asc') {
     const validFiltros = AccountSchemas.listAccount.parse(filtros);
     const { page: validPage, limit: validLimit, ...dbFilters } = validFiltros;
+
     if (dbFilters.id) {
       dbFilters.id = parseInt(dbFilters.id);
     }
+
     const skip = (page - 1) * limit;
     const take = parseInt(limit, 10);
     const [contas, total] = await Promise.all([
       AccountRepository.listAccounts(dbFilters, skip, take, order),
       AccountRepository.contAccounts()
     ]);
-    if (!contas) {
-      throw { code: 404 }
-    }
     return { contas, total, take };
   }
 
   static async createAccount(account) {
     const validAccount = AccountSchemas.createAccount.parse(account);
+    
     const newAccount = await AccountRepository.createAccount(validAccount);
     if (!newAccount) {
       throw { code: 404 };

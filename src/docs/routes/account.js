@@ -22,13 +22,21 @@ const accountsRoutes = {
       `,
       security: [{ bearerAuth: [] }],
       parameters: parameterGenerator.getCustomParameters('Accounts', {
-        excludeFields: ['Icon', 'usuario', 'transacoes'],
+        excludeFields: ['icon', 'usuario', 'transacoes', 'userId'],
         customDescriptions: {
           id: "Filtrar por ID da conta",
-          Nome: "Filtrar por nome da conta",
-          Tipo: "Filtrar por tipo da conta",
-          userId: "Filtrar por ID do usuário dono da conta"
-        }
+          name: "Filtrar por nome da conta",
+          type: "Filtrar por tipo da conta"
+        },
+        extraParameters: [
+          {
+            name: "userName",
+            in: "query",
+            description: "Filtrar por nome do usuário dono da conta",
+            required: false,
+            schema: { type: "string" }
+          }
+        ]
       }),
       responses: {
         200: commonResponses[200]("#/components/schemas/AccountResponse"),
@@ -56,19 +64,16 @@ const accountsRoutes = {
         #### Expected Result
         Returns the created account data and status 201.
       `,
-      requestBody: parameterGenerator.getMultipartRequestBody('Accounts', {
-        excludeFields: ['id'],
-        fileFields: ['Icon'],
-        requiredFields: ['Nome', 'Tipo', 'Saldo', 'userId'],
-        title: 'CreateAccountFormRequest',
-        customDescriptions: {
-          Nome: "Full name of the account.",
-          Tipo: "Type of the account (e.g., Checking, Savings)",
-          Saldo: "Initial balance of the account.",
-          Icon: "Image file for the account icon (optional, max 2MB, image only)",
-          userId: "ID of the user who owns the account."
-        },
-      }),
+      requestBody: {
+        required: true,
+        content: {
+          "multipart/form-data": {
+            schema: {
+              $ref: "#/components/schemas/CreateAccountFormRequest"
+            }
+          }
+        }
+      },
       responses: {
         201: commonResponses[201]("#/components/schemas/CreateAccountResponse"),
         400: commonResponses[400](),
@@ -98,19 +103,16 @@ const accountsRoutes = {
       `,
       security: [{ bearerAuth: [] }],
       parameters: parameterGenerator.getPathIdParameter("ID da conta a ser atualizada"),
-      requestBody: parameterGenerator.getMultipartRequestBody('Accounts', {
-        excludeFields: ['id'],
-        fileFields: ['Icon'],
-        requiredFields: ['Nome', 'Tipo', 'Saldo', 'userId'],
-        title: 'CreateAccountFormRequest',
-        customDescriptions: {
-          Nome: "Full name of the account.",
-          Tipo: "Type of the account (e.g., Checking, Savings)",
-          Saldo: "Initial balance of the account.",
-          Icon: "Image file for the account icon (optional, max 2MB, image only)",
-          userId: "ID of the user who owns the account."
-        },
-      }),
+      requestBody: {
+        required: false,
+        content: {
+          "multipart/form-data": {
+            schema: {
+              $ref: "#/components/schemas/UpdateAccountFormRequest"
+            }
+          }
+        }
+      },
       responses: {
         200: commonResponses[200]("#/components/schemas/UpdateAccountResponse"),
         400: commonResponses[400](),

@@ -4,15 +4,15 @@ import AuthRepository from "../repositories/AuthRepository.js";
 
 class AuthService {
   static async login(data) {
-    const { Email, Senha } = AuthSchema.login.parse(data);
+    const { email, password } = AuthSchema.login.parse(data);
     
-    if (!Email || !Senha) {
+    if (!email || !password) {
       throw {
         code: 400,
         message: "Email e senha são obrigatórios.",
       }
     }
-    const usuario = await AuthRepository.login(Email, Senha);
+    const usuario = await AuthRepository.login(email, password);
 
     const accessTokenExpiration = process.env.JWT_EXPIRATION_ACCESS_TOKEN || "15m";
     const refreshTokenExpiration = process.env.JWT_EXPIRATION_REFRESH_TOKEN || "7d";
@@ -20,8 +20,8 @@ class AuthService {
     const accessToken = jwt.sign(
       {
         id: usuario.id,
-        Nome: usuario.Nome,
-        Email: usuario.Email,
+        name: usuario.name,
+        email: usuario.email,
       },
       process.env.JWT_SECRET,
       { expiresIn: accessTokenExpiration }
@@ -30,7 +30,7 @@ class AuthService {
     const refreshToken = jwt.sign(
       {
         id: usuario.id,
-        Email: usuario.Email,
+        email: usuario.email,
       },
       process.env.JWT_SECRET,
       { expiresIn: refreshTokenExpiration }
@@ -67,8 +67,8 @@ class AuthService {
       const newAccessToken = jwt.sign(
         {
           id: usuario.id,
-          Nome: usuario.Nome,
-          Email: usuario.Email,
+          name: usuario.name,
+          email: usuario.email,
         },
         process.env.JWT_SECRET,
         { expiresIn: accessTokenExpiration }

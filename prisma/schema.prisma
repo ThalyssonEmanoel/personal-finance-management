@@ -10,10 +10,10 @@ datasource db {
 
 model Users {
   id           Int         @id @default(autoincrement())
-  Nome         String      @db.VarChar(45)
-  Email        String      @unique(map: "Email_UNIQUE") @db.VarChar(45)
-  Senha        String      @db.VarChar(255)
-  Avatar       String?     @db.VarChar(100)
+  name         String      @db.VarChar(45)
+  email        String      @unique(map: "Email_UNIQUE") @db.VarChar(45)
+  password        String      @db.VarChar(255)
+  avatar       String?     @db.VarChar(100)
   refreshToken String?     @db.Text
 
   contas       Accounts[]
@@ -22,10 +22,10 @@ model Users {
 
 model Accounts {
   id       Int      @id @default(autoincrement())
-  Nome     String   @db.VarChar(100)
-  Tipo     String   @db.VarChar(45)
-  Saldo    Decimal  @db.Decimal(10,2)
-  Icon     String   @db.VarChar(100)
+  name     String   @db.VarChar(100)
+  type     String   @db.VarChar(45)
+  balance    Decimal  @db.Decimal(10,2)
+  icon     String?   @db.VarChar(100)
 
   userId   Int
   usuario  Users    @relation(fields: [userId], references: [id])
