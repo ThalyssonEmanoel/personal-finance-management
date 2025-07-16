@@ -65,7 +65,6 @@ describe("Listar as contas GET", () => {
         .get("/account")
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
-      console.log("Response body:", response.body.message);
       expect(response.status).toBe(200);
       expect(response.error).toBe(false);
       accountInformation = response.body.data[0]
@@ -121,9 +120,9 @@ describe("Listar as contas GET", () => {
       expect(response.error).toBe(false);
       expect(response.body.limite).toBe(10);
     });
-    it("deve listar os usuários da próxima página", async () => {
+    it("deve listar as contas da próxima página", async () => {
       const response = await request(app)
-        .get(`/account?pagina=2`)
+        .get(`/account?page=2`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
       expect(response.status).toBe(200);
@@ -131,79 +130,39 @@ describe("Listar as contas GET", () => {
     });
   })
   describe("Caminho triste", () => {
-    it("deve retornar erro ao tentar listar um usuário com Nome inválido", async () => {
+    it("deve retornar erro ao tentar listar uma conta com paramêtros inválidos", async () => {
       const response = await request(app)
-        .get(`/users?Nome=123`)
+        .get(`/account?id=asd&name=123&type=123&balance=asd&page=asd&limit=asd&userName=34`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
       expect(response.body).toHaveProperty("code", 400);
       expect(response.body).toHaveProperty("message");
       expect(response.body.message).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({
-            path: "Nome",
-            message: "O nome precisa ser em palavras e não números.",
-          }),
+          expect.objectContaining({ path: "name", message: "The account name must contain words, not only numbers." }),
+          expect.objectContaining({ path: "type", message: "The type must contain words, not only numbers." }),
+          expect.objectContaining({ path: "balance", message: "The balance must be a number." }),
+          expect.objectContaining({ path: "userName", message: "The user name must contain words, not only numbers." }),
+          expect.objectContaining({ path: "userName", message: "The user name must contain words, not only numbers." }),
         ])
       );
-    });
-    it("deve retornar erro ao tentar listar um usuário com o ID inválido.", async () => {
-      const response = await request(app)
-        .get(`/users?id=abc`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`);
-      expect(response.body).toHaveProperty("code", 400);
-      expect(response.body).toHaveProperty("message");
-      expect(response.body.message).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            path: "id",
-            message: "O campo 'id' deve ser um número inteiro.",
-          }),
-        ])
-      );
-    });
-    it("deve retornar erro ao tentar listar um usuário com Email inválido.", async () => {
-      const response = await request(app)
-        .get(`/users?Email=123`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`);
-      expect(response.body).toHaveProperty("code", 400);
-      expect(response.body).toHaveProperty("message");
-      expect(response.body.message).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            path: "Email",
-            message: "Email invalido",
-          }),
-        ])
-      );
-    });
-    it("deve retornar erro ao tentar listar sem ter usuários existents.", async () => {
-      const response = await request(app)
-        .get(`/users?page=123`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`);
-      expect(response.body).toHaveProperty("code", 404);
-      expect(response.body).toHaveProperty("message");
-      expect(response.body.message).toEqual("Nenhum usuário encontrado");
     });
   });
 });
 
-describe("Cadastrar usuários POST/", () => {
+describe("Cadastrar conta POST/", () => {
   let senha_faker = gerarSenhaForte();
   describe("Caminho feliz", () => {
-    it("deve cadastrar um usuário", async () => {
+    it("deve cadastrar uma nova conta", async () => {
       const response = await request(app)
-        .post("/users")
+        .post("/account")
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          Nome: user_faker,
-          Email: email_faker,
-          Senha: senha_faker,
-          Avatar: null,
+          name: faker.company.name(),
+          type: "pessoal",
+          balance: 1000,
+          userId: userInformation.id,
         });
 
       expect(response.status).toBe(201);

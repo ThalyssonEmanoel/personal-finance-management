@@ -3,9 +3,13 @@ import AccountSchemas from '../schemas/AccountsSchemas.js';
 //TypeScript: Restart TS server
 
 class AccountService {
-  static async listAccounts(filtros, page, limit, order = 'asc') {
+  static async listAccounts(filtros, order = 'asc') {
     const validFiltros = AccountSchemas.listAccount.parse(filtros);
-    const { page: validPage, limit: validLimit, ...dbFilters } = validFiltros;
+    
+    // Garante valores padrão caso não venham na query
+    const page = validFiltros.page ?? 1;
+    const limit = validFiltros.limit ?? 10;
+    const { page: _p, limit: _l, ...dbFilters } = validFiltros;
 
     if (dbFilters.id) {
       dbFilters.id = parseInt(dbFilters.id);

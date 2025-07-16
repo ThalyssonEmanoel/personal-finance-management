@@ -5,9 +5,11 @@ class AccountController {
 
   static listAllAccounts = async (req, res, next) => {
     try {
-      const { page, limit = 10, ...filtros } = req.query;
-      const { contas, total, take } = await AccountService.listAccounts(filtros, page || 1, limit, 'desc');
-      res.status(200).json(CommonResponse.success(contas, total, page || 1, take));
+      const query = req.query;
+      // Garante que page será passado corretamente para o response
+      const page = query.page ? Number(query.page) : 1;
+      const { contas, total, take } = await AccountService.listAccounts(query, 'desc');
+      res.status(200).json(CommonResponse.success(contas, total, page, take));
     } catch (err) {
       next(err)
     }
