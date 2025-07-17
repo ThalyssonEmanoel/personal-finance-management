@@ -37,17 +37,19 @@ class AccountRepository {
   static async createAccount(accountData) {
     const { name, type, balance, icon, userId } = accountData;
     
+    //o normalize é usado para remover acentos e comparar nomes de forma consistente, apenas para evitar duplicatas
     const normalize = (str) => str.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
     const normalizedNome = normalize(name);
+    const normalizedType = normalize(type);
     const existingAccounts = await prisma.accounts.findMany({
       where: {
         type,
         usuario: { id: userId }
       }
     });
-    const similar = existingAccounts.find(acc => normalize(acc.name) === normalizedNome);
+    const similar = existingAccounts.find(acc => normalize(acc.name) === normalizedNome && normalize(acc.type) === normalizedType);
     if (similar) {
-      throw { code: 409, message: "Já existe uma conta com nome semelhante para este usuário." };
+      throw { code: 409, message: "Já existe uma conta com nome semelhante e tipo para este usuário." };
     }
     const data = {
       name,

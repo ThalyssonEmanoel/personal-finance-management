@@ -4,17 +4,11 @@ import app from "../../app.js";
 import { faker } from '@faker-js/faker';
 import { response } from "express";
 
-let user_faker = faker.person.fullName();
-let email_faker = faker.internet.email();
-let senha_faker = faker.internet.password({
-  length: 10,
-  memorable: false,
-  pattern: /[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
-});
+let account_faker = faker.finance.accountName();
 let token
 let accountInformation
-let User
 let userInformation
+let AccountCadastrada
 
 // Coloquei isso para conseguir obter o token antes de rodar todos os testes...
 beforeAll(async () => {
@@ -25,30 +19,22 @@ beforeAll(async () => {
       password: "Senha@12345",
     });
 
-  expect(response.status).toBe(200);
-  token = response.body.data.accessToken;
+    expect(response.status).toBe(200);
+    token = response.body.data.accessToken;
+    
+    // Buscar informações do usuário cadastrado
+    userInformation = await buscarUserCadastrado();
+    
+  }, 1000);// Posso colocar um tempo de espera aqui
 
-  // Buscar informações do usuário cadastrado
-  userInformation = await buscarUserCadastrado();
-
-}, 1000);// Posso colocar um tempo de espera aqui
-
-function gerarSenhaForte() {
-  const maiuscula = faker.string.fromCharacters('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
-  const minuscula = faker.string.fromCharacters('abcdefghijklmnopqrstuvwxyz');
-  const numero = faker.string.fromCharacters('0123456789');
-  const especial = faker.string.fromCharacters('!@#$%^&*()_+-=[]{}|;:,.<>?');
-  // Gera mais caracteres aleatórios para completar o tamanho mínimo
-  const resto = faker.internet.password({ length: 4, memorable: false });
-
-  // Embaralha a senha para não ficar sempre na mesma ordem
-  const senha = [maiuscula, minuscula, numero, especial, ...resto].join('');
-  return senha.split('').sort(() => 0.5 - Math.random()).join('');
+  function getRandomAccountType() {
+  const types = ["Salário", "Corrente", "Poupança"];
+  return types[Math.floor(Math.random() * types.length)];
 }
 
 async function buscarUserCadastrado() {
   const response = await request(app)
-    .get("/users")
+  .get("/users")
     .set("Content-Type", "application/json")
     .set("Authorization", `Bearer ${token}`);
   if (response.status === 200 && response.body.data.length > 0) {
@@ -57,6 +43,64 @@ async function buscarUserCadastrado() {
     throw new Error("Nenhum usuário cadastrado encontrado.");
   }
 }
+
+describe("Cadastrar conta POST/", () => {
+  describe("Caminho feliz", () => {
+    it("deve cadastrar uma nova conta", async () => {
+      const response = await request(app)
+        .post("/account")
+        .set("Content-Type", "application/json")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          name: account_faker,
+          type: getRandomAccountType(),
+          balance: 1000.00,
+          userId: 1,
+        });
+
+      expect(response.status).toBe(201);
+      AccountCadastrada = response.body.data
+
+    });
+  });
+  describe("Caminho triste", () => {
+    it("deve retornar erro ao tentar cadastrar uma conta o name e type já existentes", async () => {
+      const response = await request(app)
+        .post("/account")
+        .set("Content-Type", "application/json")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          name: AccountCadastrada.name,
+          type: AccountCadastrada.type,
+          balance: 1000.00,
+          userId: AccountCadastrada.userId,
+        });
+      expect(response.status).toBe(409);
+      expect(response.body.message).toEqual("Já existe uma conta com nome semelhante e tipo para este usuário.");
+    });
+    it("deve retornar erro ao tentar cadastrar uma conta com paramêtros inválidos", async () => {
+      const response = await request(app)
+        .post("/account")
+        .set("Content-Type", "application/json")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          name: 123,
+          type: 123,
+          balance: "abc",
+          userId: "abc",
+        });
+      expect(response.status).toBe(400);
+      expect(response.body.message).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ path: "name", message: "The account name must be a string/text." }),
+          expect.objectContaining({ path: "type", message: "Account type must be a string." }),
+          expect.objectContaining({ path: "balance", message: "Account balance must be a number." }),
+          expect.objectContaining({ path: "userId", message: "User ID must be an integer." }),
+        ])
+      );
+    });
+  });
+});
 
 describe("Listar as contas GET", () => {
   describe("Caminho feliz", () => {
@@ -95,9 +139,12 @@ describe("Listar as contas GET", () => {
     });
     it("deve listar uma conta pelo saldo disponível nela.", async () => {
       const response = await request(app)
-        .get(`/account?balance=${accountInformation.balance}`)
+        .get(`/account?balance=${AccountCadastrada.balance}`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
+        console.log("error", response.body.message);
+        console.log("Informação", AccountCadastrada.balance);
+
       expect(response.status).toBe(200);
       expect(response.error).toBe(false);
       expect(response.body.limite).toBe(10);
@@ -150,156 +197,65 @@ describe("Listar as contas GET", () => {
   });
 });
 
-describe("Cadastrar conta POST/", () => {
-  let senha_faker = gerarSenhaForte();
+describe("Atualizar conta patch/:ID", () => {
+  let updatedName = "Conta Atualizada";
+  let updatedType = getRandomAccountType();
   describe("Caminho feliz", () => {
-    it("deve cadastrar uma nova conta", async () => {
+    it("deve atualizar uma conta", async () => {
       const response = await request(app)
-        .post("/account")
+        .patch(`/account/${AccountCadastrada.id}`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          name: faker.company.name(),
-          type: "pessoal",
-          balance: 1000,
-          userId: userInformation.id,
+          name: updatedName,
+          type: updatedType,
+          balance: 2000.50,
         });
-
-      expect(response.status).toBe(201);
-      Usercadastrado = response.body.data
-
-    });
-  });
-  describe("Caminho triste", () => {
-    it("deve retornar erro ao tentar cadastrar um usuários com o Email já existente", async () => {
-      const response = await request(app)
-        .post("/users")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          Nome: user_faker,
-          Email: email_faker,
-          Senha: senha_faker,
-          Avatar: null,
-        });
-      expect(response.status).toBe(409);
-      expect(response.body.message).toEqual("Email já cadastrado");
-    });
-    it("deve retornar erro ao tentar cadastrar um usuários com uma senha inválida", async () => {
-      const response = await request(app)
-        .post("/users")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          Nome: user_faker,
-          Email: "RobertoCarlos123231@gmail.com",
-          Senha: "abc",
-          Avatar: null,
-        });
-      expect(response.status).toBe(400);
-      expect(response.body.message).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            path: "Senha",
-            message: "A senha deve conter no mínimo 8 caracteres, uma letra maiúscula, uma letra minúscula, um número e um caractere especial.",
-          }),
-        ])
-      );
-    });
-  });
-});
-
-describe("Atualizar users patch/:ID", () => {
-  let data;
-  describe("Caminho feliz", () => {
-    it("deve atualizar um usuário", async () => {
-      let user_faker2 = faker.person.fullName();
-      let email_faker2 = faker.internet.email();
-      let senha_faker2 = gerarSenhaForte();
-      const response = await request(app)
-        .patch(`/users/${Usercadastrado.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          Nome: user_faker2,
-          Email: email_faker2,
-          Senha: senha_faker2,
-          Avatar: null,
-        });
+        console.log("Error", response.body.message);
+        
       expect(response.status).toBe(200);
-      expect(response.body.data.Nome).toEqual(user_faker2);
-      expect(response.body.data.Email).toEqual(email_faker2);
-      data = response.body.data
+      expect(response.body.data.name).toEqual(updatedName);
+      expect(response.body.data.type).toEqual(updatedType);
     });
   });
   describe("Caminho triste", () => {
-    it("deve retornar erro ao tentar atualizar um usuário com o Email já existente em outro usuário", async () => {
+    it("deve retornar erro ao tentar atualizar uma conta com id inválido", async () => {
       const response = await request(app)
-        .patch(`/users/1`)
+        .patch(`/account/abc`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          Nome: data.Nome,
-          Email: data.Email,
+          name: updatedName,
         });
-
-      expect(response.status).toBe(409);
-      expect(response.body.message).toEqual("Email já cadastrado por outro usuário");
-    });
-    it("deve retornar erro ao tentar atualizar um usuário com o mesmo email já cadastrado", async () => {
-      const response = await request(app)
-        .patch(`/users/${Usercadastrado.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          Nome: data.Nome,
-          Email: data.Email,
-        });
-
-      expect(response.status).toBe(409);
-      expect(response.body.message).toEqual("Email a ser atualizado não pode ser o mesmo que o existente no sistema.");
-    });
-    it("deve retornar erro ao tentar atualizar um user com um id não existente", async () => {
-      const response = await request(app)
-        .patch(`/users/67fe7919879e77c0cd3f2dff`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          Nome: data.Nome,
-          Email: data.Email,
-        });
-
       expect(response.status).toBe(400);
       expect(response.body.message).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             path: "id",
-            message: "O campo 'id' deve ser um número inteiro.",
-          }),
+            message: "The 'id' field must be an integer."
+          })
         ])
       );
     });
-    it("deve retornar erro ao tentar atualizar um user com um id não existente", async () => {
+    it("deve retornar erro ao tentar atualizar uma conta não existente", async () => {
       const response = await request(app)
-        .patch(`/users/123456789987456123`)
+        .patch(`/account/9999999`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          Nome: data.Nome,
-          Email: data.Email,
+          name: updatedName,
         });
-
       expect(response.status).toBe(404);
-      expect(response.body.message).toEqual("Usuário não encontrado");
+      expect(response.body.message).toEqual("Conta não encontrada");
     });
   });
 });
 
-describe("Deletar users DELETE/:ID", () => {
+describe("Deletar account DELETE/:id", () => {
   describe("Caminho feliz", () => {
-    it("deve deletar um user", async () => {
+    it("deve deletar uma conta", async () => {
       const response = await request(app)
-        .delete(`/users/${Usercadastrado.id}`)
+        .delete(`/account/${AccountCadastrada.id}`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
       expect(response.status).toBe(200);
@@ -307,13 +263,28 @@ describe("Deletar users DELETE/:ID", () => {
     });
   });
   describe("Caminho triste", () => {
-    it("deve retornar erro ao tentar deletar um user com um id não existente", async () => {
+    it("deve retornar erro ao tentar deletar uma conta com id inválido", async () => {
       const response = await request(app)
-        .delete(`/users/${Usercadastrado.id}`)
+        .delete(`/account/abc`)
+        .set("Content-Type", "application/json")
+        .set("Authorization", `Bearer ${token}`);
+      expect(response.status).toBe(400);
+      expect(response.body.message).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: "id",
+            message: "The 'id' field must be an integer."
+          })
+        ])
+      );
+    });
+    it("deve retornar erro ao tentar deletar uma conta não existente", async () => {
+      const response = await request(app)
+        .delete(`/account/9999999`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
       expect(response.status).toBe(404);
-      expect(response.body.message).toEqual("Usuário não encontrado");
+      expect(response.body.message).toEqual("Conta não encontrada");
     });
   });
 });

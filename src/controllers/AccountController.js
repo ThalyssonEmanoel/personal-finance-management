@@ -15,16 +15,15 @@ class AccountController {
     }
   };
 
-
   static registerAccount = async (req, res, next) => {
     try {
-      
+
       const { name, type, balance, userId } = req.body;
       let icon = "";
       if (req.file) {
         icon = `uploads/${req.file.filename}`;
       }
-      
+
       const account = await AccountService.createAccount({ name, type, balance, icon, userId });
       res.status(201).json(CommonResponse.success(account));
     } catch (err) {
