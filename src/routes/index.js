@@ -1,10 +1,11 @@
 import express from "express";
 import users from "./UserRoute.js";
-import auth from "./authRoutes.js";
+import auth from "./AuthRoutes.js";
 import account from "./AccountRoutes.js";
 import swaggerJsDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
 import getSwaggerOptions from "../docs/config/head.js";
+import Transaction from "./TransactionRoutes.js";
 
 const routes = (app) => {
     // Configurando a documentação da Swagger UI para ser servida diretamente em '/'
@@ -19,7 +20,8 @@ const routes = (app) => {
         // rotas
         auth,
         users,
-        account
+        account,
+        Transaction
     );
 
     // Se não é nenhuma rota válida, produz 404

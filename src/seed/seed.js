@@ -15,18 +15,18 @@ async function clearDatabase() {
   try {
     console.log('Apagando dados existentes...');
 
-    // Limpar dados existentes (opcional)
-    // await prisma.despesas.deleteMany();
-    // await prisma.despesas_recorrentes.deleteMany();
-    // await prisma.transacoes.deleteMany();
+    // Limpar dados existentes (optional)
+    await prisma.transacoes.deleteMany();
+    await prisma.formasPagamento.deleteMany();
     await prisma.accounts.deleteMany();
     await prisma.users.deleteMany();
+
     // Resetar AUTO_INCREMENT para começar do ID 1 novamente
     console.log('Resetando contadores de ID...');
     await prisma.$executeRaw`ALTER TABLE Users AUTO_INCREMENT = 1`;
     await prisma.$executeRaw`ALTER TABLE Accounts AUTO_INCREMENT = 1`;
-    // await prisma.$executeRaw`ALTER TABLE Despesas AUTO_INCREMENT = 1`;
-    // await prisma.$executeRaw`ALTER TABLE Despesas_recorrentes AUTO_INCREMENT = 1`;
+    await prisma.$executeRaw`ALTER TABLE FormasPagamento AUTO_INCREMENT = 1`;
+    await prisma.$executeRaw`ALTER TABLE Transacoes AUTO_INCREMENT = 1`;
 
   } catch (error) {
     console.error('Erro ao limpar o banco de dados:', error);
@@ -112,6 +112,119 @@ async function seedDatabase() {
 
   const createdAccounts = await prisma.accounts.createMany({ data: accountsData });
   console.log(` Criadas ${createdAccounts.count} contas para os usuários.`);
+
+  // Criar formas de pagamento
+  const paymentMethods = [
+    { nome: "Dinheiro" },
+    { nome: "Cartão de Débito" },
+    { nome: "Cartão de Crédito" },
+    { nome: "PIX" },
+    { nome: "Transferência Bancária" },
+    { nome: "Boleto" },
+    { nome: "Vale Alimentação" },
+    { nome: "Vale Refeição" }
+  ];
+
+  const createdPaymentMethods = await prisma.formasPagamento.createMany({ data: paymentMethods });
+  console.log(` Criadas ${createdPaymentMethods.count} formas de pagamento.`);
+
+  // Buscar todas as contas e formas de pagamento criadas
+  const allAccounts = await prisma.accounts.findMany();
+  const allPaymentMethods = await prisma.formasPagamento.findMany();
+
+  // Categorias para transações
+  const expenseCategories = [
+    "Alimentação", "Transporte", "Moradia", "Saúde", "Educação",
+    "Entretenimento", "Roupas", "Tecnologia", "Viagem", "Outros"
+  ];
+
+  const incomeCategories = [
+    "Salário", "Freelance", "Investimentos", "Vendas", "Presente",
+    "Reembolso", "Renda Extra", "Outros"
+  ];
+
+  const subcategoriesMap = {
+    "Alimentação": ["Supermercado", "Restaurante", "Lanche", "Delivery"],
+    "Transporte": ["Combustível", "Uber", "Ônibus", "Manutenção"],
+    "Moradia": ["Aluguel", "Condomínio", "Energia", "Internet", "Água"],
+    "Saúde": ["Médico", "Farmácia", "Exames", "Plano de Saúde"],
+    "Educação": ["Curso", "Livros", "Material Escolar", "Mensalidade"],
+    "Entretenimento": ["Cinema", "Teatro", "Streaming", "Jogos"],
+    "Roupas": ["Casual", "Formal", "Esportiva", "Calçados"],
+    "Tecnologia": ["Software", "Hardware", "Celular", "Computador"],
+    "Viagem": ["Passagem", "Hotel", "Alimentação", "Turismo"],
+    "Salário": ["CLT", "Freelance", "Comissão"],
+    "Investimentos": ["Dividendos", "Rendimentos", "Venda de Ações"],
+    "Outros": ["Diversos", "Variado"]
+  };
+
+  // Gerar transações
+  const transactionsData = [];
+
+  allAccounts.forEach(account => {
+    // Cada conta terá entre 5 e 15 transações
+    const numTransactions = faker.number.int({ min: 1, max: 5 });
+
+    for (let i = 0; i < numTransactions; i++) {
+      const tipo = faker.helpers.arrayElement(["despesa", "receita"]);
+      const isExpense = tipo === "despesa";
+
+      const categories = isExpense ? expenseCategories : incomeCategories;
+      const categoria = faker.helpers.arrayElement(categories);
+      const subcategorias = subcategoriesMap[categoria] || ["Outros"];
+      const subcategoria = faker.helpers.arrayElement(subcategorias);
+
+      // Gerar nome da transação baseado na categoria
+      let nome;
+      switch (categoria) {
+        case "Alimentação":
+          nome = faker.helpers.arrayElement(["Supermercado Extra", "McDonald's", "Padaria", "iFood", "Açaí"]);
+          break;
+        case "Transporte":
+          nome = faker.helpers.arrayElement(["Uber", "Posto Shell", "99", "Manutenção carro", "Ônibus"]);
+          break;
+        case "Salário":
+          nome = faker.helpers.arrayElement(["Salário", "Freelance Design", "Consultoria", "Projeto Extra"]);
+          break;
+        default:
+          nome = `${categoria} - ${faker.commerce.productName()}`;
+      }
+
+      const valor = parseFloat(faker.finance.amount(10, isExpense ? 500 : 3000, 2));
+      const data_pagamento = faker.date.between({
+        from: new Date('2024-01-01'),
+        to: new Date('2024-12-31')
+      });
+
+      const recorrente = faker.datatype.boolean(0.2); // 20% chance de ser recorrente
+      const quantidade_parcelas = !recorrente && faker.datatype.boolean(0.3)
+        ? faker.number.int({ min: 2, max: 12 })
+        : null;
+
+      const dia_cobranca = recorrente
+        ? faker.number.int({ min: 1, max: 28 })
+        : null;
+
+      transactionsData.push({
+        tipo,
+        nome,
+        categoria,
+        subcategoria,
+        valor,
+        data_pagamento,
+        dia_cobranca,
+        quantidade_parcelas,
+        recorrente,
+        contaId: account.id,
+        formaPagamentoId: faker.helpers.arrayElement(allPaymentMethods).id,
+        userId: account.userId
+      });
+    }
+  });
+
+  const createdTransactions = await prisma.transacoes.createMany({ data: transactionsData });
+  console.log(` Criadas ${createdTransactions.count} transações.`);
+
   console.log(' Seed concluído com sucesso!');
 }
 

@@ -2,11 +2,13 @@
 import userPaths from "../routes/user.js";
 import accountPaths from "../routes/account.js";
 import authPaths from "../routes/auth.js";
+import transactionPaths from "../routes/transaction.js";
 
 //schemas
 import userSchema from "../schemas/usersSchema.js";
 import accountSchema from "../schemas/accountsSchema.js";
 import authSchema from "../schemas/authSchema.js";
+import transactionSchema from "../schemas/transactionSchema.js";
 
 // Function to define the server URLs depending on the environment
 const getServersInCorrectOrder = () => {
@@ -36,12 +38,21 @@ const getSwaggerOptions = () => {
         {
           name: "Users",
           description: "User management route."
+        },
+        {
+          name: "Accounts",
+          description: "Account management route."
+        },
+        {
+          name: "Transactions",
+          description: "Transaction management route."
         }
       ],
       paths: {
         ...authPaths,
         ...accountPaths,
         ...userPaths,
+        ...transactionPaths,
       },
       components: {
         securitySchemes: {
@@ -55,6 +66,7 @@ const getSwaggerOptions = () => {
           ...authSchema,
           ...accountSchema,
           ...userSchema,
+          ...transactionSchema,
         }
       },
       security: [{

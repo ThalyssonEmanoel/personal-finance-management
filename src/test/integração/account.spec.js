@@ -19,22 +19,22 @@ beforeAll(async () => {
       password: "Senha@12345",
     });
 
-    expect(response.status).toBe(200);
-    token = response.body.data.accessToken;
-    
-    // Buscar informações do usuário cadastrado
-    userInformation = await buscarUserCadastrado();
-    
-  }, 1000);// Posso colocar um tempo de espera aqui
+  expect(response.status).toBe(200);
+  token = response.body.data.accessToken;
 
-  function getRandomAccountType() {
+  // Buscar informações do usuário cadastrado
+  userInformation = await buscarUserCadastrado();
+
+}, 1000);// Posso colocar um tempo de espera aqui
+
+function getRandomAccountType() {
   const types = ["Salário", "Corrente", "Poupança"];
   return types[Math.floor(Math.random() * types.length)];
 }
 
 async function buscarUserCadastrado() {
   const response = await request(app)
-  .get("/users")
+    .get("/users")
     .set("Content-Type", "application/json")
     .set("Authorization", `Bearer ${token}`);
   if (response.status === 200 && response.body.data.length > 0) {
@@ -142,8 +142,8 @@ describe("Listar as contas GET", () => {
         .get(`/account?balance=${AccountCadastrada.balance}`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
-        console.log("error", response.body.message);
-        console.log("Informação", AccountCadastrada.balance);
+      console.log("error", response.body.message);
+      console.log("Informação", AccountCadastrada.balance);
 
       expect(response.status).toBe(200);
       expect(response.error).toBe(false);
@@ -211,8 +211,8 @@ describe("Atualizar conta patch/:ID", () => {
           type: updatedType,
           balance: 2000.50,
         });
-        console.log("Error", response.body.message);
-        
+      console.log("Error", response.body.message);
+
       expect(response.status).toBe(200);
       expect(response.body.data.name).toEqual(updatedName);
       expect(response.body.data.type).toEqual(updatedType);
