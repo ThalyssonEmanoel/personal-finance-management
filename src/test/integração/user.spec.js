@@ -19,8 +19,8 @@ beforeAll(async () => {
   const response = await request(app)
     .post("/login")
     .send({
-      Email: "thalysson140105@gmail.com",
-      Senha: "Senha@12345",
+      email: "thalysson140105@gmail.com",
+      password: "Senha@12345",
     });
 
   expect(response.status).toBe(200);
@@ -54,7 +54,7 @@ describe("Listar usuários GET", () => {
     });
     it("deve listar um usuário com base no Nome", async () => {
       const response = await request(app)
-        .get(`/users?Nome=${userInformation.Nome}`)
+        .get(`/users?Nome=${userInformation.name}`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
       expect(response.status).toBe(200);
@@ -70,7 +70,7 @@ describe("Listar usuários GET", () => {
     });
     it("deve listar um usuário com base no Email", async () => {
       const response = await request(app)
-        .get(`/users?Email=${userInformation.Email}`)
+        .get(`/users?email=${userInformation.email}`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
       expect(response.status).toBe(200);
@@ -97,7 +97,7 @@ describe("Listar usuários GET", () => {
   describe("Caminho triste", () => {
     it("deve retornar erro ao tentar listar um usuário com Nome inválido", async () => {
       const response = await request(app)
-        .get(`/users?Nome=123`)
+        .get(`/users?name=123`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
       expect(response.body).toHaveProperty("code", 400);
@@ -105,7 +105,7 @@ describe("Listar usuários GET", () => {
       expect(response.body.message).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            path: "Nome",
+            path: "name",
             message: "O nome precisa ser em palavras e não números.",
           }),
         ])
@@ -129,7 +129,7 @@ describe("Listar usuários GET", () => {
     });
     it("deve retornar erro ao tentar listar um usuário com Email inválido.", async () => {
       const response = await request(app)
-        .get(`/users?Email=123`)
+        .get(`/users?email=123`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
       expect(response.body).toHaveProperty("code", 400);
@@ -137,7 +137,7 @@ describe("Listar usuários GET", () => {
       expect(response.body.message).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            path: "Email",
+            path: "email",
             message: "Email invalido",
           }),
         ])
@@ -164,10 +164,10 @@ describe("Cadastrar usuários POST/", () => {
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          Nome: user_faker,
-          Email: email_faker,
-          Senha: senha_faker,
-          Avatar: null,
+          name: user_faker,
+          email: email_faker,
+          password: senha_faker,
+          avatar: null,
         });
 
       expect(response.status).toBe(201);
@@ -176,36 +176,36 @@ describe("Cadastrar usuários POST/", () => {
     });
   });
   describe("Caminho triste", () => {
-    it("deve retornar erro ao tentar cadastrar um usuários com o Email já existente", async () => {
+    it("deve retornar erro ao tentar cadastrar um usuário com o Email já existente", async () => {
       const response = await request(app)
         .post("/users")
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          Nome: user_faker,
-          Email: email_faker,
-          Senha: senha_faker,
-          Avatar: null,
+          name: user_faker,
+          email: email_faker,
+          password: senha_faker,
+          avatar: null,
         });
       expect(response.status).toBe(409);
       expect(response.body.message).toEqual("Email já cadastrado");
     });
-    it("deve retornar erro ao tentar cadastrar um usuários com uma senha inválida", async () => {
+    it("deve retornar erro ao tentar cadastrar um usuário com uma senha inválida", async () => {
       const response = await request(app)
         .post("/users")
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          Nome: user_faker,
-          Email: "RobertoCarlos123231@gmail.com",
-          Senha: "abc",
-          Avatar: null,
+          name: user_faker,
+          email: "RobertoCarlos123231@gmail.com",
+          password: "abc",
+          avatar: null,
         });
       expect(response.status).toBe(400);
       expect(response.body.message).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            path: "Senha",
+            path: "password",
             message: "A senha deve conter no mínimo 8 caracteres, uma letra maiúscula, uma letra minúscula, um número e um caractere especial.",
           }),
         ])
@@ -226,14 +226,14 @@ describe("Atualizar users patch/:ID", () => {
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          Nome: user_faker2,
-          Email: email_faker2,
-          Senha: senha_faker2,
-          Avatar: null,
+          name: user_faker2,
+          email: email_faker2,
+          password: senha_faker2,
+          avatar: null,
         });
       expect(response.status).toBe(200);
-      expect(response.body.data.Nome).toEqual(user_faker2);
-      expect(response.body.data.Email).toEqual(email_faker2);
+      expect(response.body.data.name).toEqual(user_faker2);
+      expect(response.body.data.email).toEqual(email_faker2);
       data = response.body.data
     });
   });
@@ -244,8 +244,8 @@ describe("Atualizar users patch/:ID", () => {
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          Nome: data.Nome,
-          Email: data.Email,
+          name: data.name,
+          email: data.email,
         });
 
       expect(response.status).toBe(409);
@@ -257,8 +257,8 @@ describe("Atualizar users patch/:ID", () => {
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          Nome: data.Nome,
-          Email: data.Email,
+          name: data.name,
+          email: data.email,
         });
 
       expect(response.status).toBe(409);
@@ -270,8 +270,8 @@ describe("Atualizar users patch/:ID", () => {
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          Nome: data.Nome,
-          Email: data.Email,
+          name: data.name,
+          email: data.email,
         });
 
       expect(response.status).toBe(400);
@@ -290,8 +290,8 @@ describe("Atualizar users patch/:ID", () => {
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`)
         .send({
-          Nome: data.Nome,
-          Email: data.Email,
+          name: data.name,
+          email: data.email,
         });
 
       expect(response.status).toBe(404);

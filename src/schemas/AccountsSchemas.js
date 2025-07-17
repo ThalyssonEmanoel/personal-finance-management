@@ -5,7 +5,9 @@ class AccountSchemas {
     name: z.string({ message: "The account name must be a string/text." })
       .refine((val) => !/^[0-9]+$/.test(val), { message: "The account name must contain words, not only numbers." })
       .optional(),
-    type: z.string({ message: "The type must be a string/text." }).optional(),
+    type: z.string({ message: "The type must be a string/text." })
+    .refine((val) => !/^[0-9]+$/.test(val), { message: "The type must contain words, not only numbers." })
+    .optional(),
     balance: z.coerce.number({ message: "The balance must be a number." }).optional(),
     userName: z.string({ message: "The user name must be a string/text." })
       .refine((val) => !/^[0-9]+$/.test(val), { message: "The user name must contain words, not only numbers." })
@@ -14,12 +16,12 @@ class AccountSchemas {
       .int({ message: "The 'id' field must be an integer." })
       .positive({ message: "The 'id' field must be at least 1." })
       .optional(),
-    page: z.number({ message: "The page must be a positive integer." })
+    page: z.coerce.number({ message: "The page must be a positive integer." })
       .int({ message: "The page must be a positive integer." })
       .positive({ message: "The page must be a positive integer." })
       .optional()
       .default(1),
-    limit: z.number({ message: "The limit must be a positive integer." })
+    limit: z.coerce.number({ message: "The limit must be a positive integer." })
       .int({ message: "The 'limit' field must be an integer." })
       .positive({ message: "The 'limit' field must be at least 1." })
       .default(10),
