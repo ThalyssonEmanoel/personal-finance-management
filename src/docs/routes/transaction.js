@@ -34,6 +34,7 @@ const transactionRoutes = {
           data_pagamento: "Filter by payment date (YYYY-MM-DD format)",
           dia_cobranca: "Filter by billing day",
           quantidade_parcelas: "Filter by number of installments",
+          parcela_atual: "Filter by current installment number",
           recorrente: "Filter by recurring transactions (true/false)",
           contaId: "Filter by account ID",
           formaPagamentoId: "Filter by payment method ID",

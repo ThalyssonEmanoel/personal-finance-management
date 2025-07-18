@@ -49,6 +49,7 @@ model Transacoes {
   data_pagamento       DateTime      @db.Date
   dia_cobranca         Int?
   quantidade_parcelas  Int?
+  parcela_atual        Int?
   recorrente           Boolean       @default(false)
 
   contaId              Int

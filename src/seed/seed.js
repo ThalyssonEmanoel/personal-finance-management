@@ -200,6 +200,9 @@ async function seedDatabase() {
       const quantidade_parcelas = !recorrente && faker.datatype.boolean(0.3)
         ? faker.number.int({ min: 2, max: 12 })
         : null;
+      const parcela_atual = !recorrente && faker.datatype.boolean(0.3)
+        ? faker.number.int({ min: 2, max: 12 })
+        : null;
 
       const dia_cobranca = recorrente
         ? faker.number.int({ min: 1, max: 28 })
@@ -214,6 +217,7 @@ async function seedDatabase() {
         data_pagamento,
         dia_cobranca,
         quantidade_parcelas,
+        parcela_atual,
         recorrente,
         contaId: account.id,
         formaPagamentoId: faker.helpers.arrayElement(allPaymentMethods).id,

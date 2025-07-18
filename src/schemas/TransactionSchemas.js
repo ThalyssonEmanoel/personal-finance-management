@@ -21,6 +21,19 @@ class TransactionSchemas {
       .int({ message: "The account ID must be an integer." })
       .positive({ message: "The account ID must be greater than 0." })
       .optional(),
+    dia_cobranca: z.coerce.number({ message: "The billing day must be a number." })
+      .int({ message: "The billing day must be an integer." })
+      .min(1, { message: "The billing day must be between 1 and 31." })
+      .max(31, { message: "The billing day must be between 1 and 31." })
+      .optional(),
+    quantidade_parcelas: z.coerce.number({ message: "The number of installments must be a number." })
+      .int({ message: "The number of installments must be an integer." })
+      .positive({ message: "The number of installments must be greater than 0." })
+      .optional(),
+    parcela_atual: z.coerce.number({ message: "The current installment number must be a number." })
+      .int({ message: "The current installment number must be an integer." })
+      .positive({ message: "The current installment number must be greater than 0." })
+      .optional(),  
     formaPagamentoId: z.coerce.number({ message: "The payment method ID must be an integer." })
       .int({ message: "The payment method ID must be an integer." })
       .positive({ message: "The payment method ID must be greater than 0." })

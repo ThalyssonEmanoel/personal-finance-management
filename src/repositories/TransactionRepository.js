@@ -25,6 +25,7 @@ class TransactionRepository {
         data_pagamento: true,
         dia_cobranca: true,
         quantidade_parcelas: true,
+        parcela_atual: true,
         recorrente: true,
         contaId: true,
         formaPagamentoId: true,

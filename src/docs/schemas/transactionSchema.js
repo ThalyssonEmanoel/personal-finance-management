@@ -16,6 +16,7 @@ const TransactionSchemas = {
           data_pagamento: { type: "string", format: "date" },
           dia_cobranca: { type: "integer", nullable: true },
           quantidade_parcelas: { type: "integer", nullable: true },
+          parcela_atual: { type: "integer", nullable: true },
           recorrente: { type: "boolean" },
           contaId: { type: "integer" },
           formaPagamentoId: { type: "integer" },
@@ -57,6 +58,7 @@ const TransactionSchemas = {
         data_pagamento: "2024-01-15",
         dia_cobranca: null,
         quantidade_parcelas: null,
+        parcela_atual: null,
         recorrente: false,
         contaId: 1,
         formaPagamentoId: 1,
@@ -130,6 +132,13 @@ const TransactionSchemas = {
         example: 3,
         nullable: true
       },
+      parcela_atual: {
+        type: "integer",
+        minimum: 1,
+        description: "Current installment (optional)",
+        example: 1,
+        nullable: true
+      },
       recorrente: {
         type: "boolean",
         description: "Whether the transaction is recurring",
@@ -171,6 +180,7 @@ const TransactionSchemas = {
           data_pagamento: { type: "string", format: "date" },
           dia_cobranca: { type: "integer", nullable: true },
           quantidade_parcelas: { type: "integer", nullable: true },
+          parcela_atual: { type: "integer", nullable: true },
           recorrente: { type: "boolean" },
           contaId: { type: "integer" },
           formaPagamentoId: { type: "integer" },
@@ -190,6 +200,7 @@ const TransactionSchemas = {
         data_pagamento: "2024-01-15",
         dia_cobranca: null,
         quantidade_parcelas: null,
+        parcela_atual: null,
         recorrente: false,
         contaId: 1,
         formaPagamentoId: 1,
@@ -249,6 +260,13 @@ const TransactionSchemas = {
         example: 3,
         nullable: true
       },
+      parcela_atual: {
+        type: "integer",
+        minimum: 1,
+        description: "Current installment (optional)",
+        example: 1,
+        nullable: true
+      },
       recorrente: {
         type: "boolean",
         description: "Whether the transaction is recurring (optional)",
@@ -284,6 +302,7 @@ const TransactionSchemas = {
           data_pagamento: { type: "string", format: "date" },
           dia_cobranca: { type: "integer", nullable: true },
           quantidade_parcelas: { type: "integer", nullable: true },
+          parcela_atual: { type: "integer", nullable: true },
           recorrente: { type: "boolean" },
           contaId: { type: "integer" },
           formaPagamentoId: { type: "integer" },
@@ -303,6 +322,7 @@ const TransactionSchemas = {
         data_pagamento: "2024-01-15",
         dia_cobranca: null,
         quantidade_parcelas: null,
+        parcela_atual: null,
         recorrente: false,
         contaId: 1,
         formaPagamentoId: 1,
