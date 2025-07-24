@@ -2,7 +2,7 @@ import { z } from "zod";
 
 class TransactionSchemas {
   static listTransaction = z.object({
-    tipo: z.enum(["despesa", "receita"], { message: "Type must be 'despesa' or 'receita'." }).optional(),
+    tipo: z.enum(["despesa", "receita", "Despesa", "Receita"], { message: "Type must be 'despesa' or 'receita'." }).optional(),
     nome: z.string({ message: "The name must be a text." })
       .refine((val) => !/^[0-9]+$/.test(val), { message: "The name must contain words, not only numbers." })
       .optional(),

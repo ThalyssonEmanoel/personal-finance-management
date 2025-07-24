@@ -6,7 +6,7 @@ import authMiddleware from "../middlewares/authMiddleware.js";
 const router = e.Router();
 
 router
-  .get("/transactions", authMiddleware, TransactionController.listAllTransactions, errorHandler)
+  .get("/transactions", TransactionController.listAllTransactions, errorHandler)
   // .post("/transactions", authMiddleware, TransactionController.registerTransaction, errorHandler)
   // .patch("/transactions/:id", authMiddleware, TransactionController.updateTransaction, errorHandler)
   // .delete("/transactions/:id", authMiddleware, TransactionController.deleteTransaction, errorHandler)

@@ -18,7 +18,7 @@ class TransactionService {
     const take = parseInt(limit, 10);
     const [transactions, total] = await Promise.all([
       TransactionRepository.listTransactions(dbFilters, skip, take, order),
-      TransactionRepository.countTransactions()
+      TransactionRepository.countTransactions(dbFilters)
     ]);
     return { transactions, total, take };
   }

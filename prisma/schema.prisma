@@ -50,6 +50,7 @@ model Transacoes {
   dia_cobranca         Int?
   quantidade_parcelas  Int?
   parcela_atual        Int?
+  descricao           String?       @db.Text
   recorrente           Boolean       @default(false)
 
   contaId              Int
