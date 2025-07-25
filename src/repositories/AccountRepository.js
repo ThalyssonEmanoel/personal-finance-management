@@ -6,7 +6,7 @@ class AccountRepository {
     const { userName, ...otherFilters } = filtros;
     let where = { ...otherFilters };
     if (userName) {
-      where.usuario = {
+      where.user = {
         name: { contains: userName }
       };
     }
@@ -44,7 +44,7 @@ class AccountRepository {
     const existingAccounts = await prisma.accounts.findMany({
       where: {
         type,
-        usuario: { id: userId }
+        user: { id: userId }
       }
     });
     const similar = existingAccounts.find(acc => normalize(acc.name) === normalizedNome && normalize(acc.type) === normalizedType);
@@ -55,7 +55,7 @@ class AccountRepository {
       name,
       type,
       balance,
-      usuario: { connect: { id: userId } },
+      user: { connect: { id: userId } },
       icon: icon !== undefined ? icon : ""
     };
     return await prisma.accounts.create({
@@ -84,7 +84,7 @@ class AccountRepository {
       const existingAccounts = await prisma.accounts.findMany({
         where: {
           type: accountData.type,
-          usuario: { id: accountData.userId },
+          user: { id: accountData.userId },
           NOT: { id: parseInt(id) }
         }
       });

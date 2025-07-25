@@ -22,23 +22,20 @@ const transactionRoutes = {
         Returns a paginated list of transactions with detailed information and related data.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getCustomParameters('Transacoes', {
-        excludeFields: ['conta', 'formaPagamento', 'usuario'],
+      parameters: parameterGenerator.getCustomParameters('Transactions', {
+        excludeFields: ['account', 'paymentMethod', 'user'],
         customDescriptions: {
-          id: "Filter by transaction ID",
-          tipo: "Filter by transaction type (despesa or receita)",
-          nome: "Filter by transaction name",
-          categoria: "Filter by transaction category",
-          subcategoria: "Filter by transaction subcategory",
-          valor: "Filter by transaction amount",
-          data_pagamento: "Filter by payment date (YYYY-MM-DD format)",
-          dia_cobranca: "Filter by billing day",
-          quantidade_parcelas: "Filter by number of installments",
-          parcela_atual: "Filter by current installment number",
-          recorrente: "Filter by recurring transactions (true/false)",
-          contaId: "Filter by account ID",
-          formaPagamentoId: "Filter by payment method ID",
-          userId: "Filter by user ID"
+          type: "Filter by transaction type (expense or income)",
+          name: "Filter by transaction name",
+          category: "Filter by transaction category",
+          value: "Filter by transaction amount",
+          release_date: "Filter by release date (YYYY-MM-DD format)",
+          billing_day: "Filter by billing day",
+          number_installments: "Filter by number of installments",
+          current_installment: "Filter by current installment number",
+          recurring: "Filter by recurring transactions (true/false)",
+          accountId: "Filter by account ID",
+          paymentMethodId: "Filter by payment method ID"
         }
       }),
       responses: {

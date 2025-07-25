@@ -2,39 +2,35 @@ import { z } from "zod";
 
 class TransactionSchemas {
   static listTransaction = z.object({
-    tipo: z.enum(["despesa", "receita", "Despesa", "Receita"], { message: "Type must be 'despesa' or 'receita'." }).optional(),
-    nome: z.string({ message: "The name must be a text." })
+    type: z.enum(["expense", "income"], { message: "Type must be 'expense' or 'income'." }).optional(),
+    name: z.string({ message: "The name must be a text." })
       .refine((val) => !/^[0-9]+$/.test(val), { message: "The name must contain words, not only numbers." })
       .optional(),
-    categoria: z.string({ message: "The category must be a text." })
+    category: z.string({ message: "The category must be a text." })
       .refine((val) => !/^[0-9]+$/.test(val), { message: "The category must contain words, not only numbers." })
       .optional(),
-    subcategoria: z.string({ message: "The subcategory must be a text." })
-      .refine((val) => !/^[0-9]+$/.test(val), { message: "The subcategory must contain words, not only numbers." })
-      .optional(),
-    valor: z.coerce.number({ message: "The value must be a number." }).optional(),
-    data_pagamento: z.string({ message: "The payment date must be a valid date string." })
+    value: z.coerce.number({ message: "The value must be a number." }).optional(),
+    release_date: z.string({ message: "The payment date must be a valid date string." })
       .refine((val) => !isNaN(Date.parse(val)), { message: "Payment date must be in a valid format." })
       .optional(),
-    recorrente: z.coerce.boolean({ message: "Recurring must be a boolean value." }).optional(),
-    contaId: z.coerce.number({ message: "The account ID must be an integer." })
-      .int({ message: "The account ID must be an integer." })
-      .positive({ message: "The account ID must be greater than 0." })
+    recurring: z.coerce.boolean({ message: "Recurring must be a boolean value." }).optional(),
+    accountName: z.string({ message: "The accountName must be a text." })
+      .refine((val) => !/^[0-9]+$/.test(val), { message: "The accountName must contain words, not only numbers." })
       .optional(),
-    dia_cobranca: z.coerce.number({ message: "The billing day must be a number." })
+    billing_day: z.coerce.number({ message: "The billing day must be a number." })
       .int({ message: "The billing day must be an integer." })
       .min(1, { message: "The billing day must be between 1 and 31." })
       .max(31, { message: "The billing day must be between 1 and 31." })
       .optional(),
-    quantidade_parcelas: z.coerce.number({ message: "The number of installments must be a number." })
+    number_installments: z.coerce.number({ message: "The number of installments must be a number." })
       .int({ message: "The number of installments must be an integer." })
       .positive({ message: "The number of installments must be greater than 0." })
       .optional(),
-    parcela_atual: z.coerce.number({ message: "The current installment number must be a number." })
+    current_installment: z.coerce.number({ message: "The current installment number must be a number." })
       .int({ message: "The current installment number must be an integer." })
       .positive({ message: "The current installment number must be greater than 0." })
       .optional(),  
-    formaPagamentoId: z.coerce.number({ message: "The payment method ID must be an integer." })
+    paymentMethod: z.coerce.number({ message: "The payment method ID must be an integer." })
       .int({ message: "The payment method ID must be an integer." })
       .positive({ message: "The payment method ID must be greater than 0." })
       .optional(),
@@ -58,29 +54,33 @@ class TransactionSchemas {
   });
 
   static createTransaction = z.object({
-    tipo: z.enum(["despesa", "receita"], { message: "Type must be 'despesa' or 'receita'." }),
-    nome: z.string({ message: "The name is required and must be a text." })
+    type: z.enum(["expense", "income"], { message: "Type must be 'expense' or 'income'." }),
+    name: z.string({ message: "The name is required and must be a text." })
       .refine((val) => !/^[0-9]+$/.test(val), { message: "The name must contain words, not only numbers." }),
-    categoria: z.string({ message: "The category is required and must be a text." }),
-    subcategoria: z.string({ message: "The subcategory must be a text." }).optional(),
-    valor: z.coerce.number({ message: "The value is required and must be a number." })
+    category: z.string({ message: "The category is required and must be a text." }),
+    value: z.coerce.number({ message: "The value is required and must be a number." })
       .positive({ message: "The value must be greater than 0." }),
-    data_pagamento: z.string({ message: "The payment date is required." })
+    release_date: z.string({ message: "The payment date is required." })
       .refine((val) => !isNaN(Date.parse(val)), { message: "Payment date must be in a valid format." }),
-    dia_cobranca: z.coerce.number({ message: "The billing day must be a number." })
+    billing_day: z.coerce.number({ message: "The billing day must be a number." })
       .int({ message: "The billing day must be an integer." })
       .min(1, { message: "The billing day must be between 1 and 31." })
       .max(31, { message: "The billing day must be between 1 and 31." })
       .optional(),
-    quantidade_parcelas: z.coerce.number({ message: "The number of installments must be a number." })
+    number_installments: z.coerce.number({ message: "The number of installments must be a number." })
       .int({ message: "The number of installments must be an integer." })
       .positive({ message: "The number of installments must be greater than 0." })
       .optional(),
-    recorrente: z.coerce.boolean({ message: "Recurring must be a boolean value." }).default(false),
-    contaId: z.coerce.number({ message: "The account ID is required and must be an integer." })
+    current_installment: z.coerce.number({ message: "The current installment number must be a number." })
+      .int({ message: "The current installment number must be an integer." })
+      .positive({ message: "The current installment number must be greater than 0." })
+      .optional(),
+    description: z.string({ message: "The description must be a text." }).optional(),
+    recurring: z.coerce.boolean({ message: "Recurring must be a boolean value." }).default(false),
+    accountId: z.coerce.number({ message: "The account ID is required and must be an integer." })
       .int({ message: "The account ID must be an integer." })
       .positive({ message: "The account ID must be greater than 0." }),
-    formaPagamentoId: z.coerce.number({ message: "The payment method ID is required and must be an integer." })
+    paymentMethodId: z.coerce.number({ message: "The payment method ID is required and must be an integer." })
       .int({ message: "The payment method ID must be an integer." })
       .positive({ message: "The payment method ID must be greater than 0." }),
     userId: z.coerce.number({ message: "The user ID is required and must be an integer." })
@@ -89,35 +89,43 @@ class TransactionSchemas {
   });
 
   static updateTransaction = z.object({
-    tipo: z.enum(["despesa", "receita"], { message: "Type must be 'despesa' or 'receita'." }).optional(),
-    nome: z.string({ message: "The name must be a text." })
+    type: z.enum(["expense", "income"], { message: "Type must be 'expense' or 'income'." }).optional(),
+    name: z.string({ message: "The name must be a text." })
       .refine((val) => !/^[0-9]+$/.test(val), { message: "The name must contain words, not only numbers." })
       .optional(),
-    categoria: z.string({ message: "The category must be a text." }).optional(),
-    subcategoria: z.string({ message: "The subcategory must be a text." }).optional(),
-    valor: z.coerce.number({ message: "The value must be a number." })
+    category: z.string({ message: "The category must be a text." }).optional(),
+    value: z.coerce.number({ message: "The value must be a number." })
       .positive({ message: "The value must be greater than 0." })
       .optional(),
-    data_pagamento: z.string({ message: "The payment date must be a valid date string." })
+    release_date: z.string({ message: "The payment date must be a valid date string." })
       .refine((val) => !isNaN(Date.parse(val)), { message: "Payment date must be in a valid format." })
       .optional(),
-    dia_cobranca: z.coerce.number({ message: "The billing day must be a number." })
+    billing_day: z.coerce.number({ message: "The billing day must be a number." })
       .int({ message: "The billing day must be an integer." })
       .min(1, { message: "The billing day must be between 1 and 31." })
       .max(31, { message: "The billing day must be between 1 and 31." })
       .optional(),
-    quantidade_parcelas: z.coerce.number({ message: "The number of installments must be a number." })
+    number_installments: z.coerce.number({ message: "The number of installments must be a number." })
       .int({ message: "The number of installments must be an integer." })
       .positive({ message: "The number of installments must be greater than 0." })
       .optional(),
-    recorrente: z.coerce.boolean({ message: "Recurring must be a boolean value." }).optional(),
-    contaId: z.coerce.number({ message: "The account ID must be an integer." })
+    current_installment: z.coerce.number({ message: "The current installment number must be a number." })
+      .int({ message: "The current installment number must be an integer." })
+      .positive({ message: "The current installment number must be greater than 0." })
+      .optional(),
+    description: z.string({ message: "The description must be a text." }).optional(),
+    recurring: z.coerce.boolean({ message: "Recurring must be a boolean value." }).optional(),
+    accountId: z.coerce.number({ message: "The account ID must be an integer." })
       .int({ message: "The account ID must be an integer." })
       .positive({ message: "The account ID must be greater than 0." })
       .optional(),
-    formaPagamentoId: z.coerce.number({ message: "The payment method ID must be an integer." })
+    paymentMethodId: z.coerce.number({ message: "The payment method ID must be an integer." })
       .int({ message: "The payment method ID must be an integer." })
       .positive({ message: "The payment method ID must be greater than 0." })
+      .optional(),
+    userId: z.coerce.number({ message: "The user ID must be an integer." })
+      .int({ message: "The user ID must be an integer." })
+      .positive({ message: "The user ID must be greater than 0." })
       .optional()
   });
 
@@ -125,6 +133,12 @@ class TransactionSchemas {
     id: z.coerce.number({ message: "The 'id' must be an integer." })
       .int({ message: "The 'id' must be an integer." })
       .positive({ message: "The 'id' must be at least 1." })
+  });
+
+  static accountIdParam = z.object({
+    accountId: z.coerce.number({ message: "The 'accountId' must be an integer." })
+      .int({ message: "The 'accountId' must be an integer." })
+      .positive({ message: "The 'accountId' must be at least 1." })
   });
 }
 export default TransactionSchemas;

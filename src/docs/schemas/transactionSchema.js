@@ -8,20 +8,19 @@ const TransactionSchemas = {
         description: "Transaction data.",
         properties: {
           id: { type: "integer" },
-          tipo: { type: "string", enum: ["despesa", "receita"] },
-          nome: { type: "string" },
-          categoria: { type: "string" },
-          subcategoria: { type: "string", nullable: true },
-          valor: { type: "number" },
-          data_pagamento: { type: "string", format: "date" },
-          dia_cobranca: { type: "integer", nullable: true },
-          quantidade_parcelas: { type: "integer", nullable: true },
-          parcela_atual: { type: "integer", nullable: true },
-          recorrente: { type: "boolean" },
-          contaId: { type: "integer" },
-          formaPagamentoId: { type: "integer" },
+          type: { type: "string", enum: ["expense", "income"] },
+          name: { type: "string" },
+          category: { type: "string" },
+          value: { type: "number" },
+          release_date: { type: "string", format: "date" },
+          billing_day: { type: "integer", nullable: true },
+          number_installments: { type: "integer", nullable: true },
+          current_installment: { type: "integer", nullable: true },
+          recurring: { type: "boolean" },
+          accountId: { type: "integer" },
+          paymentMethodId: { type: "integer" },
           userId: { type: "integer" },
-          conta: {
+          account: {
             type: "object",
             properties: {
               id: { type: "integer" },
@@ -29,14 +28,14 @@ const TransactionSchemas = {
               type: { type: "string" }
             }
           },
-          formaPagamento: {
+          paymentMethod: {
             type: "object",
             properties: {
               id: { type: "integer" },
-              nome: { type: "string" }
+              name: { type: "string" }
             }
           },
-          usuario: {
+          user: {
             type: "object",
             properties: {
               id: { type: "integer" },
@@ -50,29 +49,28 @@ const TransactionSchemas = {
     example: {
       transaction: {
         id: 1,
-        tipo: "despesa",
-        nome: "Supermercado",
-        categoria: "Alimentação",
-        subcategoria: "Compras",
-        valor: 150.50,
-        data_pagamento: "2024-01-15",
-        dia_cobranca: null,
-        quantidade_parcelas: null,
-        parcela_atual: null,
-        recorrente: false,
-        contaId: 1,
-        formaPagamentoId: 1,
+        type: "expense",
+        name: "Supermercado",
+        category: "Alimentação",
+        value: 150.50,
+        release_date: "2024-01-15",
+        billing_day: null,
+        number_installments: null,
+        current_installment: null,
+        recurring: false,
+        accountId: 1,
+        paymentMethodId: 1,
         userId: 1,
-        conta: {
+        account: {
           id: 1,
           name: "Conta Corrente",
           type: "Corrente"
         },
-        formaPagamento: {
+        paymentMethod: {
           id: 1,
-          nome: "Débito"
+          name: "Débito"
         },
-        usuario: {
+        user: {
           id: 1,
           name: "João Silva"
         }
@@ -82,42 +80,36 @@ const TransactionSchemas = {
   CreateTransactionRequest: {
     title: "CreateTransactionRequest",
     type: "object",
-    required: ["tipo", "nome", "categoria", "valor", "data_pagamento", "contaId", "formaPagamentoId", "userId"],
+    required: ["type", "name", "category", "value", "release_date", "accountId", "paymentMethodId", "userId"],
     properties: {
-      tipo: {
+      type: {
         type: "string",
-        enum: ["despesa", "receita"],
+        enum: ["expense", "income"],
         description: "Transaction type",
-        example: "despesa"
+        example: "expense"
       },
-      nome: {
+      name: {
         type: "string",
         description: "Transaction name",
         example: "Supermercado"
       },
-      categoria: {
+      category: {
         type: "string",
         description: "Transaction category",
         example: "Alimentação"
       },
-      subcategoria: {
-        type: "string",
-        description: "Transaction subcategory (optional)",
-        example: "Compras",
-        nullable: true
-      },
-      valor: {
+      value: {
         type: "number",
         description: "Transaction amount",
         example: 150.50
       },
-      data_pagamento: {
+      release_date: {
         type: "string",
         format: "date",
-        description: "Payment date",
+        description: "Release date",
         example: "2024-01-15"
       },
-      dia_cobranca: {
+      billing_day: {
         type: "integer",
         minimum: 1,
         maximum: 31,
@@ -125,32 +117,32 @@ const TransactionSchemas = {
         example: 15,
         nullable: true
       },
-      quantidade_parcelas: {
+      number_installments: {
         type: "integer",
         minimum: 1,
         description: "Number of installments (optional)",
         example: 3,
         nullable: true
       },
-      parcela_atual: {
+      current_installment: {
         type: "integer",
         minimum: 1,
         description: "Current installment (optional)",
         example: 1,
         nullable: true
       },
-      recorrente: {
+      recurring: {
         type: "boolean",
         description: "Whether the transaction is recurring",
         example: false,
         default: false
       },
-      contaId: {
+      accountId: {
         type: "integer",
         description: "Account ID",
         example: 1
       },
-      formaPagamentoId: {
+      paymentMethodId: {
         type: "integer",
         description: "Payment method ID",
         example: 1
@@ -172,18 +164,17 @@ const TransactionSchemas = {
         description: "Created transaction data.",
         properties: {
           id: { type: "integer" },
-          tipo: { type: "string", enum: ["despesa", "receita"] },
-          nome: { type: "string" },
-          categoria: { type: "string" },
-          subcategoria: { type: "string", nullable: true },
-          valor: { type: "number" },
-          data_pagamento: { type: "string", format: "date" },
-          dia_cobranca: { type: "integer", nullable: true },
-          quantidade_parcelas: { type: "integer", nullable: true },
-          parcela_atual: { type: "integer", nullable: true },
-          recorrente: { type: "boolean" },
-          contaId: { type: "integer" },
-          formaPagamentoId: { type: "integer" },
+          type: { type: "string", enum: ["expense", "income"] },
+          name: { type: "string" },
+          category: { type: "string" },
+          value: { type: "number" },
+          release_date: { type: "string", format: "date" },
+          billing_day: { type: "integer", nullable: true },
+          number_installments: { type: "integer", nullable: true },
+          current_installment: { type: "integer", nullable: true },
+          recurring: { type: "boolean" },
+          accountId: { type: "integer" },
+          paymentMethodId: { type: "integer" },
           userId: { type: "integer" }
         }
       }
@@ -192,18 +183,17 @@ const TransactionSchemas = {
     example: {
       transaction: {
         id: 1,
-        tipo: "despesa",
-        nome: "Supermercado",
-        categoria: "Alimentação",
-        subcategoria: "Compras",
-        valor: 150.50,
-        data_pagamento: "2024-01-15",
-        dia_cobranca: null,
-        quantidade_parcelas: null,
-        parcela_atual: null,
-        recorrente: false,
-        contaId: 1,
-        formaPagamentoId: 1,
+        type: "expense",
+        name: "Supermercado",
+        category: "Alimentação",
+        value: 150.50,
+        release_date: "2024-01-15",
+        billing_day: null,
+        number_installments: null,
+        current_installment: null,
+        recurring: false,
+        accountId: 1,
+        paymentMethodId: 1,
         userId: 1
       }
     }
@@ -212,40 +202,34 @@ const TransactionSchemas = {
     title: "UpdateTransactionRequest",
     type: "object",
     properties: {
-      tipo: {
+      type: {
         type: "string",
-        enum: ["despesa", "receita"],
+        enum: ["expense", "income"],
         description: "Transaction type (optional)",
-        example: "despesa"
+        example: "expense"
       },
-      nome: {
+      name: {
         type: "string",
         description: "Transaction name (optional)",
         example: "Supermercado"
       },
-      categoria: {
+      category: {
         type: "string",
         description: "Transaction category (optional)",
         example: "Alimentação"
       },
-      subcategoria: {
-        type: "string",
-        description: "Transaction subcategory (optional)",
-        example: "Compras",
-        nullable: true
-      },
-      valor: {
+      value: {
         type: "number",
         description: "Transaction amount (optional)",
         example: 150.50
       },
-      data_pagamento: {
+      release_date: {
         type: "string",
         format: "date",
-        description: "Payment date (optional)",
+        description: "Release date (optional)",
         example: "2024-01-15"
       },
-      dia_cobranca: {
+      billing_day: {
         type: "integer",
         minimum: 1,
         maximum: 31,
@@ -253,31 +237,31 @@ const TransactionSchemas = {
         example: 15,
         nullable: true
       },
-      quantidade_parcelas: {
+      number_installments: {
         type: "integer",
         minimum: 1,
         description: "Number of installments (optional)",
         example: 3,
         nullable: true
       },
-      parcela_atual: {
+      current_installment: {
         type: "integer",
         minimum: 1,
         description: "Current installment (optional)",
         example: 1,
         nullable: true
       },
-      recorrente: {
+      recurring: {
         type: "boolean",
         description: "Whether the transaction is recurring (optional)",
         example: false
       },
-      contaId: {
+      accountId: {
         type: "integer",
         description: "Account ID (optional)",
         example: 1
       },
-      formaPagamentoId: {
+      paymentMethodId: {
         type: "integer",
         description: "Payment method ID (optional)",
         example: 1
@@ -294,18 +278,17 @@ const TransactionSchemas = {
         description: "Updated transaction data.",
         properties: {
           id: { type: "integer" },
-          tipo: { type: "string", enum: ["despesa", "receita"] },
-          nome: { type: "string" },
-          categoria: { type: "string" },
-          subcategoria: { type: "string", nullable: true },
-          valor: { type: "number" },
-          data_pagamento: { type: "string", format: "date" },
-          dia_cobranca: { type: "integer", nullable: true },
-          quantidade_parcelas: { type: "integer", nullable: true },
-          parcela_atual: { type: "integer", nullable: true },
-          recorrente: { type: "boolean" },
-          contaId: { type: "integer" },
-          formaPagamentoId: { type: "integer" },
+          type: { type: "string", enum: ["expense", "income"] },
+          name: { type: "string" },
+          category: { type: "string" },
+          value: { type: "number" },
+          release_date: { type: "string", format: "date" },
+          billing_day: { type: "integer", nullable: true },
+          number_installments: { type: "integer", nullable: true },
+          current_installment: { type: "integer", nullable: true },
+          recurring: { type: "boolean" },
+          accountId: { type: "integer" },
+          paymentMethodId: { type: "integer" },
           userId: { type: "integer" }
         }
       }
@@ -314,18 +297,17 @@ const TransactionSchemas = {
     example: {
       transaction: {
         id: 1,
-        tipo: "despesa",
-        nome: "Supermercado",
-        categoria: "Alimentação",
-        subcategoria: "Compras",
-        valor: 175.50,
-        data_pagamento: "2024-01-15",
-        dia_cobranca: null,
-        quantidade_parcelas: null,
-        parcela_atual: null,
-        recorrente: false,
-        contaId: 1,
-        formaPagamentoId: 1,
+        type: "expense",
+        name: "Supermercado",
+        category: "Alimentação",
+        value: 175.50,
+        release_date: "2024-01-15",
+        billing_day: null,
+        number_installments: null,
+        current_installment: null,
+        recurring: false,
+        accountId: 1,
+        paymentMethodId: 1,
         userId: 1
       }
     }

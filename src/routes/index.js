@@ -6,6 +6,8 @@ import swaggerJsDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
 import getSwaggerOptions from "../docs/config/head.js";
 import Transaction from "./TransactionRoutes.js";
+import PaymentMethods from "./PaymentMethodsRoutes.js";
+import AccountPaymentMethods from "./AccountPaymentMethodsRoutes.js";
 
 const routes = (app) => {
     // Configurando a documentação da Swagger UI para ser servida diretamente em '/'
@@ -21,7 +23,9 @@ const routes = (app) => {
         auth,
         users,
         account,
-        Transaction
+        Transaction,
+        PaymentMethods,
+        AccountPaymentMethods
     );
 
     // Se não é nenhuma rota válida, produz 404
