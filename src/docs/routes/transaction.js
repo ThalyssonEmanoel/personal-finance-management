@@ -23,7 +23,7 @@ const transactionRoutes = {
       `,
       security: [{ bearerAuth: [] }],
       parameters: parameterGenerator.getCustomParameters('Transactions', {
-        excludeFields: ['account', 'paymentMethod', 'user'],
+        excludeFields: ['account', 'paymentMethod', 'user', 'Date', 'description'],
         customDescriptions: {
           type: "Filter by transaction type (expense or income)",
           name: "Filter by transaction name",
