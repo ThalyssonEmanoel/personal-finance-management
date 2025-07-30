@@ -16,7 +16,8 @@ class UserRepository {
         name: true,
         email: true,
         password: false,
-        avatar: true
+        avatar: true,
+        isAdmin: true
       },
     });
     if (!result || result.length === 0) {
@@ -24,11 +25,28 @@ class UserRepository {
     }
     return result
   }
-  static async contUsers() {
-    return await prisma.users.count();
+  static async contUsers(filtros = {}) {
+    return await prisma.users.count({
+      where: filtros
+    });
+  }
+
+  static async getUserById(id) {
+    return await prisma.users.findUnique({
+      where: { id: parseInt(id) },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password: true, // Incluir senha para verificação
+        avatar: true,
+        isAdmin: true
+      }
+    });
   }
 
   static async createUser(userData) {
+
     const { name, email, password, avatar } = userData;
 
     // Verificar se o email já existe
@@ -46,20 +64,22 @@ class UserRepository {
         name: name,
         email,
         password,
-        avatar: avatar || null
+        avatar: avatar || null,
+        isAdmin: false
       },
       select: {
         id: true,
         name: true,
         email: true,
         password: false,
-        avatar: true
+        avatar: true,
+        isAdmin: false
       }
     });
   }
 
   static async updateUser(id, userData) {
-    const { name, email, password, avatar, refreshToken } = userData;
+    const { name, email, password, avatar, refreshToken, isAdmin } = userData;
 
     // Verificar se o usuário existe
     const existingUser = await prisma.users.findUnique({
@@ -82,24 +102,15 @@ class UserRepository {
         throw { code: 409, message: "Email já cadastrado por outro usuário" };
       }
     }
-    if (email) {
-      const emailExists = await prisma.users.findFirst({
-        where: {
-          email,
-        }
-      });
-      if (emailExists) {
-        throw { code: 409, message: "Email a ser atualizado não pode ser o mesmo que o existente no sistema." };
-      }
-    }
 
     // Atualizar o usuário
     const updateData = {};
-    if (name) updateData.name = name;
-    if (email) updateData.email = email;
-    if (password) updateData.password = password;
+    if (name !== undefined && name !== null && name !== "") updateData.name = name;
+    if (email !== undefined && email !== null && email !== "") updateData.email = email;
+    if (password !== undefined && password !== null && password !== "") updateData.password = password;
     if (avatar !== undefined) updateData.avatar = avatar;
     if (refreshToken !== undefined) updateData.refreshToken = refreshToken;
+    if (isAdmin !== undefined) updateData.isAdmin = isAdmin;
 
     return await prisma.users.update({
       where: { id: parseInt(id) },
@@ -109,7 +120,8 @@ class UserRepository {
         name: true,
         email: true,
         password: false,
-        avatar: true
+        avatar: true,
+        isAdmin: true
       }
     });
   }
@@ -124,12 +136,34 @@ class UserRepository {
       throw { code: 404, message: "Usuário não encontrado" };
     }
 
-    // Deletar o usuário
-    await prisma.users.delete({
-      where: { id: parseInt(id) }
-    });
+    try {
+      await prisma.$transaction(async (prisma) => {
+        await prisma.transactions.deleteMany({
+          where: { userId: parseInt(id) }
+        });
 
-    return { message: "Usuário deletado com sucesso" };
+        await prisma.accountPaymentMethods.deleteMany({
+          where: {
+            account: {
+              userId: parseInt(id)
+            }
+          }
+        });
+
+        await prisma.accounts.deleteMany({
+          where: { userId: parseInt(id) }
+        });
+
+        await prisma.users.delete({
+          where: { id: parseInt(id) }
+        });
+      });
+
+      return { message: "Usuário e todos os dados relacionados foram deletados com sucesso" };
+    } catch (error) {
+      console.error("Erro ao deletar usuário:", error);
+      throw error;
+    }
   }
 }
 

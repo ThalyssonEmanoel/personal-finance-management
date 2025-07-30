@@ -8,9 +8,9 @@ const UserSchemas = {
         description: "Dados do usuário.",
         properties: {
           id: { type: "integer" },
-          Nome: { type: "string" },
-          Email: { type: "string" },
-          Avatar: { type: "string", nullable: true },// Pode ser nulo se o usuário não tiver um avatar
+          name: { type: "string" },
+          email: { type: "string", nullable: true },
+          avatar: { type: "string", nullable: true },// Pode ser nulo se o usuário não tiver um avatar
         }
       }
     },
@@ -18,35 +18,35 @@ const UserSchemas = {
     example: {
       user: {
         id: 1,
-        Nome: "Thalysson",
-        Email: "admin123@gmail.com",
-        Avatar: null // ou uma URL de imagem se o usuário tiver um avatar
+        name: "Thalysson",
+        email: "admin123@gmail.com",
+        avatar: null, // ou uma URL de imagem se o usuário tiver um avatar
       }
     }
   },
   CreateUserFormRequest: {
     title: "CreateUserFormRequest",
     type: "object",
-    required: ["Nome", "Email", "Senha"],
+    required: ["name", "email", "password"],
     properties: {
-      Nome: {
+      name: {
         type: "string",
         description: "Nome completo do usuário",
         example: "Thalysson Emanoel"
       },
-      Email: {
+      email: {
         type: "string",
         format: "email",
         description: "Email único do usuário",
         example: "thalysson@example.com"
       },
-      Senha: {
+      password: {
         type: "string",
-        minLength: 6,
-        description: "Senha do usuário (mínimo 6 caracteres)",
-        example: "123ABC@abc"
+        minLength: 8,
+        description: "Senha do usuário (mínimo 8 caracteres com maiúscula, minúscula, número e caractere especial)",
+        example: "MinhaSenh@123"
       },
-      Avatar: {
+      avatar: {
         type: "string",
         format: "binary",
         description: "Arquivo de imagem para o avatar do usuário (opcional, máximo 2MB)",
@@ -64,9 +64,9 @@ const UserSchemas = {
         description: "Dados do usuário criado.",
         properties: {
           id: { type: "integer" },
-          Nome: { type: "string" },
-          Email: { type: "string" },
-          Avatar: {
+          name: { type: "string" },
+          email: { type: "string" },
+          avatar: {
             type: "string",
             nullable: true,
             description: "Caminho do arquivo de avatar salvo no servidor"
@@ -78,9 +78,9 @@ const UserSchemas = {
     example: {
       user: {
         id: 1,
-        Nome: "Thalysson Emanoel",
-        Email: "thalysson@example.com",
-        Avatar: "src/uploads/avatares/1699030930148-Avatar.jpg"
+        name: "Thalysson Emanoel",
+        email: "thalysson@example.com",
+        avatar: "src/uploads/avatares/1699030930148-Avatar.jpg"
       }
     }
   },
@@ -88,29 +88,24 @@ const UserSchemas = {
     title: "UpdateUserFormRequest",
     type: "object",
     properties: {
-      Nome: {
+      name: {
         type: "string",
         description: "Nome completo do usuário (opcional)",
-        example: "Thalysson Emanoel "
+        example: "Thalysson Emanoel Atualizado"
       },
-      Email: {
+      email: {
         type: "string",
         format: "email",
-        description: "Email único do usuário (opcional)",
+        description: "Email único do usuário (opcional)", 
+        nullable: true,
         example: "thalysson.novo@example.com"
       },
-      Senha: {
-        type: "string",
-        minLength: 8,
-        description: "Nova senha do usuário (opcional, mínimo 8 caracteres com maiúscula, minúscula, número e caractere especial)",
-        example: "NovaSenh@123"
-      },
-      Avatar: {
+      avatar: {
         type: "string",
         format: "binary",
         description: "Novo arquivo de imagem para o avatar do usuário (opcional, máximo 2MB)",
         nullable: true
-      }
+      },
     },
     description: "Schema para atualização de usuário com upload de arquivo"
   },
@@ -123,13 +118,13 @@ const UserSchemas = {
         description: "Dados do usuário atualizado.",
         properties: {
           id: { type: "integer" },
-          Nome: { type: "string" },
-          Email: { type: "string" },
-          Avatar: {
+          name: { type: "string" },
+          email: { type: "string", nullable: true },
+          avatar: {
             type: "string",
             nullable: true,
             description: "Caminho do arquivo de avatar atualizado no servidor"
-          }
+          },
         }
       }
     },
@@ -137,9 +132,9 @@ const UserSchemas = {
     example: {
       user: {
         id: 1,
-        Nome: "Thalysson Emanoel ",
-        Email: "thalysson.novo@example.com",
-        Avatar: "src/uploads/avatares/1699030930148-Avatar-updated.jpg"
+        name: "Thalysson Emanoel Atualizado",
+        email: "thalysson.novo@example.com",
+        avatar: "src/uploads/avatares/1699030930148-Avatar-updated.jpg"
       }
     }
   },
@@ -154,7 +149,7 @@ const UserSchemas = {
     },
     description: "Schema para a resposta de exclusão de usuário.",
     example: {
-      message: "Usuário deletado com sucesso"
+      message: "Usuário e todos os dados relacionados foram deletados com sucesso"
     }
   },
   UserIdParameter: {
@@ -167,6 +162,44 @@ const UserSchemas = {
     },
     description: "ID único do usuário",
     example: 1
+  },
+  ChangePasswordRequest: {
+    title: "ChangePasswordRequest",
+    type: "object",
+    required: ["currentPassword", "newPassword", "confirmPassword"],
+    properties: {
+      currentPassword: {
+        type: "string",
+        description: "Senha atual do usuário",
+        example: "MinhaSenh@123"
+      },
+      newPassword: {
+        type: "string",
+        minLength: 8,
+        description: "Nova senha do usuário (mínimo 8 caracteres com maiúscula, minúscula, número e caractere especial)",
+        example: "NovaSenh@456"
+      },
+      confirmPassword: {
+        type: "string",
+        description: "Confirmação da nova senha (deve ser igual à nova senha)",
+        example: "NovaSenh@456"
+      }
+    },
+    description: "Schema para alteração de senha do usuário"
+  },
+  ChangePasswordResponse: {
+    title: "ChangePasswordResponse",
+    type: "object",
+    properties: {
+      message: {
+        type: "string",
+        description: "Mensagem de confirmação da alteração de senha"
+      }
+    },
+    description: "Schema para a resposta de alteração de senha.",
+    example: {
+      message: "Senha alterada com sucesso."
+    }
   }
 };
 

@@ -26,10 +26,10 @@ class UserController {
   static updateUser = async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { name, email, password } = req.body;
+      const { name, email, isAdmin } = req.body;
       const avatar = req.file ? req.file.path : req.body.avatar;
 
-      const userData = { name, email, password, avatar };
+      const userData = { name, email, avatar, isAdmin };
       const updatedUser = await UserService.updateUser(id, userData);
       res.status(200).json(CommonResponse.success(updatedUser));
     } catch (err) {
@@ -41,6 +41,24 @@ class UserController {
     try {
       const { id } = req.params;
       const result = await UserService.deleteUser(id);
+      res.status(200).json(CommonResponse.success(result));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  static changePassword = async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { currentPassword, newPassword, confirmPassword } = req.body;
+      const requestingUserId = req.user.id;
+      
+      const result = await UserService.changePassword(
+        id, 
+        { currentPassword, newPassword, confirmPassword },
+        requestingUserId
+      );
+      
       res.status(200).json(CommonResponse.success(result));
     } catch (err) {
       next(err);
