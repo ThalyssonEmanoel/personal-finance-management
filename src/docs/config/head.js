@@ -2,11 +2,17 @@
 import userPaths from "../routes/user.js";
 import accountPaths from "../routes/account.js";
 import authPaths from "../routes/auth.js";
+import transactionPaths from "../routes/transaction.js";
+import paymentMethodsPaths from "../routes/paymentMethods.js";
+import accountPaymentMethodsPaths from "../routes/accountPaymentMethods.js";
 
 //schemas
 import userSchema from "../schemas/usersSchema.js";
 import accountSchema from "../schemas/accountsSchema.js";
 import authSchema from "../schemas/authSchema.js";
+import transactionSchema from "../schemas/transactionSchema.js";
+import paymentMethodsSchema from "../schemas/paymentMethodsSchema.js";
+import accountPaymentMethodsSchema from "../schemas/accountPaymentMethodsSchema.js";
 
 // Function to define the server URLs depending on the environment
 const getServersInCorrectOrder = () => {
@@ -36,12 +42,31 @@ const getSwaggerOptions = () => {
         {
           name: "Users",
           description: "User management route."
+        },
+        {
+          name: "Accounts",
+          description: "Account management route."
+        },
+        {
+          name: "Transactions",
+          description: "Transaction management route."
+        },
+        {
+          name: "Payment Methods",
+          description: "Payment methods management route."
+        },
+        {
+          name: "Account Payment Methods",
+          description: "Account payment methods relationship management route."
         }
       ],
       paths: {
         ...authPaths,
         ...accountPaths,
         ...userPaths,
+        ...transactionPaths,
+        ...paymentMethodsPaths,
+        ...accountPaymentMethodsPaths,
       },
       components: {
         securitySchemes: {
@@ -55,6 +80,9 @@ const getSwaggerOptions = () => {
           ...authSchema,
           ...accountSchema,
           ...userSchema,
+          ...transactionSchema,
+          ...paymentMethodsSchema,
+          ...accountPaymentMethodsSchema,
         }
       },
       security: [{

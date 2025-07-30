@@ -16,8 +16,8 @@ model Users {
   avatar       String?     @db.VarChar(100)
   refreshToken String?     @db.Text
 
-  contas       Accounts[]
-  transacoes   Transacoes[]
+  accounts       Accounts[]
+  transactions   Transactions[]
 }
 
 model Accounts {
@@ -28,40 +28,56 @@ model Accounts {
   icon     String?   @db.VarChar(100)
 
   userId   Int
-  usuario  Users    @relation(fields: [userId], references: [id])
+  user  Users    @relation(fields: [userId], references: [id])
 
-  transacoes Transacoes[]
+  transactions              Transactions[]
+  accountPaymentMethods     AccountPaymentMethods[]
 }
 
-model FormasPagamento {
+model PaymentMethods {
   id          Int          @id @default(autoincrement())
-  nome        String       @db.VarChar(100)
-  transacoes  Transacoes[]
+  name        String       @db.VarChar(100)
+
+  accountPaymentMethods AccountPaymentMethods[]
+  transactions          Transactions[]
 }
 
-model Transacoes {
+model AccountPaymentMethods {
+  id              Int             @id @default(autoincrement())
+  
+  accountId       Int
+  account         Accounts        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  paymentMethodId Int
+  paymentMethod   PaymentMethods  @relation(fields: [paymentMethodId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, paymentMethodId])
+}
+
+model Transactions {
   id                   Int           @id @default(autoincrement())
-  tipo                 TipoTransacao
-  nome                 String        @db.VarChar(255)
-  categoria            String        @db.VarChar(100)
-  subcategoria         String?       @db.VarChar(100)
-  valor                Decimal       @db.Decimal(10,2)
-  data_pagamento       DateTime      @db.Date
-  dia_cobranca         Int?
-  quantidade_parcelas  Int?
-  recorrente           Boolean       @default(false)
+  type                 TransactionType
+  name                 String        @db.VarChar(255)
+  category            String        @db.VarChar(100)
+  value                Decimal       @db.Decimal(10,2)
+  release_date       DateTime      @db.Date
+  billing_day         Int?
+  number_installments  Int?
+  current_installment  Int?
+  description           String?       @db.Text
+  recurring           Boolean       @default(false)
 
-  contaId              Int
-  conta                Accounts        @relation(fields: [contaId], references: [id])
+  accountId              Int
+  account                Accounts        @relation(fields: [accountId], references: [id])
 
-  formaPagamentoId     Int
-  formaPagamento       FormasPagamento @relation(fields: [formaPagamentoId], references: [id])
+  paymentMethodId        Int
+  paymentMethod          PaymentMethods  @relation(fields: [paymentMethodId], references: [id])
 
   userId               Int
-  usuario              Users         @relation(fields: [userId], references: [id])
+  user                 Users         @relation(fields: [userId], references: [id])
 }
 
-enum TipoTransacao {
-  despesa
-  receita
+enum TransactionType {
+  expense
+  income
 }

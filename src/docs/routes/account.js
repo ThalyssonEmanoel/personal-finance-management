@@ -22,7 +22,7 @@ const accountsRoutes = {
       `,
       security: [{ bearerAuth: [] }],
       parameters: parameterGenerator.getCustomParameters('Accounts', {
-        excludeFields: ['icon', 'usuario', 'transacoes', 'userId'],
+        excludeFields: ['icon', 'user', 'transactions', 'userId'],
         customDescriptions: {
           id: "Filtrar por ID da conta",
           name: "Filtrar por nome da conta",

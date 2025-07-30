@@ -22,7 +22,7 @@ const usersRoutes = {
        Returns a paginated list of users with detailed information.`,
       security: [{ bearerAuth: [] }],
       parameters: parameterGenerator.getCustomParameters('Users', {
-        excludeFields: ['password', 'Despesas', 'Despesas_recorrentes', 'avatar', 'refreshToken', 'Text', 'transacoes'], //despesas foi exluído, pois acho que não é necessário
+        excludeFields: ['password', 'Despesas', 'Despesas_recorrentes', 'avatar', 'refreshToken', 'Text', 'transactions'], //despesas foi exluído, pois acho que não é necessário
         customDescriptions: {
           id: "Filtrar por ID do usuário",
           name: "Filtrar por nome do usuário",
