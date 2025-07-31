@@ -9,8 +9,9 @@ class AccountSchemas {
     .refine((val) => !/^[0-9]+$/.test(val), { message: "The type must contain words, not only numbers." })
     .optional(),
     balance: z.coerce.number({ message: "The balance must be a number." }).optional(),
-    userName: z.string({ message: "The user name must be a string/text." })
-      .refine((val) => !/^[0-9]+$/.test(val), { message: "The user name must contain words, not only numbers." })
+    userId: z.coerce.number({ message: "The user ID must be an integer." })
+      .int({ message: "The user ID must be an integer." })
+      .positive({ message: "The user ID must be greater than 0." })
       .optional(),
     id: z.coerce.number({ message: "The 'id' field must be an integer." })
       .int({ message: "The 'id' field must be an integer." })

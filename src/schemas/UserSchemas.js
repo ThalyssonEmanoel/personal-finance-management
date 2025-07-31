@@ -32,7 +32,30 @@ class UserSchemas {
     avatar: z.string({ message: "O avatar precisa ser definido como uma string/texto." }).optional().nullable(),
   });
 
+  static createUserAdmin = z.object({
+    name: z.string({ message: "O nome precisa ser definido como uma string/texto." })
+      .refine((val) => !/^\d+$/.test(val), { message: "O nome precisa ser em palavras e não números." }),
+    email: z.string({ message: "O email precisa ser definido como uma string/texto." }).email({ message: "Email invalido" }),
+    password: z.string({ message: "a senaha precisa ser definida como uma string/texto." })
+      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[a-zA-Z\d\W_]{8,}$/,
+        { message: "A senha deve conter no mínimo 8 caracteres, uma letra maiúscula, uma letra minúscula, um número e um caractere especial." }),
+    avatar: z.string({ message: "O avatar precisa ser definido como uma string/texto." }).optional().nullable(),
+    isAdmin: z.coerce.boolean({ message: "O campo 'isAdmin' deve ser um valor booleano." }).optional(),
+  });
+
   static updateUser = z.object({
+    name: z.string({ message: "O nome precisa ser definido como uma string/texto." })
+      .refine((val) => !/^\d+$/.test(val), { message: "O nome precisa ser em palavras e não números." })
+      .optional(),
+    email: z.string({ message: "O email precisa ser definido como uma string/texto." })
+      .email({ message: "Email invalido" })
+      .optional()
+      .or(z.literal(""))
+      .or(z.null()),
+    avatar: z.string({ message: "O avatar precisa ser definido como uma string/texto." }).optional().nullable(),
+  });
+
+  static updateUserAdmin = z.object({
     name: z.string({ message: "O nome precisa ser definido como uma string/texto." })
       .refine((val) => !/^\d+$/.test(val), { message: "O nome precisa ser em palavras e não números." })
       .optional(),

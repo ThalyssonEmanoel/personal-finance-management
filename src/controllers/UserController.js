@@ -12,6 +12,16 @@ class UserController {
       next(err)
     }
   };
+  static registerUserAdmin = async (req, res, next) => {
+    try {
+      const { name, email, password, isAdmin } = req.body;
+      const avatar = req.file ? req.file.path : null;
+      const user = await UserService.createUserAdmin({ name, email, password, avatar, isAdmin });
+      res.status(201).json(CommonResponse.success(user));
+    } catch (err) {
+      next(err);
+    }
+  };
   static registerUser = async (req, res, next) => {
     try {
       const { name, email, password } = req.body;
@@ -23,13 +33,26 @@ class UserController {
     }
   };
 
-  static updateUser = async (req, res, next) => {
+  static updateUserAdmin = async (req, res, next) => {
     try {
       const { id } = req.params;
       const { name, email, isAdmin } = req.body;
       const avatar = req.file ? req.file.path : req.body.avatar;
 
       const userData = { name, email, avatar, isAdmin };
+      const updatedUser = await UserService.updateUserAdmin(id, userData);
+      res.status(200).json(CommonResponse.success(updatedUser));
+    } catch (err) {
+      next(err);
+    }
+  };
+  static updateUser = async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { name, email } = req.body;
+      const avatar = req.file ? req.file.path : req.body.avatar;
+
+      const userData = { name, email, avatar };
       const updatedUser = await UserService.updateUser(id, userData);
       res.status(200).json(CommonResponse.success(updatedUser));
     } catch (err) {

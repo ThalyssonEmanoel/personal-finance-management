@@ -78,6 +78,38 @@ class UserRepository {
     });
   }
 
+  static async createUserAdmin(userData) {
+    const { name, email, password, avatar, isAdmin } = userData;
+
+    // Verificar se o email já existe
+    const existingUser = await prisma.users.findUnique({
+      where: { email }
+    });
+
+    if (existingUser) {
+      throw { code: 409, message: "Email já cadastrado" };
+    }
+
+    // Criar o novo usuário com permissão de admin definida
+    return await prisma.users.create({
+      data: {
+        name: name,
+        email,
+        password,
+        avatar: avatar || null,
+        isAdmin: isAdmin || false
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password: false,
+        avatar: true,
+        isAdmin: true
+      }
+    });
+  }
+
   static async updateUser(id, userData) {
     const { name, email, password, avatar, refreshToken, isAdmin } = userData;
 
@@ -104,6 +136,54 @@ class UserRepository {
     }
 
     // Atualizar o usuário
+    const updateData = {};
+    if (name !== undefined && name !== null && name !== "") updateData.name = name;
+    if (email !== undefined && email !== null && email !== "") updateData.email = email;
+    if (password !== undefined && password !== null && password !== "") updateData.password = password;
+    if (avatar !== undefined) updateData.avatar = avatar;
+    if (refreshToken !== undefined) updateData.refreshToken = refreshToken;
+    if (isAdmin !== undefined) updateData.isAdmin = isAdmin;
+
+    return await prisma.users.update({
+      where: { id: parseInt(id) },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password: false,
+        avatar: true,
+        isAdmin: true
+      }
+    });
+  }
+
+  static async updateUserAdmin(id, userData) {
+    const { name, email, password, avatar, refreshToken, isAdmin } = userData;
+
+    // Verificar se o usuário existe
+    const existingUser = await prisma.users.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!existingUser) {
+      throw { code: 404, message: "Usuário não encontrado" };
+    }
+
+    // Verificar se o email já existe em outro usuário
+    if (email) {
+      const emailExists = await prisma.users.findFirst({
+        where: {
+          email,
+          id: { not: parseInt(id) }
+        }
+      });
+      if (emailExists) {
+        throw { code: 409, message: "Email já cadastrado por outro usuário" };
+      }
+    }
+
+    // Atualizar o usuário (admin pode alterar qualquer campo incluindo isAdmin)
     const updateData = {};
     if (name !== undefined && name !== null && name !== "") updateData.name = name;
     if (email !== undefined && email !== null && email !== "") updateData.email = email;

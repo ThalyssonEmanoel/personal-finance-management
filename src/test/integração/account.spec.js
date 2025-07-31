@@ -151,7 +151,7 @@ describe("Listar as contas GET", () => {
     });
     it("deve listar uma conta pelo dono da conta.", async () => {
       const response = await request(app)
-        .get(`/account?userName=${userInformation.name}`)
+        .get(`/account?userId=${userInformation.id}`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
       expect(response.status).toBe(200);
@@ -179,7 +179,7 @@ describe("Listar as contas GET", () => {
   describe("Caminho triste", () => {
     it("deve retornar erro ao tentar listar uma conta com paramêtros inválidos", async () => {
       const response = await request(app)
-        .get(`/account?id=asd&name=123&type=123&balance=asd&page=asd&limit=asd&userName=34`)
+        .get(`/account?id=asd&name=123&type=123&balance=asd&page=asd&limit=asd&userId=asd`)
         .set("Content-Type", "application/json")
         .set("Authorization", `Bearer ${token}`);
       expect(response.body).toHaveProperty("code", 400);
@@ -189,8 +189,8 @@ describe("Listar as contas GET", () => {
           expect.objectContaining({ path: "name", message: "The account name must contain words, not only numbers." }),
           expect.objectContaining({ path: "type", message: "The type must contain words, not only numbers." }),
           expect.objectContaining({ path: "balance", message: "The balance must be a number." }),
-          expect.objectContaining({ path: "userName", message: "The user name must contain words, not only numbers." }),
-          expect.objectContaining({ path: "userName", message: "The user name must contain words, not only numbers." }),
+          expect.objectContaining({ path: "userId", message: "The user ID must be an integer." }),
+          expect.objectContaining({ path: "userId", message: "The user ID must be an integer." }),
         ])
       );
     });

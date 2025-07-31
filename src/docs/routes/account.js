@@ -30,11 +30,11 @@ const accountsRoutes = {
         },
         extraParameters: [
           {
-            name: "userName",
+            name: "userId",
             in: "query",
-            description: "Filtrar por nome do usuário dono da conta",
+            description: "Filtrar por ID do usuário dono da conta",
             required: false,
-            schema: { type: "string" }
+            schema: { type: "integer" }
           }
         ]
       }),

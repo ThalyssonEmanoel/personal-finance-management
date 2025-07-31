@@ -2,6 +2,118 @@ import commonResponses from "../schemas/swaggerCommonResponses.js";
 import parameterGenerator from "../utils/parameterGenerator.js";
 
 const usersRoutes = {
+  "/admin/users": {
+    post: {
+      tags: ["Users"],
+      summary: "Register a new user (Admin Only)",
+      description: `
+      ** ADMINISTRATOR ACCESS ONLY:** This endpoint can only be accessed by authenticated administrators.
+
+      #### Use Case
+      Allows system administrators to register a new user in the application through the administrative interface.
+
+      #### Business Function
+      Creates a new user account with the provided information, encrypting the password before storing it. This is an administrative operation that allows admins to create user accounts on behalf of others.
+
+      #### Business Rules Involved
+      - **ADMIN AUTHENTICATION REQUIRED:** Only authenticated administrators can access this endpoint.
+      - Email must be unique in the system.
+      - Password must have at least 8 characters with uppercase, lowercase, number and special character.
+      - All required fields (name, email, password) must be provided.
+      - Avatar is optional and must be an image file (max 2MB).
+      - Only image files are allowed for avatar upload.
+      - Password is automatically encrypted before storage.
+      - New users are always created with isAdmin set to false.
+      - The isAdmin field cannot be set during user creation (administrators must use the update endpoint to grant admin privileges).
+      - This endpoint bypasses normal user registration flow and is intended for administrative user management.
+
+      #### Expected Result
+      Returns the created user data (without password) and a 201 status code.`,
+      requestBody: {
+        required: true,
+        content: {
+          "multipart/form-data": {
+            schema: {
+              $ref: "#/components/schemas/CreateUserFormRequestAdmin"
+            }
+          }
+        }
+      },
+      responses: {
+        201: commonResponses[201]("#/components/schemas/CreateUserResponseAdmin"),
+        400: commonResponses[400](),
+        401: commonResponses[401](),
+        403: {
+          description: "Forbidden - Administrator access required",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  error: { type: "boolean", example: true },
+                  code: { type: "integer", example: 403 },
+                  message: { type: "string", example: "Acesso negado. Apenas administradores podem acessar este endpoint." }
+                }
+              }
+            }
+          }
+        },
+        409: commonResponses[409](),
+        498: commonResponses[498](),
+        500: commonResponses[500]()
+      }
+    }
+  },
+  "/admin/users/{id}": {
+    patch: {
+      tags: ["Users"],
+      summary: "Update user (Admin Only)",
+      description: `
+      ** ADMINISTRATOR ACCESS ONLY:** This endpoint can only be accessed by authenticated administrators.
+
+      #### Use Case
+      Allows system administrators to update any user's information, including administrative privileges.
+
+      #### Business Function
+      Updates user data including name, email, password, avatar, and administrative status. All fields are optional. This is an administrative operation that allows admins to manage any user account in the system.
+
+      #### Business Rules Involved
+      - **ADMIN AUTHENTICATION REQUIRED:** Only authenticated administrators can access this endpoint.
+      - User must exist in the system.
+      - Email must be unique if being updated.
+      - Password must meet security requirements if being updated (8+ chars, uppercase, lowercase, number, special char).
+      - Avatar file must be an image (max 2MB) if being uploaded.
+      - Password is automatically encrypted before storage.
+      - ID must be a valid positive integer.
+      - **EXCLUSIVE ADMIN PRIVILEGE:** Only administrators can modify the isAdmin field.
+      - Administrators can update any user's information (not restricted to their own account).
+      - This endpoint allows administrators to grant or revoke admin privileges to other users.
+
+      #### Expected Result
+      Returns the updated user data (without password) and a 200 status code.`,
+      security: [{ bearerAuth: [] }],
+      parameters: parameterGenerator.getPathIdParameter("ID do usuário a ser atualizado"),
+      requestBody: {
+        required: false,
+        content: {
+          "multipart/form-data": {
+            schema: {
+              $ref: "#/components/schemas/UpdateUserFormRequestAdmin"
+            }
+          }
+        }
+      },
+      responses: {
+        200: commonResponses[200]("#/components/schemas/UpdateUserResponseAdmin"),
+        400: commonResponses[400](),
+        401: commonResponses[401](),
+        404: commonResponses[404](),
+        409: commonResponses[409](),
+        498: commonResponses[498](),
+        500: commonResponses[500]()
+      }
+    },
+  },
   "/users": {
     get: {
       tags: ["Users"],

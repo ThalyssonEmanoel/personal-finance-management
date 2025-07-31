@@ -3,12 +3,10 @@ import { prisma } from "../config/prismaClient.js";
 class AccountRepository {
 
   static async listAccounts(filtros, skip, take, order) {
-    const { userName, ...otherFilters } = filtros;
+    const { userId, ...otherFilters } = filtros;
     let where = { ...otherFilters };
-    if (userName) {
-      where.user = {
-        name: { contains: userName }
-      };
+    if (userId) {
+      where.userId = userId;
     }
     const result = await prisma.accounts.findMany({
       where,

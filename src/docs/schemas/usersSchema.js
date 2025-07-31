@@ -24,6 +24,42 @@ const UserSchemas = {
       }
     }
   },
+  CreateUserFormRequestAdmin: {
+    title: "CreateUserFormRequest",
+    type: "object",
+    required: ["name", "email", "password"],
+    properties: {
+      name: {
+        type: "string",
+        description: "Nome completo do usuário",
+        example: "Thalysson Emanoel"
+      },
+      email: {
+        type: "string",
+        format: "email",
+        description: "Email único do usuário",
+        example: "thalysson@example.com"
+      },
+      password: {
+        type: "string",
+        minLength: 8,
+        description: "Senha do usuário (mínimo 8 caracteres com maiúscula, minúscula, número e caractere especial)",
+        example: "MinhaSenh@123"
+      },
+      avatar: {
+        type: "string",
+        format: "binary",
+        description: "Arquivo de imagem para o avatar do usuário (opcional, máximo 2MB)",
+        nullable: true
+      },
+      isAdmin: {
+        type: "boolean",
+        description: "Define se o usuário é administrador (opcional, apenas administradores podem alterar este campo)",
+        example: false
+      }
+    },
+    description: "Schema para criação de um novo usuário com upload de arquivo"
+  },
   CreateUserFormRequest: {
     title: "CreateUserFormRequest",
     type: "object",
@@ -51,9 +87,43 @@ const UserSchemas = {
         format: "binary",
         description: "Arquivo de imagem para o avatar do usuário (opcional, máximo 2MB)",
         nullable: true
-      }
+      },
     },
     description: "Schema para criação de um novo usuário com upload de arquivo"
+  },
+  CreateUserResponseAdmin: {
+    title: "CreateUserResponse",
+    type: "object",
+    properties: {
+      user: {
+        type: "object",
+        description: "Dados do usuário criado.",
+        properties: {
+          id: { type: "integer" },
+          name: { type: "string" },
+          email: { type: "string" },
+          avatar: {
+            type: "string",
+            nullable: true,
+            description: "Caminho do arquivo de avatar salvo no servidor"
+          },
+          isAdmin: {
+            type: "boolean",
+            description: "Indica se o usuário é administrador (sempre false na criação)"
+          }
+        }
+      }
+    },
+    description: "Schema para a resposta de criação de usuário.",
+    example: {
+      user: {
+        id: 1,
+        name: "Thalysson Emanoel",
+        email: "thalysson@example.com",
+        avatar: "src/uploads/avatares/1699030930148-Avatar.jpg",
+        isAdmin: false
+      }
+    }
   },
   CreateUserResponse: {
     title: "CreateUserResponse",
@@ -70,7 +140,7 @@ const UserSchemas = {
             type: "string",
             nullable: true,
             description: "Caminho do arquivo de avatar salvo no servidor"
-          }
+          },
         }
       }
     },
@@ -80,9 +150,40 @@ const UserSchemas = {
         id: 1,
         name: "Thalysson Emanoel",
         email: "thalysson@example.com",
-        avatar: "src/uploads/avatares/1699030930148-Avatar.jpg"
+        avatar: "src/uploads/avatares/1699030930148-Avatar.jpg",
+        isAdmin: false
       }
     }
+  },
+  UpdateUserFormRequestAdmin: {
+    title: "UpdateUserFormRequest",
+    type: "object",
+    properties: {
+      name: {
+        type: "string",
+        description: "Nome completo do usuário (opcional)",
+        example: "Thalysson Emanoel Atualizado"
+      },
+      email: {
+        type: "string",
+        format: "email",
+        description: "Email único do usuário (opcional)",
+        nullable: true,
+        example: "thalysson.novo@example.com"
+      },
+      avatar: {
+        type: "string",
+        format: "binary",
+        description: "Novo arquivo de imagem para o avatar do usuário (opcional, máximo 2MB)",
+        nullable: true
+      },
+      isAdmin: {
+        type: "boolean",
+        description: "Define se o usuário é administrador (opcional, apenas administradores podem alterar este campo)",
+        example: true
+      }
+    },
+    description: "Schema para atualização de usuário com upload de arquivo"
   },
   UpdateUserFormRequest: {
     title: "UpdateUserFormRequest",
@@ -96,7 +197,7 @@ const UserSchemas = {
       email: {
         type: "string",
         format: "email",
-        description: "Email único do usuário (opcional)", 
+        description: "Email único do usuário (opcional)",
         nullable: true,
         example: "thalysson.novo@example.com"
       },
@@ -108,6 +209,40 @@ const UserSchemas = {
       },
     },
     description: "Schema para atualização de usuário com upload de arquivo"
+  },
+  UpdateUserResponseAdmin: {
+    title: "UpdateUserResponse",
+    type: "object",
+    properties: {
+      user: {
+        type: "object",
+        description: "Dados do usuário atualizado.",
+        properties: {
+          id: { type: "integer" },
+          name: { type: "string" },
+          email: { type: "string", nullable: true },
+          avatar: {
+            type: "string",
+            nullable: true,
+            description: "Caminho do arquivo de avatar atualizado no servidor"
+          },
+          isAdmin: {
+            type: "boolean",
+            description: "Indica se o usuário é administrador"
+          }
+        }
+      }
+    },
+    description: "Schema para a resposta de atualização de usuário.",
+    example: {
+      user: {
+        id: 1,
+        name: "Thalysson Emanoel Atualizado",
+        email: "thalysson.novo@example.com",
+        avatar: "src/uploads/avatares/1699030930148-Avatar-updated.jpg",
+        isAdmin: true
+      }
+    }
   },
   UpdateUserResponse: {
     title: "UpdateUserResponse",
@@ -124,7 +259,7 @@ const UserSchemas = {
             type: "string",
             nullable: true,
             description: "Caminho do arquivo de avatar atualizado no servidor"
-          },
+          }
         }
       }
     },
@@ -134,7 +269,8 @@ const UserSchemas = {
         id: 1,
         name: "Thalysson Emanoel Atualizado",
         email: "thalysson.novo@example.com",
-        avatar: "src/uploads/avatares/1699030930148-Avatar-updated.jpg"
+        avatar: "src/uploads/avatares/1699030930148-Avatar-updated.jpg",
+        isAdmin: true
       }
     }
   },
