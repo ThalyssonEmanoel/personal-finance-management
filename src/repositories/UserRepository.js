@@ -40,7 +40,7 @@ class UserRepository {
         email: true,
         password: true, // Incluir senha para verificação
         avatar: true,
-        isAdmin: true
+        isAdmin: false
       }
     });
   }

@@ -43,6 +43,24 @@ class AccountSchemas {
       .positive({ message: "User ID must be at least 1." })
   });
 
+  static createAccountBody = z.object({
+    name: z.string({ message: "The account name must be a string/text." })
+      .refine((val) => !/^[0-9]+$/.test(val), { message: "The account name must be a string/text." }),
+    type: z.string({ message: "Account type must be a string." }),
+    balance: z.coerce.number({ message: "Account balance must be a number." }),
+    icon: z.string({ message: "Account icon must be a string (image path)." })
+      .regex(/\.(jpg|jpeg|png|gif|bmp|webp)$/i, { message: "Icon must be an image file (jpg, jpeg, png, gif, bmp, webp)." })
+      .optional()
+      .nullable()
+      .or(z.literal(""))
+  });
+
+  static createAccountQuery = z.object({
+    userId: z.coerce.number({ message: "User ID must be an integer." })
+      .int({ message: "User ID must be an integer." })
+      .positive({ message: "User ID must be at least 1." })
+  });
+
   static updateAccount = z.object({
     name: z.string({ message: "The account name must be a string/text." })
       .refine((val) => !/^[0-9]+$/.test(val), { message: "The account name must contain words, not only numbers." })

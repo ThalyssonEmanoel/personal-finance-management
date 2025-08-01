@@ -36,7 +36,7 @@ const adminOrOwnerMiddleware = async (req, res, next) => {
     }
 
     // Se não for administrador, verificar se está tentando acessar apenas suas próprias informações
-    const targetUserId = req.query.id;
+    const targetUserId = req.params.id || req.query.id || req.params.userId;
     
     // Para rotas que não têm ID específico (como GET /users), filtrar apenas o próprio usuário
     if (!targetUserId) {

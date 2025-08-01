@@ -12,6 +12,16 @@ class UserController {
       next(err)
     }
   };
+
+  static getUserById = async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const user = await UserService.getUserById(id);
+      res.status(200).json(CommonResponse.success(user));
+    } catch (err) {
+      next(err);
+    }
+  };
   static registerUserAdmin = async (req, res, next) => {
     try {
       const { name, email, password, isAdmin } = req.body;

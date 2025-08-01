@@ -7,7 +7,7 @@ class UserService {
 
   static async listUsers(filtros, page, limit, order = 'asc') {
     const validFiltros = UserSchema.listUser.parse(filtros);
-    
+
     const { page: validPage, limit: validLimit, ...dbFilters } = validFiltros;
 
     if (dbFilters.id) {
@@ -25,9 +25,21 @@ class UserService {
     }
     return { usuarios, total, take };
   };
+
+  static async getUserById(id) {
+    const validId = UserSchema.userIdParam.parse({ id });
+    const user = await UserRepository.getUserById(validId.id);
+
+    if (!user) {
+      throw { code: 404, message: "Usuário não encontrado" };
+    }
+
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
   static async createUser(user) {
     const validUser = UserSchema.createUser.parse(user);
-    
+
 
     const saltRounds = parseInt(process.env.SALT) || 10;
     const hashedPassword = await bcrypt.hash(validUser.password, saltRounds);
@@ -46,7 +58,7 @@ class UserService {
 
   static async createUserAdmin(user) {
     const validUser = UserSchema.createUserAdmin.parse(user);
-    
+
     const saltRounds = parseInt(process.env.SALT) || 10;
     const hashedPassword = await bcrypt.hash(validUser.password, saltRounds);
 

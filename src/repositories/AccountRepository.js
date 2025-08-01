@@ -32,6 +32,20 @@ class AccountRepository {
     return await prisma.accounts.count();
   }
 
+  static async getAccountById(id) {
+    return await prisma.accounts.findUnique({
+      where: { id: parseInt(id) },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        balance: true,
+        icon: true,
+        userId: true
+      }
+    });
+  }
+
   static async createAccount(accountData) {
     const { name, type, balance, icon, userId } = accountData;
     

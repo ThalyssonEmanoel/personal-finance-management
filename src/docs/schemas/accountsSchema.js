@@ -53,11 +53,6 @@ const AccountSchemas = {
         format: "binary",
         description: "Ícone da conta (opcional)",
         nullable: true
-      },
-      userId: {
-        type: "integer",
-        description: "Id do usuário dono da conta",
-        example: 1
       }
     },
     description: "Schema para criação de uma nova conta"

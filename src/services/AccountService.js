@@ -24,6 +24,17 @@ class AccountService {
     return { contas, total, take };
   }
 
+  static async getAccountById(id) {
+    const validId = AccountSchemas.accountIdParam.parse({ id });
+    const account = await AccountRepository.getAccountById(validId.id);
+    
+    if (!account) {
+      throw { code: 404, message: "Conta não encontrada" };
+    }
+
+    return account;
+  }
+
   static async createAccount(account) {
     const validAccount = AccountSchemas.createAccount.parse(account);
     

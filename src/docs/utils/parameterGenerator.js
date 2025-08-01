@@ -34,6 +34,10 @@ class SwaggerGenerator {
     return this.parameterGenerator.getCustomParameters(modelName, config);
   }
 
+  getPathIdWithQueryParameters(modelName, config = {}) {
+    return this.parameterGenerator.getPathIdWithQueryParameters(modelName, config);
+  }
+
   getResponseSchema(modelName, config = {}) {
     return this.responseSchemaGenerator.getResponseSchema(modelName, config);
   }

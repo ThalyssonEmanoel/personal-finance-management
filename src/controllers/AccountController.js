@@ -1,4 +1,5 @@
 import AccountService from '../services/AccountService.js';
+import AccountSchemas from '../schemas/AccountsSchemas.js';
 import CommonResponse from "../utils/commonResponse.js";
 
 class AccountController {
@@ -15,10 +16,25 @@ class AccountController {
     }
   };
 
+  static getAccountById = async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const account = await AccountService.getAccountById(id);
+      res.status(200).json(CommonResponse.success(account));
+    } catch (err) {
+      next(err);
+    }
+  };
+
   static registerAccount = async (req, res, next) => {
     try {
-
-      const { name, type, balance, userId } = req.body;
+      // Validar body e query separadamente
+      const bodyData = AccountSchemas.createAccountBody.parse(req.body);
+      const queryData = AccountSchemas.createAccountQuery.parse(req.params);
+      
+      const { name, type, balance } = bodyData;
+      const { userId } = queryData;
+      
       let icon = "";
       if (req.file) {
         icon = `uploads/${req.file.filename}`;
