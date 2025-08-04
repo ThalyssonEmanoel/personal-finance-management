@@ -1,9 +1,10 @@
 import TransactionService from '../services/TransactionService.js';
 import CommonResponse from "../utils/commonResponse.js";
+import TransactionSchemas from '../schemas/TransactionSchemas.js';
 
 class TransactionController {
 
-  static listAllTransactions = async (req, res, next) => {
+  static listAllTransactionsAdmin = async (req, res, next) => {
     try {
       const query = req.query;
       const page = query.page ? Number(query.page) : 1;
@@ -14,10 +15,26 @@ class TransactionController {
     }
   };
 
+  static listAllTransactionsUsers = async (req, res, next) => {
+    try {
+      const query = req.query;
+      const validQuery = TransactionSchemas.listTransactionUser.parse(query);
+      const page = validQuery.page ? Number(validQuery.page) : 1;
+      const { transactions, total, take } = await TransactionService.listTransactions(validQuery, 'desc');
+      res.status(200).json(CommonResponse.success(transactions, total, page, take));
+    } catch (err) {
+      next(err)
+    }
+  };
+
   static createTransaction = async (req, res, next) => {
     try {
-      const transactionData = req.body;
-      const transaction = await TransactionService.createTransaction(transactionData);
+      const bodyData = TransactionSchemas.createTransactionRequest.parse(req.body);
+      const queryData = TransactionSchemas.createTransactionQuery.parse(req.query);
+
+      const { name, type, category, value, release_date, billing_day, number_installments, current_installment, recurring, accountId, paymentMethodId } = bodyData;
+      const { userId } = queryData;
+      const transaction = await TransactionService.createTransaction({ name, type, category, value, release_date, billing_day, number_installments, current_installment, recurring, accountId, paymentMethodId, userId });
       res.status(201).json(CommonResponse.success(transaction));
     } catch (err) {
       next(err);
@@ -26,9 +43,9 @@ class TransactionController {
 
   static updateTransaction = async (req, res, next) => {
     try {
-      const { id } = req.params;
+      const { id, userId } = req.query;
       const transactionData = req.body;
-      const updatedTransaction = await TransactionService.updateTransaction(id, transactionData);
+      const updatedTransaction = await TransactionService.updateTransaction(id, userId, transactionData);
       res.status(200).json(CommonResponse.success(updatedTransaction));
     } catch (err) {
       next(err);

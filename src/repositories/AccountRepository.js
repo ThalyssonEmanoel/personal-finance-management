@@ -77,18 +77,20 @@ class AccountRepository {
       throw { code: 404, message: "Conta não encontrada" };
     }
     if (accountData.name && accountData.type && userId) {
-      const normalize = (str) => str.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+      const normalize = (str) => str.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();//Talvez será melhor remover esse normalize, pois nem sempre funciona
       const normalizedNome = normalize(accountData.name);
+      const normalizedType = normalize(accountData.type);
       const existingAccounts = await prisma.accounts.findMany({
         where: {
+          name: accountData.name,
           type: accountData.type,
           user: { id: userId },
           NOT: { id: parseInt(id) }
         }
       });
-      const similar = existingAccounts.find(acc => normalize(acc.name) === normalizedNome);
+      const similar = existingAccounts.find(acc => normalize(acc.name) === normalizedNome && normalize(acc.type) === normalizedType);
       if (similar) {
-        throw { code: 409, message: "Já existe uma conta com nome semelhante para este usuário." };
+        throw { code: 409, message: "Já existe uma conta com nome e tipo iguais para este usuário." };
       }
     }
     const updateData = {};

@@ -147,11 +147,6 @@ const TransactionSchemas = {
         description: "Payment method ID",
         example: 1
       },
-      userId: {
-        type: "integer",
-        description: "User ID",
-        example: 1
-      }
     },
     description: "Schema for creating a new transaction"
   },
@@ -175,7 +170,6 @@ const TransactionSchemas = {
           recurring: { type: "boolean" },
           accountId: { type: "integer" },
           paymentMethodId: { type: "integer" },
-          userId: { type: "integer" }
         }
       }
     },
@@ -194,7 +188,6 @@ const TransactionSchemas = {
         recurring: false,
         accountId: 1,
         paymentMethodId: 1,
-        userId: 1
       }
     }
   },
@@ -289,7 +282,6 @@ const TransactionSchemas = {
           recurring: { type: "boolean" },
           accountId: { type: "integer" },
           paymentMethodId: { type: "integer" },
-          userId: { type: "integer" }
         }
       }
     },
@@ -308,7 +300,6 @@ const TransactionSchemas = {
         recurring: false,
         accountId: 1,
         paymentMethodId: 1,
-        userId: 1
       }
     }
   },

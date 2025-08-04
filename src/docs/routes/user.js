@@ -168,7 +168,6 @@ const usersRoutes = {
 
       #### Expected Result
       Returns the created user data (without password) and a 201 status code.`,
-      security: [{ bearerAuth: [] }],
       requestBody: {
         required: true,
         content: {

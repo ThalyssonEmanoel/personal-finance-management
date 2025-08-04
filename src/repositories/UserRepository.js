@@ -111,7 +111,7 @@ class UserRepository {
   }
 
   static async updateUser(id, userData) {
-    const { name, email, password, avatar, refreshToken, isAdmin } = userData;
+    const { name, email, password, avatar, refreshToken } = userData;
 
     // Verificar se o usuário existe
     const existingUser = await prisma.users.findUnique({
@@ -142,7 +142,6 @@ class UserRepository {
     if (password !== undefined && password !== null && password !== "") updateData.password = password;
     if (avatar !== undefined) updateData.avatar = avatar;
     if (refreshToken !== undefined) updateData.refreshToken = refreshToken;
-    if (isAdmin !== undefined) updateData.isAdmin = isAdmin;
 
     return await prisma.users.update({
       where: { id: parseInt(id) },
@@ -153,7 +152,7 @@ class UserRepository {
         email: true,
         password: false,
         avatar: true,
-        isAdmin: true
+        isAdmin: false
       }
     });
   }

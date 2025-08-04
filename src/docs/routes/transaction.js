@@ -2,6 +2,39 @@ import commonResponses from "../schemas/swaggerCommonResponses.js";
 import parameterGenerator from "../utils/parameterGenerator.js";
 
 const transactionRoutes = {
+  "/transactions/admin": {
+    get: {
+      tags: ["Transactions"],
+      summary: "List all transactions (Admin Only)",
+      description: `
+        #### Use Case
+        Allows the system to list all registered transactions, with the possibility of filtering by specific parameters.
+
+        #### Business Rule
+        Provides a paginated listing of registered transactions, with detailed information for each transaction.
+
+        #### Business Rules Involved
+        - Allow filtering by defined parameters.
+        - Return error if no transactions are registered.
+        - Include related data (account, payment method, user).
+
+        #### Expected Result
+        Returns a paginated list of transactions with detailed information and related data.
+      `,
+      security: [{ bearerAuth: [] }],
+      parameters: parameterGenerator.getCustomParameters('Transactions', {
+        excludeFields: ['account', 'paymentMethod', 'user', 'Date', 'description'],
+      }),
+      responses: {
+        200: commonResponses[200]("#/components/schemas/TransactionResponse"),
+        400: commonResponses[400](),
+        401: commonResponses[401](),
+        404: commonResponses[404](),
+        498: commonResponses[498](),
+        500: commonResponses[500]()
+      }
+    },
+  },
   "/transactions": {
     get: {
       tags: ["Transactions"],
@@ -69,6 +102,15 @@ const transactionRoutes = {
         Returns the created transaction data and status 201.
       `,
       security: [{ bearerAuth: [] }],
+      parameters: [
+        {
+          name: "userId",
+          in: "query",
+          description: "ID for user who will own the transaction",
+          required: true,
+          schema: { type: "integer", minimum: 1 }
+        }
+      ],
       requestBody: {
         required: true,
         content: {
@@ -112,7 +154,7 @@ const transactionRoutes = {
         Returns the updated transaction data and status 200.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getPathIdParameter("ID of the transaction to be updated"),
+      parameters: parameterGenerator.getQueryIdAndUserParameter("ID da conta a ser deletada"),
       requestBody: {
         required: false,
         content: {
