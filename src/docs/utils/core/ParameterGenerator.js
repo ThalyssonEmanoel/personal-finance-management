@@ -84,6 +84,49 @@ class ParameterGenerator {
     ];
   }
 
+  getQueryIdAndUserParameter(description = "ID do registro e ID do usuário") {
+    return [
+      {
+        name: "id",
+        in: "query",
+        required: true,
+        schema: {
+          type: "integer",
+          minimum: 1
+        },
+        description: description,
+        example: 1
+      },
+      {
+        name: "userId",
+        in: "query",
+        required: true,
+        schema: {
+          type: "integer",
+          minimum: 1
+        },
+        description: "ID do usuário dono do registro",
+        example: 1
+      }
+    ];
+  }
+
+  getQueryUserParameter(description = "ID do usuário") {
+    return [
+      {
+        name: "userId",
+        in: "query",
+        required: true,
+        schema: {
+          type: "integer",
+          minimum: 1
+        },
+        description: description,
+        example: 1
+      }
+    ];
+  }
+
   /**
    * @getAllParameters Gera todos os parâmetros (paginação + filtros) para um model
    */
@@ -147,7 +190,7 @@ class ParameterGenerator {
 
     // Adiciona o parâmetro de ID no path
     parameters.push({
-      name: "id",
+      name: "userId",
       in: "path",
       required: true,
       schema: {

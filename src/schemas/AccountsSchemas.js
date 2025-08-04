@@ -75,6 +75,38 @@ class AccountSchemas {
       .int({ message: "The 'id' field must be an integer." })
       .positive({ message: "The 'id' field must be at least 1." })
   });
+
+  static userIdParam = z.object({
+    userId: z.coerce.number({ message: "The 'id' field must be an integer." })
+      .int({ message: "The 'id' field must be an integer." })
+      .positive({ message: "The 'id' field must be at least 1." })
+  });
+
+  static listAccountUser = z.object({
+    name: z.string({ message: "The account name must be a string/text." })
+      .refine((val) => !/^[0-9]+$/.test(val), { message: "The account name must contain words, not only numbers." })
+      .optional(),
+    type: z.string({ message: "The type must be a string/text." })
+    .refine((val) => !/^[0-9]+$/.test(val), { message: "The type must contain words, not only numbers." })
+    .optional(),
+    balance: z.coerce.number({ message: "The balance must be a number." }).optional(),
+    userId: z.coerce.number({ message: "The user ID must be an integer." })
+      .int({ message: "The user ID must be an integer." })
+      .positive({ message: "The user ID must be greater than 0." }),
+    id: z.coerce.number({ message: "The 'id' field must be an integer." })
+      .int({ message: "The 'id' field must be an integer." })
+      .positive({ message: "The 'id' field must be at least 1." })
+      .optional(),
+    page: z.coerce.number({ message: "The page must be a positive integer." })
+      .int({ message: "The page must be a positive integer." })
+      .positive({ message: "The page must be a positive integer." })
+      .optional()
+      .default(1),
+    limit: z.coerce.number({ message: "The limit must be a positive integer." })
+      .int({ message: "The 'limit' field must be an integer." })
+      .positive({ message: "The 'limit' field must be at least 1." })
+      .default(10),
+  });
 }
 
 export default AccountSchemas;

@@ -9,13 +9,13 @@ import adminOnlyMiddleware from "../middlewares/adminOnlyMiddleware.js";
 const router = e.Router();
 
 router
-.get("/account/:id", authMiddleware, adminOrOwnerMiddleware, AccountController.getAccountById, errorHandler)
-.post("/account", authMiddleware, adminOrOwnerMiddleware, upload.single("Icon"), AccountController.registerAccount, errorHandler)
-.patch( "/account/:id", authMiddleware, adminOrOwnerMiddleware, upload.single("Icon"), AccountController.updateAccount, errorHandler )
-.delete("/account/:id", authMiddleware, adminOrOwnerMiddleware, AccountController.deleteAccount, errorHandler)
+.get("/account/:id", authMiddleware, adminOrOwnerMiddleware.verifyWithUserId, AccountController.listAllAccountsUser, errorHandler)
+.post("/account", authMiddleware, adminOrOwnerMiddleware.verifyWithUserId, upload.single("Icon"), AccountController.registerAccount, errorHandler)
+.patch( "/account/:id", authMiddleware, adminOrOwnerMiddleware.verifyWithUserId, upload.single("Icon"), AccountController.updateAccount, errorHandler )
+.delete("/account/:id", authMiddleware, adminOrOwnerMiddleware.verifyWithUserId, AccountController.deleteAccount, errorHandler)
 
 //Only admins 
-.get("/admin/account", authMiddleware, adminOnlyMiddleware, AccountController.listAllAccounts, errorHandler)
+.get("/admin/account", authMiddleware, adminOnlyMiddleware, AccountController.listAllAccountsAdmin, errorHandler)
 
 
 export default router;

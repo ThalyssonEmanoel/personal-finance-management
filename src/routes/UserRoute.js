@@ -9,11 +9,11 @@ import adminOnlyMiddleware from "../middlewares/adminOnlyMiddleware.js";
 const router = e.Router();
 
 router
-  .get("/users/:id", authMiddleware, adminOrOwnerMiddleware, UserController.getUserById, errorHandler)
-  .delete("/users/:id", authMiddleware, adminOrOwnerMiddleware, UserController.deleteUser, errorHandler)
-  .patch("/users/:id/change-password", authMiddleware, adminOrOwnerMiddleware, UserController.changePassword, errorHandler)
-  .patch("/users/:id", authMiddleware, adminOrOwnerMiddleware, upload.single("avatar"), UserController.updateUser, errorHandler)
-  .post("/users", authMiddleware, upload.single("avatar"), adminOrOwnerMiddleware, UserController.registerUser, errorHandler) // para o avatar, no banco, O caminho salvo no banco será algo como: uploads/1699030930148-avatar.png
+  .get("/users/:id", authMiddleware, adminOrOwnerMiddleware.verifyJustId, UserController.getUserById, errorHandler)
+  .delete("/users/:id", authMiddleware, adminOrOwnerMiddleware.verifyJustId, UserController.deleteUser, errorHandler)
+  .patch("/users/:id/change-password", authMiddleware, adminOrOwnerMiddleware.verifyJustId, UserController.changePassword, errorHandler)
+  .patch("/users/:id", authMiddleware, adminOrOwnerMiddleware.verifyJustId, upload.single("avatar"), UserController.updateUser, errorHandler)
+  .post("/users", authMiddleware, upload.single("avatar"), adminOrOwnerMiddleware.verifyJustId, UserController.registerUser, errorHandler) // para o avatar, no banco, O caminho salvo no banco será algo como: uploads/1699030930148-avatar.png
 
   //apenas adminstradores podem ter acesso:
   .get("/admin/users", authMiddleware, adminOnlyMiddleware, UserController.listAllUsers, errorHandler)

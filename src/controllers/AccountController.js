@@ -4,7 +4,7 @@ import CommonResponse from "../utils/commonResponse.js";
 
 class AccountController {
 
-  static listAllAccounts = async (req, res, next) => {
+  static listAllAccountsAdmin = async (req, res, next) => {
     try {
       const query = req.query;
       // Garante que page será passado corretamente para o response
@@ -16,13 +16,16 @@ class AccountController {
     }
   };
 
-  static getAccountById = async (req, res, next) => {
+  static listAllAccountsUser = async (req, res, next) => {
     try {
-      const { id } = req.params;
-      const account = await AccountService.getAccountById(id);
-      res.status(200).json(CommonResponse.success(account));
+      const query = req.query;
+      const queryFiltrada = AccountSchemas.listAccountUser.parse(query);
+      // Garante que page será passado corretamente para o response
+      const page = queryFiltrada.page ? Number(queryFiltrada.page) : 1;
+      const { contas, total, take } = await AccountService.listAccounts(queryFiltrada, 'desc');
+      res.status(200).json(CommonResponse.success(contas, total, page, take));
     } catch (err) {
-      next(err);
+      next(err)
     }
   };
 
@@ -30,11 +33,11 @@ class AccountController {
     try {
       // Validar body e query separadamente
       const bodyData = AccountSchemas.createAccountBody.parse(req.body);
-      const queryData = AccountSchemas.createAccountQuery.parse(req.params);
-      
+      const queryData = AccountSchemas.createAccountQuery.parse(req.query);
+
       const { name, type, balance } = bodyData;
       const { userId } = queryData;
-      
+
       let icon = "";
       if (req.file) {
         icon = `uploads/${req.file.filename}`;
@@ -49,14 +52,14 @@ class AccountController {
 
   static updateAccount = async (req, res, next) => {
     try {
-      const { id } = req.params;
-      const { name, type, balance, userId } = req.body;
+      const { id, userId } = req.query;
+      const { name, type, balance } = req.body;
       let icon = req.body.icon;
       if (req.file) {
         icon = `uploads/avatares/${req.file.filename}`;
       }
-      const accountData = { name, type, balance, icon, userId };
-      const updatedAccount = await AccountService.updateAccount(id, accountData);
+      const accountData = { name, type, balance, icon};
+      const updatedAccount = await AccountService.updateAccount(id, userId, accountData);
       res.status(200).json(CommonResponse.success(updatedAccount));
     } catch (err) {
       next(err);
@@ -65,8 +68,9 @@ class AccountController {
 
   static deleteAccount = async (req, res, next) => {
     try {
-      const { id } = req.params;
-      const result = await AccountService.deleteAccount(id);
+      const { id } = req.query;
+      const { userId } = req.query;
+      const result = await AccountService.deleteAccount(id, userId);
       res.status(200).json(CommonResponse.success(result));
     } catch (err) {
       next(err);

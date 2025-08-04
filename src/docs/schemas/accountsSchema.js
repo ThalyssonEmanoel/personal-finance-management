@@ -31,7 +31,7 @@ const AccountSchemas = {
   CreateAccountFormRequest: {
     title: "CreateAccountFormRequest",
     type: "object",
-    required: ["name", "type", "balance", "userId"],
+    required: ["name", "type", "balance"],
     properties: {
       name: {
         type: "string",

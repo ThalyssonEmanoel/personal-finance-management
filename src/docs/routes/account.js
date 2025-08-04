@@ -79,7 +79,7 @@ const accountsRoutes = {
       parameters: [
         {
           name: "userId",
-          in: "path",
+          in: "query",
           description: "ID do usuário para quem a conta será criada",
           required: true,
           schema: { type: "integer", minimum: 1 }
@@ -129,20 +129,20 @@ const accountsRoutes = {
         Returns the account data and a 200 status code.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getPathIdWithQueryParameters('Accounts', {
-        idDescription: "ID da conta a ser consultada",
+      parameters: parameterGenerator.getCustomParameters('Accounts', {
         excludeFields: ['icon', 'user', 'transactions', 'userId'],
         customDescriptions: {
+          id: "Filtrar por ID da conta",
           name: "Filtrar por nome da conta",
           type: "Filtrar por tipo da conta"
         },
         extraParameters: [
           {
-            name: "includeTransactions",
+            name: "userId",
             in: "query",
-            description: "Incluir transações relacionadas à conta",
+            description: "Filtrar por ID do usuário dono da conta",
             required: false,
-            schema: { type: "boolean", default: false }
+            schema: { type: "integer" }
           }
         ]
       }),
@@ -175,7 +175,7 @@ const accountsRoutes = {
         Retorna os dados da conta atualizada e status 200.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getPathIdParameter("ID da conta a ser atualizada"),
+      parameters: parameterGenerator.getQueryIdAndUserParameter("ID da conta a ser deletada"),
       requestBody: {
         required: false,
         content: {
@@ -216,7 +216,7 @@ const accountsRoutes = {
         Retorna mensagem de sucesso confirmando a exclusão da conta.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getPathIdParameter("ID da conta a ser deletada"),
+      parameters: parameterGenerator.getQueryIdAndUserParameter("ID da conta a ser deletada"),
       responses: {
         200: commonResponses[200]("#/components/schemas/DeleteAccountResponse"),
         400: commonResponses[400](),

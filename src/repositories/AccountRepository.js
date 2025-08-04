@@ -31,21 +31,7 @@ class AccountRepository {
   static async contAccounts() {
     return await prisma.accounts.count();
   }
-
-  static async getAccountById(id) {
-    return await prisma.accounts.findUnique({
-      where: { id: parseInt(id) },
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        balance: true,
-        icon: true,
-        userId: true
-      }
-    });
-  }
-
+  
   static async createAccount(accountData) {
     const { name, type, balance, icon, userId } = accountData;
     
@@ -83,20 +69,20 @@ class AccountRepository {
     });
   }
 
-  static async updateAccount(id, accountData) {
+  static async updateAccount(id, userId, accountData) {
     const existingAccount = await prisma.accounts.findUnique({
-      where: { id: parseInt(id) }
+      where: { id: parseInt(id), userId: parseInt(userId) },
     });
     if (!existingAccount) {
       throw { code: 404, message: "Conta não encontrada" };
     }
-    if (accountData.name && accountData.type && accountData.userId) {
+    if (accountData.name && accountData.type && userId) {
       const normalize = (str) => str.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
       const normalizedNome = normalize(accountData.name);
       const existingAccounts = await prisma.accounts.findMany({
         where: {
           type: accountData.type,
-          user: { id: accountData.userId },
+          user: { id: userId },
           NOT: { id: parseInt(id) }
         }
       });
@@ -110,7 +96,6 @@ class AccountRepository {
     if (accountData.type) updateData.type = accountData.type;
     if (accountData.balance !== undefined) updateData.balance = accountData.balance;
     if (accountData.icon !== undefined) updateData.icon = accountData.icon;
-    if (accountData.userId !== undefined) updateData.userId = accountData.userId;
     return await prisma.accounts.update({
       where: { id: parseInt(id) },
       data: updateData,
@@ -125,17 +110,36 @@ class AccountRepository {
     });
   }
 
-  static async deleteAccount(id) {
+  static async deleteAccount(id, userId) {
     const existingAccount = await prisma.accounts.findUnique({
-      where: { id: parseInt(id) }
+      where: { id: parseInt(id), userId: parseInt(userId) }
     });
+    
     if (!existingAccount) {
       throw { code: 404, message: "Conta não encontrada" };
     }
-    await prisma.accounts.delete({
-      where: { id: parseInt(id) }
-    });
-    return { message: "Conta deletada com sucesso" };
+
+    try {
+      // Usar transação para garantir consistência dos dados
+      await prisma.$transaction(async (prisma) => {
+        await prisma.transactions.deleteMany({
+          where: { accountId: parseInt(id) }
+        });
+
+        await prisma.accountPaymentMethods.deleteMany({
+          where: { accountId: parseInt(id) }
+        });
+
+        await prisma.accounts.delete({
+          where: { id: parseInt(id) }
+        });
+      });
+
+      return { message: "Conta e todos os dados relacionados foram deletados com sucesso" };
+    } catch (error) {
+      console.error("Erro ao deletar conta:", error);
+      throw error;
+    }
   }
 }
 
