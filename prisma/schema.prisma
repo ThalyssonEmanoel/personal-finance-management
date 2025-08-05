@@ -9,73 +9,74 @@ datasource db {
 }
 
 model Users {
-  id           Int         @id @default(autoincrement())
-  name         String      @db.VarChar(45)
-  email        String      @unique(map: "Email_UNIQUE") @db.VarChar(45)
-  password        String      @db.VarChar(255)
-  avatar       String?     @db.VarChar(100)
-  refreshToken String?     @db.Text
-  isAdmin      Boolean     @default(false)
+  id           Int     @id @default(autoincrement())
+  name         String  @db.VarChar(45)
+  email        String  @unique(map: "Email_UNIQUE") @db.VarChar(45)
+  password     String  @db.VarChar(255)
+  avatar       String? @db.VarChar(100)
+  refreshToken String? @db.Text
+  isAdmin      Boolean @default(false)
 
-  accounts       Accounts[]
-  transactions   Transactions[]
+  accounts     Accounts[]
+  transactions Transactions[]
 }
 
 model Accounts {
-  id       Int      @id @default(autoincrement())
-  name     String   @db.VarChar(100)
-  type     String   @db.VarChar(45)
-  balance    Decimal  @db.Decimal(10,2)
-  icon     String?   @db.VarChar(100)
+  id      Int     @id @default(autoincrement())
+  name    String  @db.VarChar(100)
+  type    String  @db.VarChar(45)
+  balance Decimal @db.Decimal(10, 2)
+  icon    String? @db.VarChar(100)
 
-  userId   Int
-  user  Users    @relation(fields: [userId], references: [id])
+  userId Int
+  user   Users @relation(fields: [userId], references: [id])
 
-  transactions              Transactions[]
-  accountPaymentMethods     AccountPaymentMethods[]
+  transactions          Transactions[]
+  accountPaymentMethods AccountPaymentMethods[]
 }
 
 model PaymentMethods {
-  id          Int          @id @default(autoincrement())
-  name        String       @db.VarChar(100)
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(100)
 
   accountPaymentMethods AccountPaymentMethods[]
   transactions          Transactions[]
 }
 
 model AccountPaymentMethods {
-  id              Int             @id @default(autoincrement())
-  
-  accountId       Int
-  account         Accounts        @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  
+  id Int @id @default(autoincrement())
+
+  accountId Int
+  account   Accounts @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
   paymentMethodId Int
-  paymentMethod   PaymentMethods  @relation(fields: [paymentMethodId], references: [id], onDelete: Cascade)
+  paymentMethod   PaymentMethods @relation(fields: [paymentMethodId], references: [id], onDelete: Cascade)
 
   @@unique([accountId, paymentMethodId])
 }
 
 model Transactions {
-  id                   Int           @id @default(autoincrement())
-  type                 TransactionType
-  name                 String        @db.VarChar(255)
-  category            String        @db.VarChar(100)
-  value                Decimal       @db.Decimal(10,2)
-  release_date       DateTime      @db.Date
+  id                  Int             @id @default(autoincrement())
+  type                TransactionType
+  name                String          @db.VarChar(255)
+  category            String          @db.VarChar(100)
+  value               Decimal         @db.Decimal(10, 2)
+  value_installment   Decimal?        @db.Decimal(10, 2) // Valor total original (antes da divisão)
+  release_date        DateTime        @db.Date
   billing_day         Int?
-  number_installments  Int?
-  current_installment  Int?
-  description           String?       @db.Text
-  recurring           Boolean       @default(false)
+  number_installments Int?
+  current_installment Int?
+  description         String?         @db.Text
+  recurring           Boolean         @default(false)
 
-  accountId              Int
-  account                Accounts        @relation(fields: [accountId], references: [id])
+  accountId Int
+  account   Accounts @relation(fields: [accountId], references: [id])
 
-  paymentMethodId        Int
-  paymentMethod          PaymentMethods  @relation(fields: [paymentMethodId], references: [id])
+  paymentMethodId Int
+  paymentMethod   PaymentMethods @relation(fields: [paymentMethodId], references: [id])
 
-  userId               Int
-  user                 Users         @relation(fields: [userId], references: [id])
+  userId Int
+  user   Users @relation(fields: [userId], references: [id])
 }
 
 enum TransactionType {

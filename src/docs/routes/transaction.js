@@ -62,6 +62,7 @@ const transactionRoutes = {
           name: "Filter by transaction name",
           category: "Filter by transaction category",
           value: "Filter by transaction amount",
+          value_installment: "Filter by original installment total value",
           release_date: "Filter by release date (YYYY-MM-DD format)",
           billing_day: "Filter by billing day",
           number_installments: "Filter by number of installments",
@@ -97,6 +98,7 @@ const transactionRoutes = {
         - The user must exist.
         - Amount must be positive.
         - Payment date must be valid.
+        - For installment transactions, value_installment stores the original total value.
 
         #### Expected Result
         Returns the created transaction data and status 201.
@@ -149,6 +151,7 @@ const transactionRoutes = {
         - The payment method must exist if changed.
         - ID must be a valid positive integer.
         - Amount must be positive if provided.
+        - value_installment field stores original total for installment transactions.
 
         #### Expected Result
         Returns the updated transaction data and status 200.

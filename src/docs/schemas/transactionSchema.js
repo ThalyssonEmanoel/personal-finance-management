@@ -12,6 +12,7 @@ const TransactionSchemas = {
           name: { type: "string" },
           category: { type: "string" },
           value: { type: "number" },
+          value_installment: { type: "number", nullable: true },
           release_date: { type: "string", format: "date" },
           billing_day: { type: "integer", nullable: true },
           number_installments: { type: "integer", nullable: true },
@@ -53,6 +54,7 @@ const TransactionSchemas = {
         name: "Supermercado",
         category: "Alimentação",
         value: 150.50,
+        value_installment: null,
         release_date: "2024-01-15",
         billing_day: null,
         number_installments: null,
@@ -102,6 +104,12 @@ const TransactionSchemas = {
         type: "number",
         description: "Transaction amount",
         example: 150.50
+      },
+      value_installment: {
+        type: "number",
+        description: "Original total value for installment transactions (optional). This field stores the total amount before division into installments. For example: if a R$ 450.00 purchase is divided into 3 installments, value_installment = 450.00 and value = 150.00 for each installment.",
+        example: 450.00,
+        nullable: true
       },
       release_date: {
         type: "string",
@@ -169,6 +177,7 @@ const TransactionSchemas = {
           name: { type: "string" },
           category: { type: "string" },
           value: { type: "number" },
+          value_installment: { type: "number", nullable: true },
           release_date: { type: "string", format: "date" },
           billing_day: { type: "integer", nullable: true },
           number_installments: { type: "integer", nullable: true },
@@ -188,10 +197,11 @@ const TransactionSchemas = {
         name: "Supermercado",
         category: "Alimentação",
         value: 150.50,
+        value_installment: 450.00,
         release_date: "2024-01-15",
         billing_day: null,
-        number_installments: null,
-        current_installment: null,
+        number_installments: 3,
+        current_installment: 1,
         recurring: false,
         description: "Compra mensal no supermercado",
         accountId: 1,
@@ -223,6 +233,12 @@ const TransactionSchemas = {
         type: "number",
         description: "Transaction amount (optional)",
         example: 150.50
+      },
+      value_installment: {
+        type: "number",
+        description: "Original total value for installment transactions (optional). This field stores the total amount before division into installments. For example: if a R$ 450.00 purchase is divided into 3 installments, value_installment = 450.00 and value = 150.00 for each installment.",
+        example: 450.00,
+        nullable: true
       },
       release_date: {
         type: "string",
@@ -283,6 +299,7 @@ const TransactionSchemas = {
           name: { type: "string" },
           category: { type: "string" },
           value: { type: "number" },
+          value_installment: { type: "number", nullable: true },
           release_date: { type: "string", format: "date" },
           billing_day: { type: "integer", nullable: true },
           number_installments: { type: "integer", nullable: true },
@@ -301,6 +318,7 @@ const TransactionSchemas = {
         name: "Supermercado",
         category: "Alimentação",
         value: 175.50,
+        value_installment: null,
         release_date: "2024-01-15",
         billing_day: null,
         number_installments: null,

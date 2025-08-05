@@ -20,12 +20,8 @@ const app = express();
  * "" * /25 * * * * *" = A cada 25 segundos (para testes)
  */
 const job = new CronJob("*/60 * * * * *", async () => {
-  console.log('[CRON] Iniciando processamento de transações recorrentes...');
-  try {
-    await TransactionService.processRecurringTransactions();
-  } catch (error) {
-    console.error('[CRON] Erro no processamento de transações recorrentes:', error);
-  }
+  await TransactionService.processRecurringTransactions();
+  await TransactionService.processInstallmentsTransactions();
 });
 job.start();
 

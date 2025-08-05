@@ -36,6 +36,7 @@ class TransactionRepository {
         name: true,
         category: true,
         value: true,
+        value_installment: true, 
         release_date: true,
         billing_day: true,
         number_installments: true,
@@ -139,6 +140,7 @@ class TransactionRepository {
         name: true,
         category: true,
         value: true,
+        value_installment: true, 
         release_date: true,
         billing_day: true,
         number_installments: true,
@@ -312,6 +314,73 @@ class TransactionRepository {
     });
 
     return existingTransaction !== null;
+  }
+
+  /**
+   * Busca todas as transações parceladas que ainda não foram finalizadas
+   */
+  static async getInstallmentTransactions() {
+    const transactions = await prisma.transactions.findMany({
+      where: {
+        number_installments: {
+          not: null
+        },
+        current_installment: {
+          not: null
+        }
+      },
+      select: {
+        id: true,
+        type: true,
+        name: true,
+        category: true,
+        value: true,
+        value_installment: true,
+        release_date: true,
+        billing_day: true,
+        number_installments: true,
+        current_installment: true,
+        recurring: true,
+        description: true,
+        accountId: true,
+        paymentMethodId: true,
+        userId: true
+      }
+    });
+
+    // Filtrar no JavaScript para garantir que current_installment < number_installments
+    return transactions.filter(transaction => 
+      transaction.current_installment < transaction.number_installments
+    );
+  }
+
+  /**
+   * Verifica se já existe uma parcela específica com os mesmos dados para o mês/ano especificado
+   */
+  static async checkInstallmentExistsInMonth(userId, name, category, value, type, accountId, paymentMethodId, number_installments, current_installment, month, year) {
+    // Criar o range de datas para o mês especificado
+    const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+
+    const existingInstallment = await prisma.transactions.findFirst({
+      where: {
+        userId: userId,
+        name: name,
+        category: category,
+        value: value,
+        type: type,
+        accountId: accountId,
+        paymentMethodId: paymentMethodId,
+        number_installments: number_installments,
+        current_installment: current_installment,
+        release_date: {
+          gte: startDate,
+          lte: endDate
+        }
+      }
+    });
+
+    return existingInstallment !== null;
   }
 }
 

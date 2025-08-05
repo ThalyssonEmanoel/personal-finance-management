@@ -110,6 +110,9 @@ class TransactionSchemas {
     category: z.string({ message: "The category is required and must be a text." }),
     value: z.coerce.number({ message: "The value is required and must be a number." })
       .positive({ message: "The value must be greater than 0." }),
+    value_installment: z.coerce.number({ message: "The installment total value must be a number." })
+      .positive({ message: "The installment total value must be greater than 0." })
+      .optional(),
     release_date: z.string({ message: "The payment date is required." })
       .refine((val) => !isNaN(Date.parse(val)), { message: "Payment date must be in a valid format." }),
     billing_day: z.coerce.number({ message: "The billing day must be a number." })
@@ -145,6 +148,9 @@ class TransactionSchemas {
     category: z.string({ message: "The category is required and must be a text." }),
     value: z.coerce.number({ message: "The value is required and must be a number." })
       .positive({ message: "The value must be greater than 0." }),
+    value_installment: z.coerce.number({ message: "The installment total value must be a number." })
+      .positive({ message: "The installment total value must be greater than 0." })
+      .optional(),
     release_date: z.string({ message: "The payment date is required." })
       .refine((val) => !isNaN(Date.parse(val)), { message: "Payment date must be in a valid format." }),
     billing_day: z.coerce.number({ message: "The billing day must be a number." })
