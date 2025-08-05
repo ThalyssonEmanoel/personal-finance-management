@@ -19,7 +19,17 @@ class AccountRepository {
         type: true,
         balance: true,
         icon: true,
-        userId: true
+        userId: true,
+        accountPaymentMethods: {
+          select: {
+            paymentMethod: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        },
       },
     });
     if (result.length === 0) {

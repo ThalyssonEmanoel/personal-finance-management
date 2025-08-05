@@ -1,5 +1,4 @@
 import { z } from "zod";
-
 class TransactionSchemas {
   static listTransaction = z.object({
     type: z.enum(["expense", "income"], { message: "Type must be 'expense' or 'income'." }).optional(),

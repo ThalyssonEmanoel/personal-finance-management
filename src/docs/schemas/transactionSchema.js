@@ -137,6 +137,12 @@ const TransactionSchemas = {
         example: false,
         default: false
       },
+      description: {
+        type: "string",
+        description: "Transaction description (optional)",
+        example: "Compra mensal no supermercado",
+        nullable: true
+      },
       accountId: {
         type: "integer",
         description: "Account ID",
@@ -168,6 +174,7 @@ const TransactionSchemas = {
           number_installments: { type: "integer", nullable: true },
           current_installment: { type: "integer", nullable: true },
           recurring: { type: "boolean" },
+          description: { type: "string", nullable: true },
           accountId: { type: "integer" },
           paymentMethodId: { type: "integer" },
         }
@@ -186,6 +193,7 @@ const TransactionSchemas = {
         number_installments: null,
         current_installment: null,
         recurring: false,
+        description: "Compra mensal no supermercado",
         accountId: 1,
         paymentMethodId: 1,
       }
