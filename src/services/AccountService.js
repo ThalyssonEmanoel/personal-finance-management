@@ -24,6 +24,17 @@ class AccountService {
     return { contas, total, take };
   }
 
+  static async getAccountById(id) {
+    const validId = AccountSchemas.accountIdParam.parse({ id });
+    const account = await AccountRepository.getAccountById(validId.id);
+    
+    if (!account) {
+      throw { code: 404, message: "Conta não encontrada" };
+    }
+
+    return account;
+  }
+
   static async createAccount(account) {
     const validAccount = AccountSchemas.createAccount.parse(account);
     
@@ -34,19 +45,21 @@ class AccountService {
     return newAccount;
   }
 
-  static async updateAccount(id, accountData) {
+  static async updateAccount(id, userId, accountData) {
     const validId = AccountSchemas.accountIdParam.parse({ id });
+    const validUserId = AccountSchemas.userIdParam.parse({ userId });
     const validAccountData = AccountSchemas.updateAccount.parse(accountData);
-    const updatedAccount = await AccountRepository.updateAccount(validId.id, validAccountData);
+    const updatedAccount = await AccountRepository.updateAccount(validId.id, validUserId.userId, validAccountData);
     if (!updatedAccount) {
       throw { code: 404 };
     }
     return updatedAccount;
   }
 
-  static async deleteAccount(id) {
+  static async deleteAccount(id, userId) {
     const validId = AccountSchemas.accountIdParam.parse({ id });
-    const result = await AccountRepository.deleteAccount(validId.id);
+    const validUserId = AccountSchemas.userIdParam.parse({ userId });
+    const result = await AccountRepository.deleteAccount(validId.id, validUserId.userId);
     return result;
   }
 }

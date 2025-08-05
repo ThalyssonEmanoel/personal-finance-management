@@ -31,7 +31,7 @@ const AccountSchemas = {
   CreateAccountFormRequest: {
     title: "CreateAccountFormRequest",
     type: "object",
-    required: ["name", "type", "balance", "userId"],
+    required: ["name", "type", "balance"],
     properties: {
       name: {
         type: "string",
@@ -53,11 +53,6 @@ const AccountSchemas = {
         format: "binary",
         description: "Ícone da conta (opcional)",
         nullable: true
-      },
-      userId: {
-        type: "integer",
-        description: "Id do usuário dono da conta",
-        example: 1
       }
     },
     description: "Schema para criação de uma nova conta"

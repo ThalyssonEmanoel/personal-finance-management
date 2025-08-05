@@ -3,12 +3,10 @@ import { prisma } from "../config/prismaClient.js";
 class AccountRepository {
 
   static async listAccounts(filtros, skip, take, order) {
-    const { userName, ...otherFilters } = filtros;
+    const { userId, ...otherFilters } = filtros;
     let where = { ...otherFilters };
-    if (userName) {
-      where.user = {
-        name: { contains: userName }
-      };
+    if (userId) {
+      where.userId = userId;
     }
     const result = await prisma.accounts.findMany({
       where,
@@ -33,7 +31,7 @@ class AccountRepository {
   static async contAccounts() {
     return await prisma.accounts.count();
   }
-
+  
   static async createAccount(accountData) {
     const { name, type, balance, icon, userId } = accountData;
     
@@ -71,26 +69,28 @@ class AccountRepository {
     });
   }
 
-  static async updateAccount(id, accountData) {
+  static async updateAccount(id, userId, accountData) {
     const existingAccount = await prisma.accounts.findUnique({
-      where: { id: parseInt(id) }
+      where: { id: parseInt(id), userId: parseInt(userId) },
     });
     if (!existingAccount) {
       throw { code: 404, message: "Conta não encontrada" };
     }
-    if (accountData.name && accountData.type && accountData.userId) {
-      const normalize = (str) => str.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+    if (accountData.name && accountData.type && userId) {
+      const normalize = (str) => str.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();//Talvez será melhor remover esse normalize, pois nem sempre funciona
       const normalizedNome = normalize(accountData.name);
+      const normalizedType = normalize(accountData.type);
       const existingAccounts = await prisma.accounts.findMany({
         where: {
+          name: accountData.name,
           type: accountData.type,
-          user: { id: accountData.userId },
+          user: { id: userId },
           NOT: { id: parseInt(id) }
         }
       });
-      const similar = existingAccounts.find(acc => normalize(acc.name) === normalizedNome);
+      const similar = existingAccounts.find(acc => normalize(acc.name) === normalizedNome && normalize(acc.type) === normalizedType);
       if (similar) {
-        throw { code: 409, message: "Já existe uma conta com nome semelhante para este usuário." };
+        throw { code: 409, message: "Já existe uma conta com nome e tipo iguais para este usuário." };
       }
     }
     const updateData = {};
@@ -98,7 +98,6 @@ class AccountRepository {
     if (accountData.type) updateData.type = accountData.type;
     if (accountData.balance !== undefined) updateData.balance = accountData.balance;
     if (accountData.icon !== undefined) updateData.icon = accountData.icon;
-    if (accountData.userId !== undefined) updateData.userId = accountData.userId;
     return await prisma.accounts.update({
       where: { id: parseInt(id) },
       data: updateData,
@@ -113,17 +112,36 @@ class AccountRepository {
     });
   }
 
-  static async deleteAccount(id) {
+  static async deleteAccount(id, userId) {
     const existingAccount = await prisma.accounts.findUnique({
-      where: { id: parseInt(id) }
+      where: { id: parseInt(id), userId: parseInt(userId) }
     });
+    
     if (!existingAccount) {
       throw { code: 404, message: "Conta não encontrada" };
     }
-    await prisma.accounts.delete({
-      where: { id: parseInt(id) }
-    });
-    return { message: "Conta deletada com sucesso" };
+
+    try {
+      // Usar transação para garantir consistência dos dados
+      await prisma.$transaction(async (prisma) => {
+        await prisma.transactions.deleteMany({
+          where: { accountId: parseInt(id) }
+        });
+
+        await prisma.accountPaymentMethods.deleteMany({
+          where: { accountId: parseInt(id) }
+        });
+
+        await prisma.accounts.delete({
+          where: { id: parseInt(id) }
+        });
+      });
+
+      return { message: "Conta e todos os dados relacionados foram deletados com sucesso" };
+    } catch (error) {
+      console.error("Erro ao deletar conta:", error);
+      throw error;
+    }
   }
 }
 

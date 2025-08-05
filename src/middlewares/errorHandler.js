@@ -20,6 +20,44 @@ function errorHandler(err, req, res, next) {
     });
   }
 
+  // Tratamento específico para erros do Multer, enche muito o saco
+  if (err.code && typeof err.code === 'string') {
+    let statusCode = 400;
+    let message = err.message;
+
+    switch (err.code) {
+      case 'LIMIT_FILE_SIZE':
+        message = 'Arquivo muito grande. Tamanho máximo permitido: 2MB';
+        break;
+      case 'LIMIT_FILE_COUNT':
+        message = 'Muitos arquivos enviados';
+        break;
+      case 'LIMIT_UNEXPECTED_FILE':
+        message = 'Campo de arquivo inesperado ou não permitido';
+        break;
+      case 'LIMIT_PART_COUNT':
+        message = 'Muitas partes no formulário';
+        break;
+      case 'LIMIT_FIELD_KEY':
+        message = 'Nome do campo muito longo';
+        break;
+      case 'LIMIT_FIELD_VALUE':
+        message = 'Valor do campo muito longo';
+        break;
+      case 'LIMIT_FIELD_COUNT':
+        message = 'Muitos campos no formulário';
+        break;
+      default:
+        message = err.message || 'Erro no upload do arquivo';
+    }
+
+    return res.status(statusCode).json({
+      error: true,
+      code: statusCode,
+      message: message
+    });
+  }
+
   if (err.code === 404) {
     return res.status(404).json(CommonResponse.notFound(err.message) ||  "Recurso não encontrado");
   }

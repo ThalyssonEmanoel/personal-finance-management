@@ -84,6 +84,49 @@ class ParameterGenerator {
     ];
   }
 
+  getQueryIdAndUserParameter(description = "ID do registro e ID do usuário") {
+    return [
+      {
+        name: "id",
+        in: "query",
+        required: true,
+        schema: {
+          type: "integer",
+          minimum: 1
+        },
+        description: description,
+        example: 1
+      },
+      {
+        name: "userId",
+        in: "query",
+        required: true,
+        schema: {
+          type: "integer",
+          minimum: 1
+        },
+        description: "ID do usuário dono do registro",
+        example: 1
+      }
+    ];
+  }
+
+  getQueryUserParameter(description = "ID do usuário") {
+    return [
+      {
+        name: "userId",
+        in: "query",
+        required: true,
+        schema: {
+          type: "integer",
+          minimum: 1
+        },
+        description: description,
+        example: 1
+      }
+    ];
+  }
+
   /**
    * @getAllParameters Gera todos os parâmetros (paginação + filtros) para um model
    */
@@ -125,6 +168,60 @@ class ParameterGenerator {
       parameters = [...filterParams, ...extraParameters];
     } else {
       parameters = filterParams;
+    }
+
+    return parameters;
+  }
+
+  /**
+   * @getPathIdWithQueryParameters Gera parâmetro de ID no path + parâmetros de query customizados
+   */
+  getPathIdWithQueryParameters(modelName, config = {}) {
+    const {
+      idDescription = "ID único do registro",
+      excludeFields = [],
+      customDescriptions = {},
+      customValidations = {},
+      extraParameters = [],
+      includeFilters = true
+    } = config;
+
+    const parameters = [];
+
+    // Adiciona o parâmetro de ID no path
+    parameters.push({
+      name: "userId",
+      in: "path",
+      required: true,
+      schema: {
+        type: "integer",
+        minimum: 1
+      },
+      description: idDescription,
+      example: 1
+    });
+
+    // Se includeFilters for true, adiciona os parâmetros de query
+    if (includeFilters && modelName) {
+      const filterParams = this.getFilterParameters(modelName, excludeFields);
+
+      // Aplicar customizações nos parâmetros de filtro
+      filterParams.forEach(param => {
+        if (customDescriptions[param.name]) {
+          param.description = customDescriptions[param.name];
+        }
+
+        if (customValidations[param.name]) {
+          param.schema = { ...param.schema, ...customValidations[param.name] };
+        }
+      });
+
+      parameters.push(...filterParams);
+    }
+
+    // Adiciona parâmetros extras manualmente
+    if (Array.isArray(extraParameters) && extraParameters.length > 0) {
+      parameters.push(...extraParameters);
     }
 
     return parameters;

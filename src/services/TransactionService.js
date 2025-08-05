@@ -1,5 +1,6 @@
 import TransactionRepository from '../repositories/TransactionRepository.js';
 import TransactionSchemas from '../schemas/TransactionSchemas.js';
+import AccountSchemas from '../schemas/AccountsSchemas.js';
 
 class TransactionService {
   static async listTransactions(filtros, order = 'asc') {
@@ -31,11 +32,12 @@ class TransactionService {
     return newTransaction;
   }
 
-  static async updateTransaction(id, transactionData) {
+  static async updateTransaction(id, userId, transactionData) {
     const validId = TransactionSchemas.transactionIdParam.parse({ id });
+    const validUserId = AccountSchemas.userIdParam.parse({ userId });
     const validTransactionData = TransactionSchemas.updateTransaction.parse(transactionData);
-    
-    const updatedTransaction = await TransactionRepository.updateTransaction(validId.id, validTransactionData);
+
+    const updatedTransaction = await TransactionRepository.updateTransaction(validId.id, validUserId.userId, validTransactionData);
     if (!updatedTransaction) {
       throw { code: 404 };
     }

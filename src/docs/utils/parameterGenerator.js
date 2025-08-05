@@ -26,12 +26,24 @@ class SwaggerGenerator {
     return this.parameterGenerator.getPathIdParameter(description);
   }
 
+  getQueryIdAndUserParameter(description = "ID do registro e ID do usuário") {
+    return this.parameterGenerator.getQueryIdAndUserParameter(description);
+  }
+
+  getQueryUserParameter(description = "ID do usuário") {
+    return this.parameterGenerator.getQueryUserParameter(description);
+  }
+
   getAllParameters(modelName, excludeFields = []) {
     return this.parameterGenerator.getAllParameters(modelName, excludeFields);
   }
 
   getCustomParameters(modelName, config = {}) {
     return this.parameterGenerator.getCustomParameters(modelName, config);
+  }
+
+  getPathIdWithQueryParameters(modelName, config = {}) {
+    return this.parameterGenerator.getPathIdWithQueryParameters(modelName, config);
   }
 
   getResponseSchema(modelName, config = {}) {

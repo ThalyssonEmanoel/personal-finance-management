@@ -5,6 +5,7 @@ class HttpStatusCodes {
 
   static BAD_REQUEST = { code: 400, message: 'Requisição com sintaxe incorreta' };
   static UNAUTHORIZED = { code: 401, message: 'Não autorizado' };
+  static FORBIDDEN = { code: 403, message: 'Acesso proibido' };
   static NOT_FOUND = { code: 404, message: 'Recurso não encontrado' };
   static CONFLICT = { code: 409, message: 'Conflito com o estado atual do servidor' };
   // static IM_A_TEAPOT = { code: 418, message: 'Eu sou um bule de chá' };

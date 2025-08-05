@@ -98,7 +98,7 @@ class TransactionRepository {
   }
 
   static async createTransaction(transactionData) {
-    const { accountId, paymentMethodId, userId, ...otherData } = transactionData;
+    const { accountId, paymentMethodId, userId, release_date, ...otherData } = transactionData;
     
     // Verificar se a conta existe e pertence ao usuário
     const account = await prisma.accounts.findFirst({
@@ -119,9 +119,16 @@ class TransactionRepository {
       throw { code: 400, message: "Método de pagamento não é compatível com a conta selecionada" };
     }
 
+    // Converter a data para objeto Date se for uma string
+    let parsedReleaseDate = release_date;
+    if (typeof release_date === 'string') {
+      parsedReleaseDate = new Date(release_date + 'T00:00:00.000Z');
+    }
+
     return await prisma.transactions.create({
       data: {
         ...otherData,
+        release_date: parsedReleaseDate,
         account: { connect: { id: accountId } },
         paymentMethod: { connect: { id: paymentMethodId } },
         user: { connect: { id: userId } }
@@ -157,9 +164,9 @@ class TransactionRepository {
     });
   }
 
-  static async updateTransaction(id, transactionData) {
-    const { accountId, paymentMethodId, userId, ...otherData } = transactionData;
-    
+  static async updateTransaction(id, userId, transactionData) {
+    const { accountId, paymentMethodId, release_date, ...otherData } = transactionData;
+
     // Verificar se a transação existe
     const existingTransaction = await prisma.transactions.findUnique({
       where: { id: parseInt(id) }
@@ -184,7 +191,15 @@ class TransactionRepository {
     const updateData = { ...otherData };
     if (accountId) updateData.accountId = accountId;
     if (paymentMethodId) updateData.paymentMethodId = paymentMethodId;
-    if (userId) updateData.userId = userId;
+    
+    // Converter a data para objeto Date se for uma string
+    if (release_date) {
+      if (typeof release_date === 'string') {
+        updateData.release_date = new Date(release_date + 'T00:00:00.000Z');
+      } else {
+        updateData.release_date = release_date;
+      }
+    }
 
     return await prisma.transactions.update({
       where: { id: parseInt(id) },

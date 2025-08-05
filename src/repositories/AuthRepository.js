@@ -13,8 +13,8 @@ class AuthRepository {
         message: "Email ou senha inválidos.",
       };
     }
-    const { password: _, refreshToken: s, ...usuarioSemSenha } = usuario;
-    
+    const { password: _, refreshToken: s, isAdmin, ...usuarioSemSenha } = usuario;
+
     return usuarioSemSenha;
   }
 
@@ -45,7 +45,7 @@ class AuthRepository {
     return { message: "Refresh token invalidado com sucesso" };
   }
   static async removeTokens(userId) {
-    await UserRepository.invalidateRefreshToken(userId);
+    await this.invalidateRefreshToken(userId);
   }
 
   static async validateRefreshToken(userId, refreshToken) {
@@ -53,7 +53,7 @@ class AuthRepository {
       where: { id: parseInt(userId) },
       select: {
         id: true,
-        Nome: true,
+        name: true,
         email: true,
         refreshToken: true
       }
