@@ -10,8 +10,8 @@ const router = e.Router();
 
 router
 .get("/account/:id", authMiddleware, adminOrOwnerMiddleware.verifyWithUserId, AccountController.listAllAccountsUser, errorHandler)
-.post("/account", authMiddleware, adminOrOwnerMiddleware.verifyWithUserId, upload.single("Icon"), AccountController.registerAccount, errorHandler)
-.patch( "/account/:id", authMiddleware, adminOrOwnerMiddleware.verifyWithUserId, upload.single("Icon"), AccountController.updateAccount, errorHandler )
+.post("/account", authMiddleware, adminOrOwnerMiddleware.verifyWithUserId, upload.single("icon"), AccountController.registerAccount, errorHandler)
+.patch( "/account/:id", authMiddleware, adminOrOwnerMiddleware.verifyWithUserId, upload.single("icon"), AccountController.updateAccount, errorHandler )
 .delete("/account/:id", authMiddleware, adminOrOwnerMiddleware.verifyWithUserId, AccountController.deleteAccount, errorHandler)
 
 //Only admins 

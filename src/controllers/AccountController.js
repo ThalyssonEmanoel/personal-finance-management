@@ -56,7 +56,7 @@ class AccountController {
       const { name, type, balance } = req.body;
       let icon = req.body.icon;
       if (req.file) {
-        icon = `uploads/avatares/${req.file.filename}`;
+        icon = `uploads/${req.file.filename}`;
       }
       const accountData = { name, type, balance, icon};
       const updatedAccount = await AccountService.updateAccount(id, userId, accountData);
