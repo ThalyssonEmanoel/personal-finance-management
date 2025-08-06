@@ -264,10 +264,6 @@ async function seedDatabase() {
         ? faker.number.int({ min: 2, max: 12 })
         : null;
 
-      const billing_day = recurring
-        ? faker.number.int({ min: 1, max: 28 })
-        : null;
-
       // Selecionar um método de pagamento compatível com a conta
       const randomAccountPaymentMethod = faker.helpers.arrayElement(accountPaymentMethods);
 
@@ -277,7 +273,6 @@ async function seedDatabase() {
         category,
         value,
         release_date,
-        billing_day,
         number_installments,
         current_installment,
         recurring,

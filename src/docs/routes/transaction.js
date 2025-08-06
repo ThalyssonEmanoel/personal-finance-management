@@ -1,5 +1,5 @@
 import commonResponses from "../schemas/swaggerCommonResponses.js";
-import parameterGenerator from "../utils/parameterGenerator.js";
+import parameterGenerator from "../utils/simpleParameterGenerator.js";
 
 const transactionRoutes = {
   "/transactions/admin": {
@@ -23,7 +23,7 @@ const transactionRoutes = {
       `,
       security: [{ bearerAuth: [] }],
       parameters: parameterGenerator.getCustomParameters('Transactions', {
-        excludeFields: ['account', 'paymentMethod', 'user', 'Date', 'description'],
+        excludeFields: ['account', 'paymentMethod', 'user', 'description']
       }),
       responses: {
         200: commonResponses[200]("#/components/schemas/TransactionResponse"),
@@ -56,15 +56,14 @@ const transactionRoutes = {
       `,
       security: [{ bearerAuth: [] }],
       parameters: parameterGenerator.getCustomParameters('Transactions', {
-        excludeFields: ['account', 'paymentMethod', 'user', 'Date', 'description'],
+        excludeFields: ['account', 'paymentMethod', 'user', 'description'],
         customDescriptions: {
           type: "Filter by transaction type (expense or income)",
-          name: "Filter by transaction name",
+          name: "Filter by transaction name", 
           category: "Filter by transaction category",
           value: "Filter by transaction amount",
           value_installment: "Filter by original installment total value",
           release_date: "Filter by release date (YYYY-MM-DD format)",
-          billing_day: "Filter by billing day",
           number_installments: "Filter by number of installments",
           current_installment: "Filter by current installment number",
           recurring: "Filter by recurring transactions (true/false)",
@@ -86,22 +85,27 @@ const transactionRoutes = {
       summary: "Register a new transaction",
       description: `
         #### Use Case
-        Allows the system to register a new transaction for a user.
+        Allows the system to register a new transaction for a user with automatic installment calculation.
 
         #### Business Rule
-        Creates a new transaction with the provided information.
+        Creates a new transaction with the provided information. For installment transactions, the system automatically calculates individual installment values and provides a preview.
 
         #### Business Rules Involved
         - All required fields must be provided.
         - The account must exist and belong to the user.
-        - The payment method must exist.
+        - The payment method must exist and be compatible with the account.
         - The user must exist.
         - Amount must be positive.
         - Payment date must be valid.
-        - For installment transactions, value_installment stores the original total value.
+        - For installment transactions:
+          * Only provide total value and number of installments
+          * System calculates individual installment values automatically
+          * First installment is always set as current_installment = 1
+          * Last installment gets any remainder to ensure exact total
+          * Response includes installmentPreview with calculated values
 
         #### Expected Result
-        Returns the created transaction data and status 201.
+        Returns the created transaction data and status 201. For installment transactions, includes a preview showing how the total value was divided across installments.
       `,
       security: [{ bearerAuth: [] }],
       parameters: [

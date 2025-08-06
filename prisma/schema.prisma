@@ -61,9 +61,8 @@ model Transactions {
   name                String          @db.VarChar(255)
   category            String          @db.VarChar(100)
   value               Decimal         @db.Decimal(10, 2)
-  value_installment   Decimal?        @db.Decimal(10, 2) // Valor total original (antes da divisão)
+  value_installment   Decimal?        @db.Decimal(10, 2)
   release_date        DateTime        @db.Date
-  billing_day         Int?
   number_installments Int?
   current_installment Int?
   description         String?         @db.Text

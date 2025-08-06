@@ -5,6 +5,49 @@ import AccountRepository from '../repositories/AccountRepository.js';
 import Decimal from "decimal.js";
 
 class TransactionService {
+  /**
+   * Calcula os valores das parcelas para transações parceladas
+   * @private
+   */
+  static _calculateInstallmentValues(validTransaction) {
+    if (validTransaction.number_installments && validTransaction.number_installments > 1) {
+      const totalValue = new Decimal(validTransaction.value);
+      const numberOfInstallments = validTransaction.number_installments;
+      const baseInstallmentValue = totalValue.dividedBy(numberOfInstallments);
+      const standardInstallmentValue = baseInstallmentValue.toDecimalPlaces(2, Decimal.ROUND_DOWN);
+      
+      validTransaction.value_installment = standardInstallmentValue.toNumber();
+
+      if (validTransaction.current_installment === undefined || validTransaction.current_installment === null) {
+        validTransaction.current_installment = 1;
+      }
+    }
+  }
+
+  /**
+   * Verifica se a transação deve atualizar o saldo da conta
+   * @private
+   */
+  static _shouldUpdateAccountBalance(validTransaction) {
+    return (validTransaction.type === "expense" || validTransaction.type === "income") &&
+           validTransaction.accountId && validTransaction.userId;
+  }
+
+  /**
+   * Atualiza o saldo da conta baseado na transação
+   * @private
+   */
+  static async _updateAccountBalanceForTransaction(validTransaction) {
+    if (this._shouldUpdateAccountBalance(validTransaction)) {
+      await this.updateAccountBalance({
+        accountId: validTransaction.accountId,
+        userId: validTransaction.userId,
+        amount: validTransaction.value_installment ?? validTransaction.value,
+        operation: validTransaction.type === "income" ? 'add' : 'subtract'
+      });
+    }
+  }
+
   static async listTransactions(filtros, order = 'asc') {
     const validFiltros = TransactionSchemas.listTransaction.parse(filtros);
     const page = validFiltros.page ?? 1;
@@ -24,88 +67,35 @@ class TransactionService {
     return { transactions, total, take };
   }
 
+  /**
+   * 
+   * @createTransaction 
+   * Implementei os métodos _calculateInstallmentValues, _updateAccountBalanceForTransaction e _shouldUpdateAccountBalance
+   * para seguir o conceito de Single Responsibility Principle (SRP) e manter o código mais modular e testável. PORQUE TESTAR ISSO ESTÁ SENDO UMA CHATICE.
+   */
   static async createTransaction(transaction) {
     const validTransaction = TransactionSchemas.createTransaction.parse(transaction);
 
-    if (validTransaction.number_installments && validTransaction.number_installments > 1) {
-      if (validTransaction.value_installment === null || validTransaction.value_installment === undefined || validTransaction.value_installment <= 0) {
-        throw { code: 400, message: "value_installment é obrigatório para transações parceladas e deve ser maior que zero" };
-      }
-      
-      if (!validTransaction.current_installment) {
-        validTransaction.current_installment = 1;
-      }
-    }
+    // Calcular valores das parcelas se necessário
+    this._calculateInstallmentValues(validTransaction);
 
-    /** Esse if é o mais simples, pois não envolve parcelas e nem recorrência.
-     * Basicamente o que ele faz é verificar se a transação é uma despesa simples,
-     * caso seja, irá atualizar o saldo da conta correspondente.
-     * Busca a conta pelo ID e atualiza o saldo subtraindo o valor da transação utiliznado a biblioteca Decimal.js que é mais precisa para cálculos financeiros,
-     * por que ela evita problemas de precisão que podem ocorrer com números de ponto flutuante em JavaScript.
-     */
-    if (validTransaction.type === "expense" && validTransaction.number_installments === undefined &&
-      validTransaction.current_installment === undefined) {
+    // Atualizar saldo da conta se necessário
+    await this._updateAccountBalanceForTransaction(validTransaction);
 
-      const id = validTransaction.accountId;
-      const userId = validTransaction.userId;
-      const accounts = await AccountRepository.listAccounts({ id, userId }, 0, 1, 'asc');
-
-      const account = accounts[0];
-      const balance = new Decimal(account.balance);
-      const spent = new Decimal(validTransaction.value);
-
-      let newBalance = balance.minus(spent);
-      await AccountRepository.updateAccount(id, userId, { balance: newBalance.toNumber() });
-
-    } else if (validTransaction.type === "income" && validTransaction.number_installments === undefined &&
-      validTransaction.current_installment === undefined) {
-
-      const id = validTransaction.accountId;
-      const userId = validTransaction.userId;
-      const accounts = await AccountRepository.listAccounts({ id, userId }, 0, 1, 'asc');
-
-      const account = accounts[0];
-      const balance = new Decimal(account.balance);
-      const income = new Decimal(validTransaction.value);
-
-      let newBalance = balance.plus(income);
-      await AccountRepository.updateAccount(id, userId, { balance: newBalance.toNumber() });
-    } else if (validTransaction.type === "expense" && validTransaction.number_installments > 0 &&
-      validTransaction.current_installment > 0) {
-      
-      // Lógica para despesas parceladas (subtrair o valor da parcela atual)
-      const id = validTransaction.accountId;
-      const userId = validTransaction.userId;
-      const accounts = await AccountRepository.listAccounts({ id, userId }, 0, 1, 'asc');
-
-      const account = accounts[0];
-      const balance = new Decimal(account.balance);
-      const spent = new Decimal(validTransaction.value_installment); 
-
-      let newBalance = balance.minus(spent);
-      await AccountRepository.updateAccount(id, userId, { balance: newBalance.toNumber() });
-
-    } else if (validTransaction.type === "income" && validTransaction.number_installments > 0 &&
-      validTransaction.current_installment > 0) {
-      
-      // Lógica para receitas parceladas (adicionar o valor da parcela atual)
-      const id = validTransaction.accountId;
-      const userId = validTransaction.userId;
-      const accounts = await AccountRepository.listAccounts({ id, userId }, 0, 1, 'asc');
-
-      const account = accounts[0];
-      const balance = new Decimal(account.balance);
-      const income = new Decimal(validTransaction.value_installment); 
-
-      let newBalance = balance.plus(income);
-      await AccountRepository.updateAccount(id, userId, { balance: newBalance.toNumber() });
-    }
-
+    // Criar a transação no banco de dados
     const newTransaction = await TransactionRepository.createTransaction(validTransaction);
     if (!newTransaction) {
       throw { code: 404 };
     }
     return newTransaction;
+  }
+
+  static async updateAccountBalance({ accountId, userId, amount, operation }) {
+    const accounts = await AccountRepository.listAccounts({ id: accountId, userId }, 0, 1, 'asc');
+    const account = accounts[0];
+    const balance = new Decimal(account.balance);
+    const newBalance = operation === 'add' ? balance.plus(amount) : balance.minus(amount);
+    await AccountRepository.updateAccount(accountId, userId, { balance: newBalance.toNumber() });
   }
 
   static async updateTransaction(id, userId, transactionData) {
@@ -166,7 +156,7 @@ class TransactionService {
       const transactionDay = releaseDate.getUTCDate();// Usar UTC para evitar problemas de fuso horário
       const transactionMonth = releaseDate.getUTCMonth() + 1;
       const transactionYear = releaseDate.getUTCFullYear();
-      
+
       // Verificar se hoje é o dia da recorrência E se a transação é do mês anterior do mesmo ano
       if (transactionDay === currentDay &&
         transactionMonth === previousMonth &&
@@ -197,9 +187,6 @@ class TransactionService {
             paymentMethodId: transaction.paymentMethodId,
             userId: transaction.userId
           };
-          if (transaction.billing_day !== null && transaction.billing_day !== undefined) {
-            newTransactionData.billing_day = transaction.billing_day;
-          }
           if (transaction.number_installments !== null && transaction.number_installments !== undefined) {
             newTransactionData.number_installments = transaction.number_installments;
           }
@@ -263,7 +250,7 @@ class TransactionService {
         // Dupla verificação: garantir que ainda há parcelas a serem processadas
         if (transaction.current_installment < transaction.number_installments) {
           const nextInstallment = transaction.current_installment + 1;
-          
+
           // Tripla verificação: garantir que a próxima parcela não excede o máximo
           if (nextInstallment > transaction.number_installments) {
             console.log(`[PARCELA] Ignorando transação ${transaction.name}: próxima parcela (${nextInstallment}) excederia o máximo (${transaction.number_installments})`);
@@ -274,7 +261,7 @@ class TransactionService {
             transaction.userId,
             transaction.name,
             transaction.category,
-            transaction.value_installment, 
+            transaction.value,
             transaction.type,
             transaction.accountId,
             transaction.paymentMethodId,
@@ -285,44 +272,41 @@ class TransactionService {
           );
 
           if (!existsInCurrentMonth) {
-            let installmentValue = transaction.value_installment; 
-            
-            // Se é a última parcela e temos o valor total, ajustar com possível resto
+            let installmentValue = transaction.value_installment;
+
+            // Sempre recalcular se é a última parcela para garantir que o total seja exato
             if (nextInstallment === transaction.number_installments && transaction.value) {
               const totalValue = new Decimal(transaction.value);
-              const currentInstallmentValue = new Decimal(transaction.value_installment); 
-              
+              const currentInstallmentValue = new Decimal(transaction.value_installment);
+
               // Calcular quanto já foi pago nas parcelas anteriores
               const previousInstallments = new Decimal(nextInstallment - 1);
               const paidSoFar = currentInstallmentValue.mul(previousInstallments);
-              
+
               // A última parcela é o que resta
               const lastInstallmentValue = totalValue.minus(paidSoFar);
               installmentValue = lastInstallmentValue.toNumber();
-              
-              console.log(`[PARCELA] Última parcela ${nextInstallment}: ajustando valor para R$ ${installmentValue} (resto: R$ ${lastInstallmentValue.minus(currentInstallmentValue).toNumber()})`);
+
+              console.log(`[PARCELA] Última parcela ${nextInstallment}/${transaction.number_installments}: ajustando valor para R$ ${installmentValue} (resto: R$ ${lastInstallmentValue.minus(currentInstallmentValue).toNumber()})`);
             } else {
-              console.log(`[PARCELA] Parcela ${nextInstallment}: valor padrão R$ ${installmentValue}`);
+              console.log(`[PARCELA] Parcela ${nextInstallment}/${transaction.number_installments}: valor padrão R$ ${installmentValue}`);
             }
 
             const newInstallmentData = {
               type: transaction.type,
               name: transaction.name,
               category: transaction.category,
-              value: transaction.value, 
-              value_installment: installmentValue, 
+              value: transaction.value,
+              value_installment: installmentValue,
               release_date: `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`,
               number_installments: transaction.number_installments,
               current_installment: nextInstallment,
-              recurring: false, 
+              recurring: false,
               accountId: transaction.accountId,
               paymentMethodId: transaction.paymentMethodId,
               userId: transaction.userId
             };
 
-            if (transaction.billing_day !== null && transaction.billing_day !== undefined) {
-              newInstallmentData.billing_day = transaction.billing_day;
-            }
             if (transaction.description !== null && transaction.description !== undefined) {
               newInstallmentData.description = transaction.description;
             }

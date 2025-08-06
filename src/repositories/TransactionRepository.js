@@ -38,7 +38,6 @@ class TransactionRepository {
         value: true,
         value_installment: true, 
         release_date: true,
-        billing_day: true,
         number_installments: true,
         current_installment: true,
         recurring: true,
@@ -142,7 +141,6 @@ class TransactionRepository {
         value: true,
         value_installment: true, 
         release_date: true,
-        billing_day: true,
         number_installments: true,
         current_installment: true,
         recurring: true,
@@ -213,7 +211,6 @@ class TransactionRepository {
         category: true,
         value: true,
         release_date: true,
-        billing_day: true,
         number_installments: true,
         current_installment: true,
         recurring: true,
@@ -280,7 +277,6 @@ class TransactionRepository {
         category: true,
         value: true,
         release_date: true,
-        billing_day: true,
         recurring: true,
         accountId: true,
         paymentMethodId: true,
@@ -337,7 +333,6 @@ class TransactionRepository {
         value: true,
         value_installment: true,
         release_date: true,
-        billing_day: true,
         number_installments: true,
         current_installment: true,
         recurring: true,
@@ -358,7 +353,10 @@ class TransactionRepository {
    * Verifica se já existe uma parcela específica com os mesmos dados para o mês/ano especificado
    */
   static async checkInstallmentExistsInMonth(userId, name, category, value, type, accountId, paymentMethodId, number_installments, current_installment, month, year) {
-    // Criar o range de datas para o mês especificado
+    // Criar o range de datas para o mês especificado, isso funciona da seguinte maneira:
+    // - startDate: primeiro dia do mês (00:00:00.000)
+    // - endDate: último dia do mês (23:59:59.999)
+    // Isso garante que todas as transações do mês sejam verificadas corretamente.
     const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
     const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
 
