@@ -4,24 +4,24 @@ class TransactionRepository {
 
   static async listTransactions(filters, skip, take, order) {
     let where = { ...filters };
-    
+
     // Esse if serve para filtrar da seguinte maneira, busca todas as transações apartir do dia informado até o final do mês escolhido
     if (filters.release_date) {
       const inputDate = new Date(filters.release_date + 'T00:00:00.000Z');
       const year = inputDate.getUTCFullYear();
       const month = inputDate.getUTCMonth(); // conta a partir de 0, então janeiro é 0, fevereiro é 1, etc.
       const day = inputDate.getUTCDate();
-      
+
       // Aqui é criado um range de datas para o filtro - usando UTC
       const startDate = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
-      const endDate = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999)); 
-  
+      const endDate = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
+
       delete where.release_date;
       where.release_date = {
-        gte: startDate, 
-        lte: endDate    
+        gte: startDate,
+        lte: endDate
       };
-      
+
       console.log('Final where condition:', JSON.stringify(where, null, 2));
     }
 
@@ -36,8 +36,8 @@ class TransactionRepository {
         name: true,
         category: true,
         value: true,
+        value_installment: true, 
         release_date: true,
-        billing_day: true,
         number_installments: true,
         current_installment: true,
         recurring: true,
@@ -65,7 +65,7 @@ class TransactionRepository {
         }
       },
     });
-    
+
     if (result.length === 0) {
       throw { code: 404, message: "No transactions found" };
     }
@@ -83,23 +83,23 @@ class TransactionRepository {
       const year = inputDate.getUTCFullYear();
       const month = inputDate.getUTCMonth();
       const day = inputDate.getUTCDate();
-      
+
       const startDate = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
       const endDate = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
       // Remove release_date do where original e substitui pelo range
       delete where.release_date;
       where.release_date = {
-        gte: startDate, 
-        lte: endDate    
+        gte: startDate,
+        lte: endDate
       };
     }
-    
+
     return await prisma.transactions.count({ where });
   }
 
   static async createTransaction(transactionData) {
     const { accountId, paymentMethodId, userId, release_date, ...otherData } = transactionData;
-    
+
     // Verificar se a conta existe e pertence ao usuário
     const account = await prisma.accounts.findFirst({
       where: { id: accountId, userId: userId }
@@ -110,9 +110,9 @@ class TransactionRepository {
 
     // Verificar se o método de pagamento é compatível com a conta
     const accountPaymentMethod = await prisma.accountPaymentMethods.findFirst({
-      where: { 
-        accountId: accountId, 
-        paymentMethodId: paymentMethodId 
+      where: {
+        accountId: accountId,
+        paymentMethodId: paymentMethodId
       }
     });
     if (!accountPaymentMethod) {
@@ -139,8 +139,8 @@ class TransactionRepository {
         name: true,
         category: true,
         value: true,
+        value_installment: true, 
         release_date: true,
-        billing_day: true,
         number_installments: true,
         current_installment: true,
         recurring: true,
@@ -178,9 +178,9 @@ class TransactionRepository {
     // Se a conta ou método de pagamento estão sendo alterados, validar compatibilidade
     if (accountId && paymentMethodId) {
       const accountPaymentMethod = await prisma.accountPaymentMethods.findFirst({
-        where: { 
-          accountId: accountId, 
-          paymentMethodId: paymentMethodId 
+        where: {
+          accountId: accountId,
+          paymentMethodId: paymentMethodId
         }
       });
       if (!accountPaymentMethod) {
@@ -191,7 +191,7 @@ class TransactionRepository {
     const updateData = { ...otherData };
     if (accountId) updateData.accountId = accountId;
     if (paymentMethodId) updateData.paymentMethodId = paymentMethodId;
-    
+
     // Converter a data para objeto Date se for uma string
     if (release_date) {
       if (typeof release_date === 'string') {
@@ -211,7 +211,6 @@ class TransactionRepository {
         category: true,
         value: true,
         release_date: true,
-        billing_day: true,
         number_installments: true,
         current_installment: true,
         recurring: true,
@@ -261,6 +260,125 @@ class TransactionRepository {
         }
       }
     });
+  }
+
+  /**
+   * Busca todas as transações marcadas como recorrentes
+   */
+  static async getRecurringTransactions() {
+    return await prisma.transactions.findMany({
+      where: {
+        recurring: true
+      },
+      select: {
+        id: true,
+        type: true,
+        name: true,
+        category: true,
+        value: true,
+        release_date: true,
+        recurring: true,
+        accountId: true,
+        paymentMethodId: true,
+        userId: true
+      }
+    });
+  }
+
+  /**
+   * Verifica se já existe uma transação com os mesmos dados para o mês/ano especificado
+   */
+  static async checkTransactionExistsInMonth(userId, name, category, value, type, accountId, paymentMethodId, month, year) {
+    // Criar o range de datas para o mês especificado
+    const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0)); // mês - 1 porque Date usa 0-11
+    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)); // último dia do mês
+
+    const existingTransaction = await prisma.transactions.findFirst({
+      where: {
+        userId: userId,
+        name: name,
+        category: category,
+        value: value,
+        type: type,
+        accountId: accountId,
+        paymentMethodId: paymentMethodId,
+        release_date: {
+          gte: startDate,
+          lte: endDate
+        }
+      }
+    });
+
+    return existingTransaction !== null;
+  }
+
+  /**
+   * Busca todas as transações parceladas que ainda não foram finalizadas
+   */
+  static async getInstallmentTransactions() {
+    const transactions = await prisma.transactions.findMany({
+      where: {
+        number_installments: {
+          not: null
+        },
+        current_installment: {
+          not: null
+        }
+      },
+      select: {
+        id: true,
+        type: true,
+        name: true,
+        category: true,
+        value: true,
+        value_installment: true,
+        release_date: true,
+        number_installments: true,
+        current_installment: true,
+        recurring: true,
+        description: true,
+        accountId: true,
+        paymentMethodId: true,
+        userId: true
+      }
+    });
+
+    // Filtrar no JavaScript para garantir que current_installment < number_installments
+    return transactions.filter(transaction => 
+      transaction.current_installment < transaction.number_installments
+    );
+  }
+
+  /**
+   * Verifica se já existe uma parcela específica com os mesmos dados para o mês/ano especificado
+   */
+  static async checkInstallmentExistsInMonth(userId, name, category, value, type, accountId, paymentMethodId, number_installments, current_installment, month, year) {
+    // Criar o range de datas para o mês especificado, isso funciona da seguinte maneira:
+    // - startDate: primeiro dia do mês (00:00:00.000)
+    // - endDate: último dia do mês (23:59:59.999)
+    // Isso garante que todas as transações do mês sejam verificadas corretamente.
+    const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+
+    const existingInstallment = await prisma.transactions.findFirst({
+      where: {
+        userId: userId,
+        name: name,
+        category: category,
+        value: value,
+        type: type,
+        accountId: accountId,
+        paymentMethodId: paymentMethodId,
+        number_installments: number_installments,
+        current_installment: current_installment,
+        release_date: {
+          gte: startDate,
+          lte: endDate
+        }
+      }
+    });
+
+    return existingInstallment !== null;
   }
 }
 

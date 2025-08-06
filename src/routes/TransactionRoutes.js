@@ -12,6 +12,7 @@ router
   .post("/transactions", authMiddleware, adminOrOwnerMiddleware.verifyWithUserId, TransactionController.createTransaction, errorHandler)
   .patch("/transactions/:id", authMiddleware, adminOrOwnerMiddleware.verifyWithUserId, TransactionController.updateTransaction, errorHandler)
   .delete("/transactions/:id", authMiddleware, adminOrOwnerMiddleware.verifyWithUserId, TransactionController.deleteTransaction, errorHandler)
+  .get("/transactions/payment-methods", authMiddleware, TransactionController.getCompatiblePaymentMethods, errorHandler)
   //Admin
   .get("/transactions/admin", authMiddleware, adminOnlyMiddleware, TransactionController.listAllTransactionsAdmin, errorHandler)
 export default router;
