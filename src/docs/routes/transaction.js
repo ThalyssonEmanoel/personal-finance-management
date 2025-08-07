@@ -1,6 +1,6 @@
 import { requestTransactionGet } from "../schemas/requestMold/TransactionRequest.js";
 import { requestGetId, requestUserId, requestWithIdAndUserId } from "../schemas/requestMold/UniversalRequest.js";
-import commonResponses from "../schemas/swaggerCommonResponses.js";
+import commonResponses from "../utils/swaggerCommonResponses.js";
 
 const transactionRoutes = {
   "/transactions/admin": {

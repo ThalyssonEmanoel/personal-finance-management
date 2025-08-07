@@ -7,22 +7,23 @@ import paymentMethodsPaths from "../routes/paymentMethods.js";
 import accountPaymentMethodsPaths from "../routes/accountPaymentMethods.js";
 import bankTransferPaths from "../routes/bankTransfer.js";
 
-//schemas
-import paymentMethodsSchema from "../schemas/paymentMethodsSchema.js";
-import accountPaymentMethodsSchema from "../schemas/accountPaymentMethodsSchema.js";
-import bankTransferSchema from "../schemas/bankTransferSchema.js";
-
 //request schemas
 import AccountRequest from "../schemas/requestMold/AccountRequest.js";
 import AuthRequest from "../schemas/requestMold/AuthRequest.js";
 import UserRequest from "../schemas/requestMold/UserRequest.js";
 import TransactionRequest from "../schemas/requestMold/TransactionRequest.js";
+import PaymentMethodsRequest from "../schemas/requestMold/PaymentMethodsRequest.js";
+import AccountPaymentMethodsRequest from "../schemas/requestMold/AccountPaymentMethodsRequest.js";
+import BankTransferRequest from "../schemas/requestMold/BankTransferRequest.js";
 
 //response schemas
 import AccountResponse from "../schemas/responseMold/AccountResponse.js";
 import AuthResponse from "../schemas/responseMold/AuthResponse.js";
 import UserResponse from "../schemas/responseMold/UserResponse.js";
 import TransactionResponse from "../schemas/responseMold/TransactionResponse.js";
+import PaymentMethodsResponse from "../schemas/responseMold/PaymentMethodsResponse.js";
+import AccountPaymentMethodsResponse from "../schemas/responseMold/AccountPaymentMethodsResponse.js";
+import BankTransferResponse from "../schemas/responseMold/BankTransferResponse.js";
 
 // Function to define the server URLs depending on the environment
 const getServersInCorrectOrder = () => {
@@ -92,20 +93,23 @@ const getSwaggerOptions = () => {
           }
         },
         schemas: {
-          ...paymentMethodsSchema,
-          ...accountPaymentMethodsSchema,
-          ...bankTransferSchema,
           requestMold: {
             ...AuthRequest,
             ...UserRequest,
             ...AccountRequest,
-            ...TransactionRequest
+            ...TransactionRequest,
+            ...PaymentMethodsRequest,
+            ...AccountPaymentMethodsRequest,
+            ...BankTransferRequest
           },
           responseMold: {
             ...AuthResponse,
             ...UserResponse,
             ...AccountResponse,
-            ...TransactionResponse
+            ...TransactionResponse,
+            ...PaymentMethodsResponse,
+            ...AccountPaymentMethodsResponse,
+            ...BankTransferResponse
           }
         }
       },

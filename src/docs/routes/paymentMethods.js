@@ -1,4 +1,4 @@
-import commonResponses from "../schemas/swaggerCommonResponses.js";
+import commonResponses from "../utils/swaggerCommonResponses.js";
 
 const paymentMethodsRoutes = {
   "/payment-methods": {
@@ -47,10 +47,153 @@ const paymentMethodsRoutes = {
         }
       ],
       responses: {
-        200: commonResponses[200]("#/components/schemas/PaymentMethodsResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/PaymentMethodsResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         404: commonResponses[404](),
+        498: commonResponses[498](),
+        500: commonResponses[500]()
+      }
+    },
+    post: {
+      tags: ["Payment Methods"],
+      summary: "Cria um novo método de pagamento",
+      description: `
+        #### Caso de Uso
+        Permite criar um novo método de pagamento no sistema.
+
+        #### Regra de Negócio
+        O nome do método de pagamento deve ser único no sistema.
+
+        #### Resultado Esperado
+        Retorna o método de pagamento criado com seu ID.
+      `,
+      security: [{ bearerAuth: [] }],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/requestMold/CreatePaymentMethodRequest"
+            }
+          }
+        }
+      },
+      responses: {
+        201: commonResponses[201]("#/components/schemas/responseMold/CreatePaymentMethodResponse"),
+        400: commonResponses[400](),
+        401: commonResponses[401](),
+        409: commonResponses[409](),
+        498: commonResponses[498](),
+        500: commonResponses[500]()
+      }
+    }
+  },
+  "/payment-methods/{id}": {
+    get: {
+      tags: ["Payment Methods"],
+      summary: "Busca um método de pagamento por ID",
+      description: `
+        #### Caso de Uso
+        Permite buscar um método de pagamento específico por seu ID.
+
+        #### Regra de Negócio
+        Retorna informações detalhadas do método de pagamento incluindo contadores de uso.
+
+        #### Resultado Esperado
+        Retorna os dados do método de pagamento encontrado.
+      `,
+      security: [{ bearerAuth: [] }],
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          description: "ID do método de pagamento",
+          required: true,
+          schema: { type: "integer", minimum: 1 }
+        }
+      ],
+      responses: {
+        200: commonResponses[200]("#/components/schemas/responseMold/PaymentMethodResponseGet"),
+        400: commonResponses[400](),
+        401: commonResponses[401](),
+        404: commonResponses[404](),
+        498: commonResponses[498](),
+        500: commonResponses[500]()
+      }
+    },
+    put: {
+      tags: ["Payment Methods"],
+      summary: "Atualiza um método de pagamento",
+      description: `
+        #### Caso de Uso
+        Permite atualizar um método de pagamento existente.
+
+        #### Regra de Negócio
+        O nome do método de pagamento deve ser único no sistema.
+
+        #### Resultado Esperado
+        Retorna o método de pagamento atualizado.
+      `,
+      security: [{ bearerAuth: [] }],
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          description: "ID do método de pagamento",
+          required: true,
+          schema: { type: "integer", minimum: 1 }
+        }
+      ],
+      requestBody: {
+        required: false,
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/requestMold/UpdatePaymentMethodRequest"
+            }
+          }
+        }
+      },
+      responses: {
+        200: commonResponses[200]("#/components/schemas/responseMold/UpdatePaymentMethodResponse"),
+        400: commonResponses[400](),
+        401: commonResponses[401](),
+        404: commonResponses[404](),
+        409: commonResponses[409](),
+        498: commonResponses[498](),
+        500: commonResponses[500]()
+      }
+    },
+    delete: {
+      tags: ["Payment Methods"],
+      summary: "Deleta um método de pagamento",
+      description: `
+        #### Caso de Uso
+        Permite deletar um método de pagamento do sistema.
+
+        #### Regra de Negócio
+        Não é possível deletar um método de pagamento que está sendo usado por contas ou transações.
+
+        #### Resultado Esperado
+        Retorna confirmação da exclusão do método de pagamento.
+      `,
+      security: [{ bearerAuth: [] }],
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          description: "ID do método de pagamento",
+          required: true,
+          schema: { type: "integer", minimum: 1 }
+        }
+      ],
+      responses: {
+        200: commonResponses[200]("#/components/schemas/responseMold/DeletePaymentMethodResponse"),
+        400: commonResponses[400](),
+        401: commonResponses[401](),
+        404: commonResponses[404](),
+        409: commonResponses[409](),
         498: commonResponses[498](),
         500: commonResponses[500]()
       }

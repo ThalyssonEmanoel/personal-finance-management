@@ -1,4 +1,4 @@
-import commonResponses from "../schemas/swaggerCommonResponses.js";
+import commonResponses from "../utils/swaggerCommonResponses.js";
 
 const bankTransferRoutes = {
   "/BankTransfer/admin": {
@@ -87,7 +87,7 @@ const bankTransferRoutes = {
         }
       ],
       responses: {
-        200: commonResponses[200]("#/components/schemas/BankTransferListResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/BankTransferListResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         404: commonResponses[404](),
@@ -183,7 +183,7 @@ const bankTransferRoutes = {
         }
       ],
       responses: {
-        200: commonResponses[200]("#/components/schemas/BankTransferListResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/BankTransferListResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         404: commonResponses[404](),
@@ -230,13 +230,13 @@ const bankTransferRoutes = {
         content: {
           "application/json": {
             schema: {
-              $ref: "#/components/schemas/CreateBankTransferRequest"
+              $ref: "#/components/schemas/requestMold/CreateBankTransferRequest"
             }
           }
         }
       },
       responses: {
-        201: commonResponses[201]("#/components/schemas/CreateBankTransferResponse"),
+        201: commonResponses[201]("#/components/schemas/responseMold/CreateBankTransferResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -291,13 +291,13 @@ const bankTransferRoutes = {
         content: {
           "application/json": {
             schema: {
-              $ref: "#/components/schemas/UpdateBankTransferRequest"
+              $ref: "#/components/schemas/requestMold/UpdateBankTransferRequest"
             }
           }
         }
       },
       responses: {
-        200: commonResponses[200]("#/components/schemas/UpdateBankTransferResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/UpdateBankTransferResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -337,7 +337,7 @@ const bankTransferRoutes = {
         }
       ],
       responses: {
-        200: commonResponses[200]("#/components/schemas/DeleteBankTransferResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/DeleteBankTransferResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         404: commonResponses[404](),

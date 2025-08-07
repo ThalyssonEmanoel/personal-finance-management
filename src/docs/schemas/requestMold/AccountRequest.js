@@ -77,7 +77,88 @@ export function requestAccountAdminGet() {
   return {
     parameters,
   };
-}
+};
+
+export function requestAccountGet() {
+  const parameters = [
+    {
+      "name": "id",
+      "in": "query",
+      "description": "Filter by account ID",
+      "required": false,
+      "schema": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    {
+      "name": "name",
+      "in": "query",
+      "description": "Filter by account name",
+      "required": false,
+      "schema": {
+        "type": "string",
+        "example": "Inter"
+      }
+    },
+    {
+      "name": "type",
+      "in": "query",
+      "description": "Filter by account type",
+      "required": false,
+      "schema": {
+        "type": "string",
+        "example": "Conta Salário"
+      }
+    },
+    {
+      "name": "balance",
+      "in": "query",
+      "description": "Filter by account balance",
+      "required": false,
+      "schema": {
+        "type": "number",
+        "format": "double",
+        "example": 1000.00
+      }
+    },
+    {
+      "name": "userId",
+      "in": "query",
+      "description": "Filter by user ID",
+      "required": true,
+      "schema": {
+        "type": "integer",
+        "example": 1,
+      }
+    },
+    {
+      "name": "limit",
+      "in": "query",
+      "description": "Delimit the number of results returned",
+      "required": false,
+      "schema": {
+        "type": "integer",
+        "minimum": 1,
+        "default": 10
+      }
+    },
+    {
+      "name": "page",
+      "in": "query",
+      "description": "Number of the page to be returned",
+      "required": false,
+      "schema": {
+        "type": "integer",
+        "minimum": 1,
+        "default": 1
+      }
+    },
+  ];
+  return {
+    parameters,
+  };
+};
 
 const AccountRequest = {
   CreateAccountFormRequest: {

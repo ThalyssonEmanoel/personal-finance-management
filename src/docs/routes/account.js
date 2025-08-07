@@ -1,6 +1,6 @@
-import { requestAccountAdminGet } from "../schemas/requestMold/AccountRequest.js";
+import { requestAccountAdminGet, requestAccountGet } from "../schemas/requestMold/AccountRequest.js";
 import { requestUserId, requestWithIdAndUserId } from "../schemas/requestMold/UniversalRequest.js";
-import commonResponses from "../schemas/swaggerCommonResponses.js";
+import commonResponses from "../utils/swaggerCommonResponses.js";
 
 const accountsRoutes = {
   "/admin/account": {
@@ -81,10 +81,8 @@ const accountsRoutes = {
         498: commonResponses[498](),
         500: commonResponses[500]()
       }
-    }
-  },
-  "/account/{id}": {
-    get: {
+    },
+        get: {
       tags: ["Accounts"],
       summary: "Get account by ID",
       description: `
@@ -106,7 +104,7 @@ const accountsRoutes = {
         Returns the account data and a 200 status code.
       `,
       security: [{ bearerAuth: [] }],
-      ...requestWithIdAndUserId(),
+      ...requestAccountGet(),
       responses: {
         200: commonResponses[200]("#/components/schemas/responseMold/AccountResponseGet"),
         400: commonResponses[400](),
@@ -117,6 +115,8 @@ const accountsRoutes = {
         500: commonResponses[500]()
       }
     },
+  },
+  "/account/{id}": {
     patch: {
       tags: ["Accounts"],
       summary: "Atualiza uma conta",

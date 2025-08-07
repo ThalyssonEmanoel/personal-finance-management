@@ -1,6 +1,6 @@
 import { requestGetId } from "../schemas/requestMold/UniversalRequest.js";
 import { requestUserAdminGet } from "../schemas/requestMold/UserRequest.js";
-import commonResponses from "../schemas/swaggerCommonResponses.js";
+import commonResponses from "../utils/swaggerCommonResponses.js";
 
 const usersRoutes = {
   "/admin/users": {
