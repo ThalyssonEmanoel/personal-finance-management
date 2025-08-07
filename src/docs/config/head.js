@@ -8,13 +8,21 @@ import accountPaymentMethodsPaths from "../routes/accountPaymentMethods.js";
 import bankTransferPaths from "../routes/bankTransfer.js";
 
 //schemas
-import userSchema from "../schemas/usersSchema.js";
-import accountSchema from "../schemas/accountsSchema.js";
-import authSchema from "../schemas/authSchema.js";
-import transactionSchema from "../schemas/transactionSchema.js";
 import paymentMethodsSchema from "../schemas/paymentMethodsSchema.js";
 import accountPaymentMethodsSchema from "../schemas/accountPaymentMethodsSchema.js";
 import bankTransferSchema from "../schemas/bankTransferSchema.js";
+
+//request schemas
+import AccountRequest from "../schemas/requestMold/AccountRequest.js";
+import AuthRequest from "../schemas/requestMold/AuthRequest.js";
+import UserRequest from "../schemas/requestMold/UserRequest.js";
+import TransactionRequest from "../schemas/requestMold/TransactionRequest.js";
+
+//response schemas
+import AccountResponse from "../schemas/responseMold/AccountResponse.js";
+import AuthResponse from "../schemas/responseMold/AuthResponse.js";
+import UserResponse from "../schemas/responseMold/UserResponse.js";
+import TransactionResponse from "../schemas/responseMold/TransactionResponse.js";
 
 // Function to define the server URLs depending on the environment
 const getServersInCorrectOrder = () => {
@@ -84,13 +92,21 @@ const getSwaggerOptions = () => {
           }
         },
         schemas: {
-          ...authSchema,
-          ...accountSchema,
-          ...userSchema,
-          ...transactionSchema,
           ...paymentMethodsSchema,
           ...accountPaymentMethodsSchema,
           ...bankTransferSchema,
+          requestMold: {
+            ...AuthRequest,
+            ...UserRequest,
+            ...AccountRequest,
+            ...TransactionRequest
+          },
+          responseMold: {
+            ...AuthResponse,
+            ...UserResponse,
+            ...AccountResponse,
+            ...TransactionResponse
+          }
         }
       },
       security: [{

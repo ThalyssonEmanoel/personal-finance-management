@@ -1,5 +1,7 @@
-const AccountSchemas = {
-  AccountResponse: {
+
+
+const AccountResponse = {
+  AccountResponseGet: {
     title: "AccountResponse",
     type: "object",
     properties: {
@@ -27,35 +29,6 @@ const AccountSchemas = {
         userId: 1
       }
     }
-  },
-  CreateAccountFormRequest: {
-    title: "CreateAccountFormRequest",
-    type: "object",
-    required: ["name", "type", "balance"],
-    properties: {
-      name: {
-        type: "string",
-        description: "Nome da conta",
-        example: "Conta Corrente"
-      },
-      type: {
-        type: "string",
-        description: "Tipo da conta",
-        example: "Corrente"
-      },
-      balance: {
-        type: "number",
-        description: "Saldo inicial da conta",
-        example: 1000.00
-      },
-      icon: {
-        type: "string",
-        format: "binary",
-        description: "Ícone da conta (opcional)",
-        nullable: true
-      }
-    },
-    description: "Schema para criação de uma nova conta"
   },
   CreateAccountResponse: {
     title: "CreateAccountResponse",
@@ -85,34 +58,6 @@ const AccountSchemas = {
         userId: 1
       }
     }
-  },
-  UpdateAccountFormRequest: {
-    title: "UpdateAccountFormRequest",
-    type: "object",
-    properties: {
-      name: {
-        type: "string",
-        description: "Nome da conta (opcional)",
-        example: "Conta Corrente"
-      },
-      type: {
-        type: "string",
-        description: "Tipo da conta (opcional)",
-        example: "Corrente"
-      },
-      balance: {
-        type: "number",
-        description: "Saldo da conta (opcional)",
-        example: 1200.00
-      },
-      icon: {
-        type: "string",
-        format: "binary",
-        description: "Ícone da conta (opcional)",
-        nullable: true
-      }
-    },
-    description: "Schema para atualização de conta"
   },
   UpdateAccountResponse: {
     title: "UpdateAccountResponse",
@@ -156,17 +101,6 @@ const AccountSchemas = {
       message: "Conta deletada com sucesso"
     }
   },
-  AccountIdParameter: {
-    name: "id",
-    in: "path",
-    required: true,
-    schema: {
-      type: "integer",
-      minimum: 1
-    },
-    description: "ID único da conta",
-    example: 1
-  }
 };
 
-export default AccountSchemas;
+export default AccountResponse;

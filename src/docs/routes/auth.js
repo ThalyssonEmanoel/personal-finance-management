@@ -28,13 +28,13 @@ const authRoutes = {
         content: {
           "application/json": {
             schema: {
-              $ref: "#/components/schemas/LoginRequest"
+              $ref: "#/components/schemas/requestMold/LoginRequest"
             }
           }
         }
       },
       responses: {
-        200: commonResponses[200]("#/components/schemas/LoginResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/LoginResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         500: commonResponses[500]()
@@ -67,13 +67,13 @@ const authRoutes = {
         content: {
           "application/json": {
             schema: {
-              $ref: "#/components/schemas/LogoutRequest"
+              $ref: "#/components/schemas/requestMold/LogoutRequest"
             }
           }
         }
       },
       responses: {
-        200: commonResponses[200]("#/components/schemas/LogoutResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/LogoutResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         404: commonResponses[404](),
@@ -108,13 +108,13 @@ const authRoutes = {
         content: {
           "application/json": {
             schema: {
-              $ref: "#/components/schemas/RefreshTokenRequest"
+              $ref: "#/components/schemas/requestMold/RefreshTokenRequest"
             }
           }
         }
       },
       responses: {
-        200: commonResponses[200]("#/components/schemas/RefreshTokenResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/RefreshTokenResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         404: commonResponses[404](),
@@ -153,13 +153,13 @@ const authRoutes = {
         content: {
           "application/json": {
             schema: {
-              $ref: "#/components/schemas/RevokeTokenRequest"
+              $ref: "#/components/schemas/requestMold/RevokeTokenRequest"
             }
           }
         }
       },
       responses: {
-        200: commonResponses[200]("#/components/schemas/RevokeTokenResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/RevokeTokenResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         404: commonResponses[404](),

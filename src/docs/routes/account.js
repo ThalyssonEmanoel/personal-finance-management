@@ -1,3 +1,5 @@
+import { requestAccountAdminGet } from "../schemas/requestMold/AccountRequest.js";
+import { requestUserId, requestWithIdAndUserId } from "../schemas/requestMold/UniversalRequest.js";
 import commonResponses from "../schemas/swaggerCommonResponses.js";
 
 const accountsRoutes = {
@@ -24,59 +26,9 @@ const accountsRoutes = {
         Retorna uma lista paginada de contas com informações detalhadas.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "id",
-          in: "query",
-          description: "Filtrar por ID da conta",
-          required: false,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "name",
-          in: "query",
-          description: "Filtrar por nome da conta",
-          required: false,
-          schema: { type: "string" }
-        },
-        {
-          name: "type",
-          in: "query",
-          description: "Filtrar por tipo da conta",
-          required: false,
-          schema: { type: "string" }
-        },
-        {
-          name: "balance",
-          in: "query",
-          description: "Filtrar por saldo da conta",
-          required: false,
-          schema: { type: "number" }
-        },
-        {
-          name: "userId",
-          in: "query",
-          description: "Filtrar por ID do usuário dono da conta",
-          required: false,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "page",
-          in: "query",
-          description: "Número da página",
-          required: false,
-          schema: { type: "integer", minimum: 1, default: 1 }
-        },
-        {
-          name: "limit",
-          in: "query",
-          description: "Número de itens por página",
-          required: false,
-          schema: { type: "integer", minimum: 1, default: 10 }
-        }
-      ],
+      ...requestAccountAdminGet(),
       responses: {
-        200: commonResponses[200]("#/components/schemas/AccountResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/AccountResponseGet"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -109,27 +61,19 @@ const accountsRoutes = {
         Returns the created account data and status 201.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "userId",
-          in: "query",
-          description: "ID do usuário para quem a conta será criada",
-          required: true,
-          schema: { type: "integer", minimum: 1 }
-        }
-      ],
+      ...requestUserId(),
       requestBody: {
         required: true,
         content: {
           "multipart/form-data": {
             schema: {
-              $ref: "#/components/schemas/CreateAccountFormRequest"
+              $ref: "#/components/schemas/requestMold/CreateAccountFormRequest"
             }
           }
         }
       },
       responses: {
-        201: commonResponses[201]("#/components/schemas/CreateAccountResponse"),
+        201: commonResponses[201]("#/components/schemas/responseMold/CreateAccountResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -162,24 +106,9 @@ const accountsRoutes = {
         Returns the account data and a 200 status code.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "id",
-          in: "path",
-          description: "ID da conta a ser consultada",
-          required: true,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "userId",
-          in: "query",
-          description: "ID do usuário para autorização",
-          required: true,
-          schema: { type: "integer", minimum: 1 }
-        }
-      ],
+      ...requestWithIdAndUserId(),
       responses: {
-        200: commonResponses[200]("#/components/schemas/AccountResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/AccountResponseGet"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -207,34 +136,19 @@ const accountsRoutes = {
         Retorna os dados da conta atualizada e status 200.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "id",
-          in: "path",
-          description: "ID da conta a ser atualizada",
-          required: true,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "userId",
-          in: "query",
-          description: "ID do usuário para autorização",
-          required: true,
-          schema: { type: "integer", minimum: 1 }
-        }
-      ],
+      ...requestWithIdAndUserId(),
       requestBody: {
         required: false,
         content: {
           "multipart/form-data": {
             schema: {
-              $ref: "#/components/schemas/UpdateAccountFormRequest"
+              $ref: "#/components/schemas/requestMold/UpdateAccountFormRequest"
             }
           }
         }
       },
       responses: {
-        200: commonResponses[200]("#/components/schemas/UpdateAccountResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/UpdateAccountResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -263,24 +177,9 @@ const accountsRoutes = {
         Retorna mensagem de sucesso confirmando a exclusão da conta.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "id",
-          in: "path",
-          description: "ID da conta a ser deletada",
-          required: true,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "userId",
-          in: "query",
-          description: "ID do usuário para autorização",
-          required: true,
-          schema: { type: "integer", minimum: 1 }
-        }
-      ],
+      ...requestWithIdAndUserId(),
       responses: {
-        200: commonResponses[200]("#/components/schemas/DeleteAccountResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/DeleteAccountResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
