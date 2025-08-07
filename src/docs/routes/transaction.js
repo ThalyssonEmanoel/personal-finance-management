@@ -1,5 +1,4 @@
 import commonResponses from "../schemas/swaggerCommonResponses.js";
-import parameterGenerator from "../utils/simpleParameterGenerator.js";
 
 const transactionRoutes = {
   "/transactions/admin": {
@@ -22,9 +21,106 @@ const transactionRoutes = {
         Returns a paginated list of transactions with detailed information and related data.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getCustomParameters('Transactions', {
-        excludeFields: ['account', 'paymentMethod', 'user', 'description']
-      }),
+      parameters: [
+        {
+          name: "id",
+          in: "query",
+          description: "Filter by transaction ID",
+          required: false,
+          schema: { type: "integer", minimum: 1 }
+        },
+        {
+          name: "type",
+          in: "query",
+          description: "Filter by transaction type",
+          required: false,
+          schema: { type: "string", enum: ["expense", "income"] }
+        },
+        {
+          name: "name",
+          in: "query",
+          description: "Filter by transaction name",
+          required: false,
+          schema: { type: "string" }
+        },
+        {
+          name: "category",
+          in: "query",
+          description: "Filter by transaction category",
+          required: false,
+          schema: { type: "string" }
+        },
+        {
+          name: "value",
+          in: "query",
+          description: "Filter by transaction value",
+          required: false,
+          schema: { type: "number" }
+        },
+        {
+          name: "release_date",
+          in: "query",
+          description: "Filter by release date (YYYY-MM-DD format)",
+          required: false,
+          schema: { type: "string", format: "date" }
+        },
+        {
+          name: "recurring",
+          in: "query",
+          description: "Filter by recurring transactions",
+          required: false,
+          schema: { type: "boolean" }
+        },
+        {
+          name: "accountName",
+          in: "query",
+          description: "Filter by account name",
+          required: false,
+          schema: { type: "string" }
+        },
+        {
+          name: "number_installments",
+          in: "query",
+          description: "Filter by number of installments",
+          required: false,
+          schema: { type: "integer", minimum: 1 }
+        },
+        {
+          name: "current_installment",
+          in: "query",
+          description: "Filter by current installment number",
+          required: false,
+          schema: { type: "integer", minimum: 1 }
+        },
+        {
+          name: "paymentMethod",
+          in: "query",
+          description: "Filter by payment method ID",
+          required: false,
+          schema: { type: "integer", minimum: 1 }
+        },
+        {
+          name: "userId",
+          in: "query",
+          description: "Filter by user ID",
+          required: false,
+          schema: { type: "integer", minimum: 1 }
+        },
+        {
+          name: "page",
+          in: "query",
+          description: "Page number for pagination",
+          required: false,
+          schema: { type: "integer", minimum: 1, default: 1 }
+        },
+        {
+          name: "limit",
+          in: "query",
+          description: "Number of items per page",
+          required: false,
+          schema: { type: "integer", minimum: 1, default: 10 }
+        }
+      ],
       responses: {
         200: commonResponses[200]("#/components/schemas/TransactionResponse"),
         400: commonResponses[400](),
@@ -55,22 +151,106 @@ const transactionRoutes = {
         Returns a paginated list of transactions with detailed information and related data.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getCustomParameters('Transactions', {
-        excludeFields: ['account', 'paymentMethod', 'user', 'description'],
-        customDescriptions: {
-          type: "Filter by transaction type (expense or income)",
-          name: "Filter by transaction name", 
-          category: "Filter by transaction category",
-          value: "Filter by transaction amount",
-          value_installment: "Filter by original installment total value",
-          release_date: "Filter by release date (YYYY-MM-DD format)",
-          number_installments: "Filter by number of installments",
-          current_installment: "Filter by current installment number",
-          recurring: "Filter by recurring transactions (true/false)",
-          accountId: "Filter by account ID",
-          paymentMethodId: "Filter by payment method ID"
+      parameters: [
+        {
+          name: "id",
+          in: "query",
+          description: "Filter by transaction ID",
+          required: false,
+          schema: { type: "integer", minimum: 1 }
+        },
+        {
+          name: "type",
+          in: "query",
+          description: "Filter by transaction type",
+          required: false,
+          schema: { type: "string", enum: ["expense", "income"] }
+        },
+        {
+          name: "name",
+          in: "query",
+          description: "Filter by transaction name",
+          required: false,
+          schema: { type: "string" }
+        },
+        {
+          name: "category",
+          in: "query",
+          description: "Filter by transaction category",
+          required: false,
+          schema: { type: "string" }
+        },
+        {
+          name: "value",
+          in: "query",
+          description: "Filter by transaction value",
+          required: false,
+          schema: { type: "number" }
+        },
+        {
+          name: "release_date",
+          in: "query",
+          description: "Filter by release date (YYYY-MM-DD format)",
+          required: false,
+          schema: { type: "string", format: "date" }
+        },
+        {
+          name: "recurring",
+          in: "query",
+          description: "Filter by recurring transactions",
+          required: false,
+          schema: { type: "boolean" }
+        },
+        {
+          name: "accountName",
+          in: "query",
+          description: "Filter by account name",
+          required: false,
+          schema: { type: "string" }
+        },
+        {
+          name: "number_installments",
+          in: "query",
+          description: "Filter by number of installments",
+          required: false,
+          schema: { type: "integer", minimum: 1 }
+        },
+        {
+          name: "current_installment",
+          in: "query",
+          description: "Filter by current installment number",
+          required: false,
+          schema: { type: "integer", minimum: 1 }
+        },
+        {
+          name: "paymentMethod",
+          in: "query",
+          description: "Filter by payment method ID",
+          required: false,
+          schema: { type: "integer", minimum: 1 }
+        },
+        {
+          name: "userId",
+          in: "query",
+          description: "User ID (required for user transactions)",
+          required: true,
+          schema: { type: "integer", minimum: 1 }
+        },
+        {
+          name: "page",
+          in: "query",
+          description: "Page number for pagination",
+          required: false,
+          schema: { type: "integer", minimum: 1, default: 1 }
+        },
+        {
+          name: "limit",
+          in: "query",
+          description: "Number of items per page",
+          required: false,
+          schema: { type: "integer", minimum: 1, default: 10 }
         }
-      }),
+      ],
       responses: {
         200: commonResponses[200]("#/components/schemas/TransactionResponse"),
         400: commonResponses[400](),
@@ -161,7 +341,22 @@ const transactionRoutes = {
         Returns the updated transaction data and status 200.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getQueryIdAndUserParameter("ID da conta a ser deletada"),
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          description: "Transaction ID",
+          required: true,
+          schema: { type: "integer", minimum: 1 }
+        },
+        {
+          name: "userId",
+          in: "query",
+          description: "User ID for authorization",
+          required: true,
+          schema: { type: "integer", minimum: 1 }
+        }
+      ],
       requestBody: {
         required: false,
         content: {
@@ -201,9 +396,56 @@ const transactionRoutes = {
         Returns success message confirming transaction deletion.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getPathIdParameter("ID of the transaction to be deleted"),
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          description: "ID of the transaction to be deleted",
+          required: true,
+          schema: { type: "integer", minimum: 1 }
+        }
+      ],
       responses: {
         200: commonResponses[200]("#/components/schemas/DeleteTransactionResponse"),
+        400: commonResponses[400](),
+        401: commonResponses[401](),
+        404: commonResponses[404](),
+        498: commonResponses[498](),
+        500: commonResponses[500]()
+      }
+    }
+  },
+  "/transactions/payment-methods/{accountId}": {
+    get: {
+      tags: ["Transactions"],
+      summary: "Get compatible payment methods for an account",
+      description: `
+        #### Use Case
+        Retrieves all payment methods that are compatible with a specific account for transaction creation.
+
+        #### Business Rule
+        Returns payment methods that can be used with the specified account based on account-payment method relationships.
+
+        #### Business Rules Involved
+        - Account must exist in the system.
+        - Only returns payment methods linked to the account.
+        - User must be authenticated.
+
+        #### Expected Result
+        Returns a list of compatible payment methods for the specified account.
+      `,
+      security: [{ bearerAuth: [] }],
+      parameters: [
+        {
+          name: "accountId",
+          in: "path",
+          description: "ID of the account to get compatible payment methods",
+          required: true,
+          schema: { type: "integer", minimum: 1 }
+        }
+      ],
+      responses: {
+        200: commonResponses[200]("#/components/schemas/CompatiblePaymentMethodsResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         404: commonResponses[404](),

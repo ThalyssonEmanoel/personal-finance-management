@@ -1,5 +1,4 @@
 import commonResponses from "../schemas/swaggerCommonResponses.js";
-import parameterGenerator from "../utils/simpleParameterGenerator.js";
 
 const paymentMethodsRoutes = {
   "/payment-methods": {

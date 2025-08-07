@@ -17,8 +17,9 @@ model Users {
   refreshToken String? @db.Text
   isAdmin      Boolean @default(false)
 
-  accounts     Accounts[]
-  transactions Transactions[]
+  accounts      Accounts[]
+  transactions  Transactions[]
+  bankTransfers BankTransfers[]
 }
 
 model Accounts {
@@ -31,8 +32,10 @@ model Accounts {
   userId Int
   user   Users @relation(fields: [userId], references: [id])
 
-  transactions          Transactions[]
-  accountPaymentMethods AccountPaymentMethods[]
+  transactions               Transactions[]
+  accountPaymentMethods      AccountPaymentMethods[]
+  sourceTransfers            BankTransfers[] @relation("SourceAccount")
+  destinationTransfers       BankTransfers[] @relation("DestinationAccount")
 }
 
 model PaymentMethods {
@@ -41,6 +44,7 @@ model PaymentMethods {
 
   accountPaymentMethods AccountPaymentMethods[]
   transactions          Transactions[]
+  bankTransfers         BankTransfers[]
 }
 
 model AccountPaymentMethods {
@@ -70,6 +74,25 @@ model Transactions {
 
   accountId Int
   account   Accounts @relation(fields: [accountId], references: [id])
+
+  paymentMethodId Int
+  paymentMethod   PaymentMethods @relation(fields: [paymentMethodId], references: [id])
+
+  userId Int
+  user   Users @relation(fields: [userId], references: [id])
+}
+
+model BankTransfers {
+  id                  Int      @id @default(autoincrement())
+  amount              Decimal  @db.Decimal(10, 2)
+  transfer_date       DateTime @db.Date
+  description         String?  @db.Text
+
+  sourceAccountId Int
+  sourceAccount   Accounts @relation("SourceAccount", fields: [sourceAccountId], references: [id])
+
+  destinationAccountId Int
+  destinationAccount   Accounts @relation("DestinationAccount", fields: [destinationAccountId], references: [id])
 
   paymentMethodId Int
   paymentMethod   PaymentMethods @relation(fields: [paymentMethodId], references: [id])

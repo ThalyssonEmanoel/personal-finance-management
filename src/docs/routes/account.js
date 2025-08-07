@@ -1,5 +1,4 @@
 import commonResponses from "../schemas/swaggerCommonResponses.js";
-import parameterGenerator from "../utils/simpleParameterGenerator.js";
 
 const accountsRoutes = {
   "/admin/account": {
@@ -25,23 +24,57 @@ const accountsRoutes = {
         Retorna uma lista paginada de contas com informações detalhadas.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getCustomParameters('Accounts', {
-        excludeFields: ['icon', 'user', 'transactions', 'userId'],
-        customDescriptions: {
-          id: "Filtrar por ID da conta",
-          name: "Filtrar por nome da conta",
-          type: "Filtrar por tipo da conta"
+      parameters: [
+        {
+          name: "id",
+          in: "query",
+          description: "Filtrar por ID da conta",
+          required: false,
+          schema: { type: "integer", minimum: 1 }
         },
-        extraParameters: [
-          {
-            name: "userId",
-            in: "query",
-            description: "Filtrar por ID do usuário dono da conta",
-            required: false,
-            schema: { type: "integer" }
-          }
-        ]
-      }),
+        {
+          name: "name",
+          in: "query",
+          description: "Filtrar por nome da conta",
+          required: false,
+          schema: { type: "string" }
+        },
+        {
+          name: "type",
+          in: "query",
+          description: "Filtrar por tipo da conta",
+          required: false,
+          schema: { type: "string" }
+        },
+        {
+          name: "balance",
+          in: "query",
+          description: "Filtrar por saldo da conta",
+          required: false,
+          schema: { type: "number" }
+        },
+        {
+          name: "userId",
+          in: "query",
+          description: "Filtrar por ID do usuário dono da conta",
+          required: false,
+          schema: { type: "integer", minimum: 1 }
+        },
+        {
+          name: "page",
+          in: "query",
+          description: "Número da página",
+          required: false,
+          schema: { type: "integer", minimum: 1, default: 1 }
+        },
+        {
+          name: "limit",
+          in: "query",
+          description: "Número de itens por página",
+          required: false,
+          schema: { type: "integer", minimum: 1, default: 10 }
+        }
+      ],
       responses: {
         200: commonResponses[200]("#/components/schemas/AccountResponse"),
         400: commonResponses[400](),
@@ -129,23 +162,22 @@ const accountsRoutes = {
         Returns the account data and a 200 status code.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getCustomParameters('Accounts', {
-        excludeFields: ['icon', 'user', 'transactions', 'userId'],
-        customDescriptions: {
-          id: "Filtrar por ID da conta",
-          name: "Filtrar por nome da conta",
-          type: "Filtrar por tipo da conta"
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          description: "ID da conta a ser consultada",
+          required: true,
+          schema: { type: "integer", minimum: 1 }
         },
-        extraParameters: [
-          {
-            name: "userId",
-            in: "query",
-            description: "Filtrar por ID do usuário dono da conta",
-            required: false,
-            schema: { type: "integer" }
-          }
-        ]
-      }),
+        {
+          name: "userId",
+          in: "query",
+          description: "ID do usuário para autorização",
+          required: true,
+          schema: { type: "integer", minimum: 1 }
+        }
+      ],
       responses: {
         200: commonResponses[200]("#/components/schemas/AccountResponse"),
         400: commonResponses[400](),
@@ -175,7 +207,22 @@ const accountsRoutes = {
         Retorna os dados da conta atualizada e status 200.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getQueryIdAndUserParameter("ID da conta a ser deletada"),
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          description: "ID da conta a ser atualizada",
+          required: true,
+          schema: { type: "integer", minimum: 1 }
+        },
+        {
+          name: "userId",
+          in: "query",
+          description: "ID do usuário para autorização",
+          required: true,
+          schema: { type: "integer", minimum: 1 }
+        }
+      ],
       requestBody: {
         required: false,
         content: {
@@ -216,7 +263,22 @@ const accountsRoutes = {
         Retorna mensagem de sucesso confirmando a exclusão da conta.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getQueryIdAndUserParameter("ID da conta a ser deletada"),
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          description: "ID da conta a ser deletada",
+          required: true,
+          schema: { type: "integer", minimum: 1 }
+        },
+        {
+          name: "userId",
+          in: "query",
+          description: "ID do usuário para autorização",
+          required: true,
+          schema: { type: "integer", minimum: 1 }
+        }
+      ],
       responses: {
         200: commonResponses[200]("#/components/schemas/DeleteAccountResponse"),
         400: commonResponses[400](),

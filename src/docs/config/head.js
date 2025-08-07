@@ -5,6 +5,7 @@ import authPaths from "../routes/auth.js";
 import transactionPaths from "../routes/transaction.js";
 import paymentMethodsPaths from "../routes/paymentMethods.js";
 import accountPaymentMethodsPaths from "../routes/accountPaymentMethods.js";
+import bankTransferPaths from "../routes/bankTransfer.js";
 
 //schemas
 import userSchema from "../schemas/usersSchema.js";
@@ -13,6 +14,7 @@ import authSchema from "../schemas/authSchema.js";
 import transactionSchema from "../schemas/transactionSchema.js";
 import paymentMethodsSchema from "../schemas/paymentMethodsSchema.js";
 import accountPaymentMethodsSchema from "../schemas/accountPaymentMethodsSchema.js";
+import bankTransferSchema from "../schemas/bankTransferSchema.js";
 
 // Function to define the server URLs depending on the environment
 const getServersInCorrectOrder = () => {
@@ -58,6 +60,10 @@ const getSwaggerOptions = () => {
         {
           name: "Account Payment Methods",
           description: "Account payment methods relationship management route."
+        },
+        {
+          name: "Bank Transfers",
+          description: "Bank transfer management route for transferring money between user accounts."
         }
       ],
       paths: {
@@ -67,6 +73,7 @@ const getSwaggerOptions = () => {
         ...transactionPaths,
         ...paymentMethodsPaths,
         ...accountPaymentMethodsPaths,
+        ...bankTransferPaths,
       },
       components: {
         securitySchemes: {
@@ -83,6 +90,7 @@ const getSwaggerOptions = () => {
           ...transactionSchema,
           ...paymentMethodsSchema,
           ...accountPaymentMethodsSchema,
+          ...bankTransferSchema,
         }
       },
       security: [{
