@@ -260,8 +260,17 @@ const TransactionRequest = {
     },
     description: "Schema for updating a transaction.",
     example: {
+      type: "expense",
       name: "Supermercado Atualizado",
-      value: 175.00
+      category: "Alimentação",
+      value: 175.00,
+      release_date: "2025-08-08",
+      number_installments: 3,
+      current_installment: 1,
+      description: "Compra parcelada atualizada",
+      recurring: false,
+      accountId: 4,
+      paymentMethodId: 2
     }
   },
 };

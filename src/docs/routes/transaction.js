@@ -177,7 +177,7 @@ const transactionRoutes = {
         Returns success message confirming transaction deletion.
       `,
       security: [{ bearerAuth: [] }],
-      ...requestGetId(),
+      ...requestWithIdAndUserId(),
       responses: {
         200: commonResponses[200]("#/components/schemas/responseMold/DeleteTransactionResponse"),
         400: commonResponses[400](),

@@ -36,7 +36,7 @@ class TransactionRepository {
         name: true,
         category: true,
         value: true,
-        value_installment: true, 
+        value_installment: true,
         release_date: true,
         number_installments: true,
         current_installment: true,
@@ -139,7 +139,7 @@ class TransactionRepository {
         name: true,
         category: true,
         value: true,
-        value_installment: true, 
+        value_installment: true,
         release_date: true,
         number_installments: true,
         current_installment: true,
@@ -234,9 +234,9 @@ class TransactionRepository {
     });
   }
 
-  static async deleteTransaction(id) {
+  static async deleteTransaction(id, userId) {
     const existingTransaction = await prisma.transactions.findUnique({
-      where: { id: parseInt(id) }
+      where: { id: parseInt(id), userId: parseInt(userId) }
     });
     if (!existingTransaction) {
       throw { code: 404, message: "Transação não encontrada" };
@@ -246,20 +246,6 @@ class TransactionRepository {
       where: { id: parseInt(id) }
     });
     return { message: "Transação deletada com sucesso" };
-  }
-
-  static async getCompatiblePaymentMethods(accountId) {
-    return await prisma.accountPaymentMethods.findMany({
-      where: { accountId: parseInt(accountId) },
-      include: {
-        paymentMethod: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
-    });
   }
 
   /**
@@ -344,7 +330,7 @@ class TransactionRepository {
     });
 
     // Filtrar no JavaScript para garantir que current_installment < number_installments
-    return transactions.filter(transaction => 
+    return transactions.filter(transaction =>
       transaction.current_installment < transaction.number_installments
     );
   }

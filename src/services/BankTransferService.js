@@ -28,6 +28,11 @@ class BankTransferService {
   static async createTransfer(bankTransferData) {
     const validBankTransfer = BankTransferSchemas.createBankTransfer.parse(bankTransferData);
     
+    // Converter transfer_date string para Date object
+    if (validBankTransfer.transfer_date) {
+      validBankTransfer.transfer_date = new Date(validBankTransfer.transfer_date);
+    }
+    
     // Validar que o usuário possui ambas as contas
     const [isSourceOwner, isDestinationOwner] = await Promise.all([
       BankTransferRepository.validateAccountOwnership(validBankTransfer.sourceAccountId, validBankTransfer.userId),
@@ -91,6 +96,11 @@ class BankTransferService {
   static async updateTransfer(id, userId, bankTransferData) {
     const validId = BankTransferSchemas.bankTransferIdParam.parse({ id });
     const validBankTransferData = BankTransferSchemas.updateBankTransfer.parse(bankTransferData);
+
+    // Converter transfer_date string para Date object se presente
+    if (validBankTransferData.transfer_date) {
+      validBankTransferData.transfer_date = new Date(validBankTransferData.transfer_date);
+    }
 
     const updatedBankTransfer = await BankTransferRepository.updateBankTransfer(validId.id, userId, validBankTransferData);
     if (!updatedBankTransfer) {

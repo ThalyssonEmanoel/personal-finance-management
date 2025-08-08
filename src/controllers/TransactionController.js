@@ -54,19 +54,10 @@ class TransactionController {
 
   static deleteTransaction = async (req, res, next) => {
     try {
-      const { id } = req.params;
-      const result = await TransactionService.deleteTransaction(id);
+      const { id } = req.query;
+      const { userId } = req.query;
+      const result = await TransactionService.deleteTransaction(id, userId);
       res.status(200).json(CommonResponse.success(result));
-    } catch (err) {
-      next(err);
-    }
-  };
-
-  static getCompatiblePaymentMethods = async (req, res, next) => {
-    try {
-      const { accountId } = req.params;
-      const paymentMethods = await TransactionService.getCompatiblePaymentMethods(accountId);
-      res.status(200).json(CommonResponse.success(paymentMethods));
     } catch (err) {
       next(err);
     }
