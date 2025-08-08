@@ -77,7 +77,7 @@ export function requestTransactionGet() {
       "schema": { "type": "integer", "minimum": 1 }
     },
     {
-      "name": "paymentMethod",
+      "name": "paymentMethodId",
       "in": "query",
       "description": "Filter by payment method ID",
       "required": false,

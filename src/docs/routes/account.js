@@ -82,27 +82,29 @@ const accountsRoutes = {
         500: commonResponses[500]()
       }
     },
-        get: {
+  },
+  "/account/{id}": {
+    get: {
       tags: ["Accounts"],
       summary: "Get account by ID",
       description: `
-        #### Use Case
-        Allows users to retrieve information about a specific account by its ID.
-
-        #### Business Rule
-        Retrieves detailed information about a specific account, ensuring data privacy and access control.
-
-        #### Business Rules Involved
-        - User must be authenticated.
-        - Users can ONLY access accounts that belong to them (except administrators).
-        - Administrators can access any account information.
-        - ID must be a valid positive integer.
-        - Account must exist in the system.
-        - Access is controlled by adminOrOwnerMiddleware.
-
-        #### Expected Result
-        Returns the account data and a 200 status code.
-      `,
+    #### Use Case
+    Allows users to retrieve information about a specific account by its ID.
+  
+    #### Business Rule
+    Retrieves detailed information about a specific account, ensuring data privacy and access control.
+  
+    #### Business Rules Involved
+    - User must be authenticated.
+    - Users can ONLY access accounts that belong to them (except administrators).
+    - Administrators can access any account information.
+    - ID must be a valid positive integer.
+    - Account must exist in the system.
+    - Access is controlled by adminOrOwnerMiddleware.
+  
+    #### Expected Result
+    Returns the account data and a 200 status code.
+  `,
       security: [{ bearerAuth: [] }],
       ...requestAccountGet(),
       responses: {
@@ -115,13 +117,11 @@ const accountsRoutes = {
         500: commonResponses[500]()
       }
     },
-  },
-  "/account/{id}": {
     patch: {
       tags: ["Accounts"],
       summary: "Atualiza uma conta",
       description: `
-        #### Caso de Uso
+      #### Caso de Uso
         Permite ao sistema atualizar as informações de uma conta existente.
 
         #### Regra de Negócio

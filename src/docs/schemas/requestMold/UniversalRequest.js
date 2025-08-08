@@ -19,7 +19,7 @@ export function requestUserId() {
   const parameters = [
     {
       "name": "userId",
-      "in": "path",
+      "in": "query",
       "description": "Insert just userId",
       "required": false,
       "schema": {
@@ -36,7 +36,7 @@ export function requestWithIdAndUserId() {
   const parameters = [
     {
       "name": "id",
-      "in": "path",
+      "in": "query",
       "description": "Insert just id",
       "required": false,
       "schema": {
@@ -46,7 +46,7 @@ export function requestWithIdAndUserId() {
     },
     {
       "name": "userId",
-      "in": "path",
+      "in": "query",
       "description": "Insert just userId",
       "required": false,
       "schema": {

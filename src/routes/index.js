@@ -7,7 +7,6 @@ import swaggerUI from "swagger-ui-express";
 import getSwaggerOptions from "../docs/config/head.js";
 import Transaction from "./TransactionRoutes.js";
 import PaymentMethods from "./PaymentMethodsRoutes.js";
-import AccountPaymentMethods from "./AccountPaymentMethodsRoutes.js";
 import BankTransfer from "./BankTransferRoutes.js";
 
 const routes = (app) => {
@@ -26,7 +25,6 @@ const routes = (app) => {
         account,
         Transaction,
         PaymentMethods,
-        AccountPaymentMethods,
         BankTransfer
     );
 

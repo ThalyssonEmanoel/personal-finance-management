@@ -41,10 +41,10 @@ class AccountRepository {
   static async contAccounts() {
     return await prisma.accounts.count();
   }
-  
+
   static async createAccount(accountData) {
-    const { name, type, balance, icon, userId } = accountData;
-    
+    const { name, type, balance, icon, userId, paymentMethodIds } = accountData;
+
     //o normalize é usado para remover acentos e comparar nomes de forma consistente, apenas para evitar duplicatas
     const normalize = (str) => str.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
     const normalizedNome = normalize(name);
@@ -59,6 +59,20 @@ class AccountRepository {
     if (similar) {
       throw { code: 409, message: "Já existe uma conta com nome semelhante e tipo para este usuário." };
     }
+
+    // Verificar se os métodos de pagamento existem (se foram fornecidos)
+    if (paymentMethodIds && paymentMethodIds.length > 0) {
+      const existingPaymentMethods = await prisma.paymentMethods.findMany({
+        where: {
+          id: { in: paymentMethodIds }
+        }
+      });
+
+      if (existingPaymentMethods.length !== paymentMethodIds.length) {
+        throw { code: 400, message: "Um ou mais métodos de pagamento não foram encontrados." };
+      }
+    }
+
     const data = {
       name,
       type,
@@ -66,34 +80,75 @@ class AccountRepository {
       user: { connect: { id: userId } },
       icon: icon !== undefined ? icon : ""
     };
-    return await prisma.accounts.create({
-      data,
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        balance: true,
-        icon: true,
-        userId: true
+
+    // Usar transação para criar a conta e associar métodos de pagamento
+    return await prisma.$transaction(async (prisma) => {
+      const newAccount = await prisma.accounts.create({
+        data,
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          balance: true,
+          icon: true,
+          userId: true
+        }
+      });
+
+      // Associar métodos de pagamento se foram fornecidos
+      if (paymentMethodIds && paymentMethodIds.length > 0) {
+        const accountPaymentMethodsData = paymentMethodIds.map(paymentMethodId => ({
+          accountId: newAccount.id,
+          paymentMethodId: paymentMethodId
+        }));
+
+        await prisma.accountPaymentMethods.createMany({
+          data: accountPaymentMethodsData
+        });
       }
+
+      // Retornar a conta com os métodos de pagamento associados
+      return await prisma.accounts.findUnique({
+        where: { id: newAccount.id },
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          balance: true,
+          icon: true,
+          userId: true,
+          accountPaymentMethods: {
+            select: {
+              paymentMethod: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              }
+            }
+          }
+        }
+      });
     });
   }
 
   static async updateAccount(id, userId, accountData) {
+    const { paymentMethodIds, ...otherData } = accountData;
+
     const existingAccount = await prisma.accounts.findUnique({
       where: { id: parseInt(id), userId: parseInt(userId) },
     });
     if (!existingAccount) {
       throw { code: 404, message: "Conta não encontrada" };
     }
-    if (accountData.name && accountData.type && userId) {
+    if (otherData.name && otherData.type && userId) {
       const normalize = (str) => str.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();//Talvez será melhor remover esse normalize, pois nem sempre funciona
-      const normalizedNome = normalize(accountData.name);
-      const normalizedType = normalize(accountData.type);
+      const normalizedNome = normalize(otherData.name);
+      const normalizedType = normalize(otherData.type);
       const existingAccounts = await prisma.accounts.findMany({
         where: {
-          name: accountData.name,
-          type: accountData.type,
+          name: otherData.name,
+          type: otherData.type,
           user: { id: userId },
           NOT: { id: parseInt(id) }
         }
@@ -103,22 +158,79 @@ class AccountRepository {
         throw { code: 409, message: "Já existe uma conta com nome e tipo iguais para este usuário." };
       }
     }
-    const updateData = {};
-    if (accountData.name) updateData.name = accountData.name;
-    if (accountData.type) updateData.type = accountData.type;
-    if (accountData.balance !== undefined) updateData.balance = accountData.balance;
-    if (accountData.icon !== undefined) updateData.icon = accountData.icon;
-    return await prisma.accounts.update({
-      where: { id: parseInt(id) },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        balance: true,
-        icon: true,
-        userId: true
+
+    // Verificar se os métodos de pagamento existem (se foram fornecidos)
+    if (paymentMethodIds && paymentMethodIds.length > 0) {
+      const existingPaymentMethods = await prisma.paymentMethods.findMany({
+        where: {
+          id: { in: paymentMethodIds }
+        }
+      });
+
+      if (existingPaymentMethods.length !== paymentMethodIds.length) {
+        throw { code: 400, message: "Um ou mais métodos de pagamento não foram encontrados." };
       }
+    }
+
+    return await prisma.$transaction(async (prisma) => {
+      const updateData = {};
+
+      if (otherData.name !== undefined && otherData.name !== null && otherData.name.trim() !== '') {
+        updateData.name = otherData.name;
+      }
+      if (otherData.type !== undefined && otherData.type !== null && otherData.type.trim() !== '') {
+        updateData.type = otherData.type;
+      }
+      if (otherData.balance !== undefined && otherData.balance !== null && otherData.balance !== '') {
+        updateData.balance = otherData.balance;
+      }
+      if (otherData.icon !== undefined) {
+        updateData.icon = otherData.icon;
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        await prisma.accounts.update({
+          where: { id: parseInt(id) },
+          data: updateData
+        });
+      }
+
+      if (paymentMethodIds !== undefined) {
+        await prisma.accountPaymentMethods.deleteMany({
+          where: { accountId: parseInt(id) }
+        });
+        if (paymentMethodIds.length > 0) {
+          const accountPaymentMethodsData = paymentMethodIds.map(paymentMethodId => ({
+            accountId: parseInt(id),
+            paymentMethodId: paymentMethodId
+          }));
+
+          await prisma.accountPaymentMethods.createMany({
+            data: accountPaymentMethodsData
+          });
+        }
+      }
+      return await prisma.accounts.findUnique({
+        where: { id: parseInt(id) },
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          balance: true,
+          icon: true,
+          userId: true,
+          accountPaymentMethods: {
+            select: {
+              paymentMethod: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              }
+            }
+          }
+        }
+      });
     });
   }
 
@@ -126,13 +238,12 @@ class AccountRepository {
     const existingAccount = await prisma.accounts.findUnique({
       where: { id: parseInt(id), userId: parseInt(userId) }
     });
-    
+
     if (!existingAccount) {
       throw { code: 404, message: "Conta não encontrada" };
     }
 
     try {
-      // Usar transação para garantir consistência dos dados
       await prisma.$transaction(async (prisma) => {
         await prisma.transactions.deleteMany({
           where: { accountId: parseInt(id) }

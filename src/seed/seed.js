@@ -16,6 +16,7 @@ async function clearDatabase() {
     console.log('Apagando dados existentes...');
 
     // Limpar dados existentes (optional)
+    await prisma.bankTransfers.deleteMany();
     await prisma.transactions.deleteMany();
     await prisma.paymentMethods.deleteMany();
     await prisma.accounts.deleteMany();

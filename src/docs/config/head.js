@@ -4,7 +4,6 @@ import accountPaths from "../routes/account.js";
 import authPaths from "../routes/auth.js";
 import transactionPaths from "../routes/transaction.js";
 import paymentMethodsPaths from "../routes/paymentMethods.js";
-import accountPaymentMethodsPaths from "../routes/accountPaymentMethods.js";
 import bankTransferPaths from "../routes/bankTransfer.js";
 
 //request schemas
@@ -13,7 +12,6 @@ import AuthRequest from "../schemas/requestMold/AuthRequest.js";
 import UserRequest from "../schemas/requestMold/UserRequest.js";
 import TransactionRequest from "../schemas/requestMold/TransactionRequest.js";
 import PaymentMethodsRequest from "../schemas/requestMold/PaymentMethodsRequest.js";
-import AccountPaymentMethodsRequest from "../schemas/requestMold/AccountPaymentMethodsRequest.js";
 import BankTransferRequest from "../schemas/requestMold/BankTransferRequest.js";
 
 //response schemas
@@ -22,7 +20,6 @@ import AuthResponse from "../schemas/responseMold/AuthResponse.js";
 import UserResponse from "../schemas/responseMold/UserResponse.js";
 import TransactionResponse from "../schemas/responseMold/TransactionResponse.js";
 import PaymentMethodsResponse from "../schemas/responseMold/PaymentMethodsResponse.js";
-import AccountPaymentMethodsResponse from "../schemas/responseMold/AccountPaymentMethodsResponse.js";
 import BankTransferResponse from "../schemas/responseMold/BankTransferResponse.js";
 
 // Function to define the server URLs depending on the environment
@@ -67,10 +64,6 @@ const getSwaggerOptions = () => {
           description: "Payment methods management route."
         },
         {
-          name: "Account Payment Methods",
-          description: "Account payment methods relationship management route."
-        },
-        {
           name: "Bank Transfers",
           description: "Bank transfer management route for transferring money between user accounts."
         }
@@ -81,7 +74,6 @@ const getSwaggerOptions = () => {
         ...userPaths,
         ...transactionPaths,
         ...paymentMethodsPaths,
-        ...accountPaymentMethodsPaths,
         ...bankTransferPaths,
       },
       components: {
@@ -99,7 +91,6 @@ const getSwaggerOptions = () => {
             ...AccountRequest,
             ...TransactionRequest,
             ...PaymentMethodsRequest,
-            ...AccountPaymentMethodsRequest,
             ...BankTransferRequest
           },
           responseMold: {
@@ -108,7 +99,6 @@ const getSwaggerOptions = () => {
             ...AccountResponse,
             ...TransactionResponse,
             ...PaymentMethodsResponse,
-            ...AccountPaymentMethodsResponse,
             ...BankTransferResponse
           }
         }

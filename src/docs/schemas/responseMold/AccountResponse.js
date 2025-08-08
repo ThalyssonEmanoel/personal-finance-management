@@ -14,7 +14,22 @@ const AccountResponse = {
           type: { type: "string" },
           balance: { type: "number" },
           icon: { type: "string", nullable: true },
-          userId: { type: "integer" }
+          userId: { type: "integer" },
+          accountPaymentMethods: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                paymentMethod: {
+                  type: "object",
+                  properties: {
+                    id: { type: "integer" },
+                    name: { type: "string" }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -26,7 +41,21 @@ const AccountResponse = {
         type: "Corrente",
         balance: 1000.00,
         icon: null,
-        userId: 1
+        userId: 1,
+        accountPaymentMethods: [
+          {
+            paymentMethod: {
+              id: 1,
+              name: "Dinheiro"
+            }
+          },
+          {
+            paymentMethod: {
+              id: 2,
+              name: "PIX"
+            }
+          }
+        ]
       }
     }
   },
@@ -43,7 +72,22 @@ const AccountResponse = {
           type: { type: "string" },
           balance: { type: "number" },
           icon: { type: "string", nullable: true },
-          userId: { type: "integer" }
+          userId: { type: "integer" },
+          accountPaymentMethods: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                paymentMethod: {
+                  type: "object",
+                  properties: {
+                    id: { type: "integer" },
+                    name: { type: "string" }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -55,7 +99,21 @@ const AccountResponse = {
         type: "Corrente",
         balance: 1000.00,
         icon: null,
-        userId: 1
+        userId: 1,
+        accountPaymentMethods: [
+          {
+            paymentMethod: {
+              id: 1,
+              name: "Dinheiro"
+            }
+          },
+          {
+            paymentMethod: {
+              id: 2,
+              name: "PIX"
+            }
+          }
+        ]
       }
     }
   },
@@ -71,7 +129,23 @@ const AccountResponse = {
           name: { type: "string" },
           type: { type: "string" },
           balance: { type: "number" },
-          icon: { type: "string", nullable: true }
+          icon: { type: "string", nullable: true },
+          userId: { type: "integer" },
+          accountPaymentMethods: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                paymentMethod: {
+                  type: "object",
+                  properties: {
+                    id: { type: "integer" },
+                    name: { type: "string" }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -83,7 +157,21 @@ const AccountResponse = {
         type: "Corrente",
         balance: 1200.00,
         icon: null,
-        userId: 1
+        userId: 1,
+        accountPaymentMethods: [
+          {
+            paymentMethod: {
+              id: 1,
+              name: "Dinheiro"
+            }
+          },
+          {
+            paymentMethod: {
+              id: 3,
+              name: "Cartão de Débito"
+            }
+          }
+        ]
       }
     }
   },

@@ -186,9 +186,15 @@ const AccountRequest = {
         format: "binary",
         description: "Ícone da conta (opcional)",
         nullable: true
+      },
+      paymentMethodIds: {
+        type: "string",
+        description: "IDs dos métodos de pagamento separados por vírgula (opcional)",
+        example: "1,2,3",
+        nullable: true
       }
     },
-    description: "Schema para criação de uma nova conta"
+    description: "Schema para criação de uma nova conta. Os paymentMethodIds devem ser uma string com IDs separados por vírgula (ex: '1,2,3' ou '1')."
   },
   UpdateAccountFormRequest: {
     title: "UpdateAccountFormRequest",
@@ -214,9 +220,15 @@ const AccountRequest = {
         format: "binary",
         description: "Ícone da conta (opcional)",
         nullable: true
+      },
+      paymentMethodIds: {
+        type: "string",
+        description: "IDs dos métodos de pagamento separados por vírgula (opcional)",
+        example: "1,2,3",
+        nullable: true
       }
     },
-    description: "Schema para atualização de conta"
+    description: "Schema para atualização de conta. Os paymentMethodIds devem ser uma string com IDs separados por vírgula (ex: '1,2,3' ou '1'). Para remover todos os métodos, envie uma string vazia."
   },
 };
 
