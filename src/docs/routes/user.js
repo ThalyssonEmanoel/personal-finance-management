@@ -1,5 +1,6 @@
-import commonResponses from "../schemas/swaggerCommonResponses.js";
-import parameterGenerator from "../utils/simpleParameterGenerator.js";
+import { requestGetId } from "../schemas/requestMold/UniversalRequest.js";
+import { requestUserAdminGet } from "../schemas/requestMold/UserRequest.js";
+import commonResponses from "../utils/swaggerCommonResponses.js";
 
 const usersRoutes = {
   "/admin/users": {
@@ -25,17 +26,9 @@ const usersRoutes = {
        #### Expected Result
        Returns a paginated list of users with detailed information.`,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getCustomParameters('Users', {
-        excludeFields: ['password', 'Despesas', 'Despesas_recorrentes', 'avatar', 'refreshToken', 'Text', 'transactions'], //despesas foi exluído, pois acho que não é necessário
-        customDescriptions: {
-          id: "Filtrar por ID do usuário",
-          name: "Filtrar por nome do usuário",
-          email: "Filtrar por email do usuário",
-          avatar: "Filtrar por avatar do usuário"
-        }
-      }),
+      ...requestUserAdminGet(),
       responses: {
-        200: commonResponses[200]("#/components/schemas/UserResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/UserResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -75,13 +68,13 @@ const usersRoutes = {
         content: {
           "multipart/form-data": {
             schema: {
-              $ref: "#/components/schemas/CreateUserFormRequestAdmin"
+              $ref: "#/components/schemas/requestMold/CreateUserFormRequestAdmin"
             }
           }
         }
       },
       responses: {
-        201: commonResponses[201]("#/components/schemas/CreateUserResponseAdmin"),
+        201: commonResponses[201]("#/components/schemas/responseMold/CreateUserResponseAdmin"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -119,19 +112,19 @@ const usersRoutes = {
       #### Expected Result
       Returns the updated user data (without password) and a 200 status code.`,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getPathIdParameter("ID do usuário a ser atualizado"),
+      ...requestGetId(),
       requestBody: {
         required: false,
         content: {
           "multipart/form-data": {
             schema: {
-              $ref: "#/components/schemas/UpdateUserFormRequestAdmin"
+              $ref: "#/components/schemas/requestMold/UpdateUserFormRequestAdmin"
             }
           }
         }
       },
       responses: {
-        200: commonResponses[200]("#/components/schemas/UpdateUserResponseAdmin"),
+        200: commonResponses[200]("#/components/schemas/responseMold/UpdateUserResponseAdmin"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -173,13 +166,13 @@ const usersRoutes = {
         content: {
           "multipart/form-data": {
             schema: {
-              $ref: "#/components/schemas/CreateUserFormRequest"
+              $ref: "#/components/schemas/requestMold/CreateUserFormRequest"
             }
           }
         }
       },
       responses: {
-        201: commonResponses[201]("#/components/schemas/CreateUserResponse"),
+        201: commonResponses[201]("#/components/schemas/responseMold/CreateUserResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -212,9 +205,9 @@ const usersRoutes = {
       #### Expected Result
       Returns the user data (without password) and a 200 status code.`,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getPathIdParameter("ID do usuário a ser consultado"),
+      ...requestGetId(),
       responses: {
-        200: commonResponses[200]("#/components/schemas/UserResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/UserResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -248,19 +241,19 @@ const usersRoutes = {
       #### Expected Result
       Returns the updated user data (without password) and a 200 status code.`,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getPathIdParameter("ID do usuário a ser atualizado"),
+      ...requestGetId(),
       requestBody: {
         required: false,
         content: {
           "multipart/form-data": {
             schema: {
-              $ref: "#/components/schemas/UpdateUserFormRequest"
+              $ref: "#/components/schemas/requestMold/UpdateUserFormRequest"
             }
           }
         }
       },
       responses: {
-        200: commonResponses[200]("#/components/schemas/UpdateUserResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/UpdateUserResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -296,9 +289,9 @@ const usersRoutes = {
       #### Expected Result
       Returns a success message confirming the user and all related data deletion.`,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getPathIdParameter("ID do usuário a ser deletado"),
-      responses: {
-        200: commonResponses[200]("#/components/schemas/DeleteUserResponse"),
+        ...requestGetId(),
+        responses: {
+        200: commonResponses[200]("#/components/schemas/responseMold/DeleteUserResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -332,19 +325,19 @@ const usersRoutes = {
       #### Expected Result
       Returns a success message confirming the password change.`,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getPathIdParameter("ID do usuário que deseja alterar a senha"),
+      ...requestGetId(),
       requestBody: {
         required: true,
         content: {
           "application/json": {
             schema: {
-              $ref: "#/components/schemas/ChangePasswordRequest"
+              $ref: "#/components/schemas/requestMold/ChangePasswordRequest"
             }
           }
         }
       },
       responses: {
-        200: commonResponses[200]("#/components/schemas/ChangePasswordResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/ChangePasswordResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),

@@ -38,7 +38,7 @@ class UserRepository {
         id: true,
         name: true,
         email: true,
-        password: true, // Incluir senha para verificação
+        password: true,
         avatar: true,
         isAdmin: false
       }
@@ -217,6 +217,10 @@ class UserRepository {
 
     try {
       await prisma.$transaction(async (prisma) => {
+        await prisma.bankTransfers.deleteMany({
+          where: { userId: parseInt(id) }
+        });
+
         await prisma.transactions.deleteMany({
           where: { userId: parseInt(id) }
         });

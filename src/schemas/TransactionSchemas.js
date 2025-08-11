@@ -24,7 +24,7 @@ class TransactionSchemas {
       .int({ message: "The current installment number must be an integer." })
       .positive({ message: "The current installment number must be greater than 0." })
       .optional(),
-    paymentMethod: z.coerce.number({ message: "The payment method ID must be an integer." })
+    paymentMethodId: z.coerce.number({ message: "The payment method ID must be an integer." })
       .int({ message: "The payment method ID must be an integer." })
       .positive({ message: "The payment method ID must be greater than 0." })
       .optional(),
@@ -71,7 +71,7 @@ class TransactionSchemas {
       .int({ message: "The current installment number must be an integer." })
       .positive({ message: "The current installment number must be greater than 0." })
       .optional(),
-    paymentMethod: z.coerce.number({ message: "The payment method ID must be an integer." })
+    paymentMethodId: z.coerce.number({ message: "The payment method ID must be an integer." })
       .int({ message: "The payment method ID must be an integer." })
       .positive({ message: "The payment method ID must be greater than 0." })
       .optional(),

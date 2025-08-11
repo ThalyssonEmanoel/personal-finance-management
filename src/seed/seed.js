@@ -16,6 +16,7 @@ async function clearDatabase() {
     console.log('Apagando dados existentes...');
 
     // Limpar dados existentes (optional)
+    await prisma.bankTransfers.deleteMany();
     await prisma.transactions.deleteMany();
     await prisma.paymentMethods.deleteMany();
     await prisma.accounts.deleteMany();
@@ -285,6 +286,71 @@ async function seedDatabase() {
 
   const createdTransactions = await prisma.transactions.createMany({ data: transactionsData });
   console.log(` Criadas ${createdTransactions.count} transações.`);
+
+  const bankTransfersData = [];
+
+  allUsers.forEach(user => {
+    const userAccounts = allAccounts.filter(account => account.userId === user.id);
+    
+    if (userAccounts.length < 2) {
+      console.warn(`Usuário ${user.name} tem menos de 2 contas, não pode fazer transferências internas`);
+      return;
+    }
+
+    // Cada usuário terá 2 transferências bancárias
+    for (let i = 0; i < 2; i++) {
+      // Selecionar conta de origem e destino aleatoriamente
+      const sourceAccount = faker.helpers.arrayElement(userAccounts);
+      const availableDestinations = userAccounts.filter(acc => acc.id !== sourceAccount.id);
+      const destinationAccount = faker.helpers.arrayElement(availableDestinations);
+      const sourceAccountPaymentMethods = accountPaymentMethodsData.filter(
+        apm => apm.accountId === sourceAccount.id
+      );
+
+      if (sourceAccountPaymentMethods.length === 0) {
+        console.warn(`Conta de origem ${sourceAccount.name} não tem métodos de pagamento compatíveis!`);
+        continue;
+      }
+
+      // Preferir métodos eletrônicos para transferências
+      const preferredMethods = sourceAccountPaymentMethods.filter(apm => {
+        const method = allPaymentMethods.find(pm => pm.id === apm.paymentMethodId);
+        return ["PIX", "Transferência Bancária", "Cartão de Débito"].includes(method.name);
+      });
+
+      const selectedMethod = preferredMethods.length > 0 
+        ? faker.helpers.arrayElement(preferredMethods)
+        : faker.helpers.arrayElement(sourceAccountPaymentMethods);
+
+      const amount = parseFloat(faker.finance.amount(50, 1000, 2));
+      const transfer_date = faker.date.between({
+        from: new Date('2024-01-01'),
+        to: new Date('2024-12-31')
+      });
+
+      const descriptions = [
+        "Transferência para conta poupança",
+        "Movimentação entre contas",
+        "Transferência para investimento",
+        "Organização financeira",
+        "Transferência interna",
+        null
+      ];
+
+      bankTransfersData.push({
+        amount,
+        transfer_date,
+        description: faker.helpers.arrayElement(descriptions),
+        sourceAccountId: sourceAccount.id,
+        destinationAccountId: destinationAccount.id,
+        paymentMethodId: selectedMethod.paymentMethodId,
+        userId: user.id
+      });
+    }
+  });
+
+  const createdBankTransfers = await prisma.bankTransfers.createMany({ data: bankTransfersData });
+  console.log(` Criadas ${createdBankTransfers.count} transferências bancárias.`);
 
   console.log(' Seed concluído com sucesso!');
 }

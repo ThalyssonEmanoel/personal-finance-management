@@ -35,7 +35,7 @@ class AccountController {
       const bodyData = AccountSchemas.createAccountBody.parse(req.body);
       const queryData = AccountSchemas.createAccountQuery.parse(req.query);
 
-      const { name, type, balance } = bodyData;
+      const { name, type, balance, paymentMethodIds } = bodyData;
       const { userId } = queryData;
 
       let icon = "";
@@ -43,7 +43,7 @@ class AccountController {
         icon = `uploads/${req.file.filename}`;
       }
 
-      const account = await AccountService.createAccount({ name, type, balance, icon, userId });
+      const account = await AccountService.createAccount({ name, type, balance, icon, paymentMethodIds, userId });
       res.status(201).json(CommonResponse.success(account));
     } catch (err) {
       next(err);
@@ -53,13 +53,30 @@ class AccountController {
   static updateAccount = async (req, res, next) => {
     try {
       const { id, userId } = req.query;
-      const { name, type, balance } = req.body;
-      let icon = req.body.icon;
-      if (req.file) {
-        icon = `uploads/${req.file.filename}`;
+
+      const accountData = {};
+      
+
+      if (req.body.name !== undefined && req.body.name !== null && req.body.name.trim() !== '') {
+        accountData.name = req.body.name;
       }
-      const accountData = { name, type, balance, icon};
-      const updatedAccount = await AccountService.updateAccount(id, userId, accountData);
+      if (req.body.type !== undefined && req.body.type !== null && req.body.type.trim() !== '') {
+        accountData.type = req.body.type;
+      }
+      if (req.body.balance !== undefined && req.body.balance !== null && req.body.balance !== '') {
+        accountData.balance = req.body.balance;
+      }
+      if (req.body.paymentMethodIds !== undefined && req.body.paymentMethodIds !== null && req.body.paymentMethodIds.trim() !== '') {
+        accountData.paymentMethodIds = req.body.paymentMethodIds;
+      }
+      
+      if (req.file) {
+        accountData.icon = `uploads/${req.file.filename}`;
+      } else if (req.body.icon !== undefined) {
+        accountData.icon = req.body.icon;
+      }
+
+      const updatedAccount = await AccountService.updateAccount(parseInt(id), parseInt(userId), accountData);
       res.status(200).json(CommonResponse.success(updatedAccount));
     } catch (err) {
       next(err);

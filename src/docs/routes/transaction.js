@@ -1,5 +1,6 @@
-import commonResponses from "../schemas/swaggerCommonResponses.js";
-import parameterGenerator from "../utils/simpleParameterGenerator.js";
+import { requestTransactionGet } from "../schemas/requestMold/TransactionRequest.js";
+import { requestGetId, requestUserId, requestWithIdAndUserId } from "../schemas/requestMold/UniversalRequest.js";
+import commonResponses from "../utils/swaggerCommonResponses.js";
 
 const transactionRoutes = {
   "/transactions/admin": {
@@ -22,11 +23,9 @@ const transactionRoutes = {
         Returns a paginated list of transactions with detailed information and related data.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getCustomParameters('Transactions', {
-        excludeFields: ['account', 'paymentMethod', 'user', 'description']
-      }),
+      ...requestTransactionGet(),
       responses: {
-        200: commonResponses[200]("#/components/schemas/TransactionResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/TransactionResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         404: commonResponses[404](),
@@ -55,24 +54,9 @@ const transactionRoutes = {
         Returns a paginated list of transactions with detailed information and related data.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getCustomParameters('Transactions', {
-        excludeFields: ['account', 'paymentMethod', 'user', 'description'],
-        customDescriptions: {
-          type: "Filter by transaction type (expense or income)",
-          name: "Filter by transaction name", 
-          category: "Filter by transaction category",
-          value: "Filter by transaction amount",
-          value_installment: "Filter by original installment total value",
-          release_date: "Filter by release date (YYYY-MM-DD format)",
-          number_installments: "Filter by number of installments",
-          current_installment: "Filter by current installment number",
-          recurring: "Filter by recurring transactions (true/false)",
-          accountId: "Filter by account ID",
-          paymentMethodId: "Filter by payment method ID"
-        }
-      }),
+      ...requestTransactionGet(),
       responses: {
-        200: commonResponses[200]("#/components/schemas/TransactionResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/TransactionResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         404: commonResponses[404](),
@@ -108,27 +92,19 @@ const transactionRoutes = {
         Returns the created transaction data and status 201. For installment transactions, includes a preview showing how the total value was divided across installments.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "userId",
-          in: "query",
-          description: "ID for user who will own the transaction",
-          required: true,
-          schema: { type: "integer", minimum: 1 }
-        }
-      ],
+      ...requestUserId(),
       requestBody: {
         required: true,
         content: {
           "application/json": {
             schema: {
-              $ref: "#/components/schemas/CreateTransactionRequest"
+              $ref: "#/components/schemas/requestMold/CreateTransactionRequest"
             }
           }
         }
       },
       responses: {
-        201: commonResponses[201]("#/components/schemas/CreateTransactionResponse"),
+        201: commonResponses[201]("#/components/schemas/responseMold/CreateTransactionResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         404: commonResponses[404](),
@@ -161,19 +137,19 @@ const transactionRoutes = {
         Returns the updated transaction data and status 200.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getQueryIdAndUserParameter("ID da conta a ser deletada"),
+      ...requestWithIdAndUserId(),
       requestBody: {
         required: false,
         content: {
           "application/json": {
             schema: {
-              $ref: "#/components/schemas/UpdateTransactionRequest"
+              $ref: "#/components/schemas/requestMold/UpdateTransactionRequest"
             }
           }
         }
       },
       responses: {
-        200: commonResponses[200]("#/components/schemas/UpdateTransactionResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/UpdateTransactionResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         404: commonResponses[404](),
@@ -201,9 +177,9 @@ const transactionRoutes = {
         Returns success message confirming transaction deletion.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getPathIdParameter("ID of the transaction to be deleted"),
+      ...requestWithIdAndUserId(),
       responses: {
-        200: commonResponses[200]("#/components/schemas/DeleteTransactionResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/DeleteTransactionResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         404: commonResponses[404](),
@@ -211,7 +187,7 @@ const transactionRoutes = {
         500: commonResponses[500]()
       }
     }
-  }
+  },
 };
 
 export default transactionRoutes;

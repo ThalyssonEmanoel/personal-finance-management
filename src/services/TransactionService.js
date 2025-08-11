@@ -15,7 +15,7 @@ class TransactionService {
       const numberOfInstallments = validTransaction.number_installments;
       const baseInstallmentValue = totalValue.dividedBy(numberOfInstallments);
       const standardInstallmentValue = baseInstallmentValue.toDecimalPlaces(2, Decimal.ROUND_DOWN);
-      
+
       validTransaction.value_installment = standardInstallmentValue.toNumber();
 
       if (validTransaction.current_installment === undefined || validTransaction.current_installment === null) {
@@ -30,7 +30,7 @@ class TransactionService {
    */
   static _shouldUpdateAccountBalance(validTransaction) {
     return (validTransaction.type === "expense" || validTransaction.type === "income") &&
-           validTransaction.accountId && validTransaction.userId;
+      validTransaction.accountId && validTransaction.userId;
   }
 
   /**
@@ -99,6 +99,8 @@ class TransactionService {
   }
 
   static async updateTransaction(id, userId, transactionData) {
+    console.log("Deve ser inteiro:", id);
+    
     const validId = TransactionSchemas.transactionIdParam.parse({ id });
     const validUserId = AccountSchemas.userIdParam.parse({ userId });
     const validTransactionData = TransactionSchemas.updateTransaction.parse(transactionData);
@@ -110,20 +112,11 @@ class TransactionService {
     return updatedTransaction;
   }
 
-  static async deleteTransaction(id) {
-    const validId = TransactionSchemas.transactionIdParam.parse({ id });
-    const result = await TransactionRepository.deleteTransaction(validId.id);
+  static async deleteTransaction(id, userId) {
+    const validId = AccountSchemas.accountIdParam.parse({ id });
+    const validUserId = AccountSchemas.userIdParam.parse({ userId });
+    const result = await TransactionRepository.deleteTransaction(validId.id, validUserId.userId);
     return result;
-  }
-
-  static async getCompatiblePaymentMethods(accountId) {
-    const validAccountId = TransactionSchemas.accountIdParam.parse({ accountId });
-    const compatibleMethods = await TransactionRepository.getCompatiblePaymentMethods(validAccountId.accountId);
-
-    return compatibleMethods.map(apm => ({
-      id: apm.paymentMethod.id,
-      name: apm.paymentMethod.name
-    }));
   }
 
   /**

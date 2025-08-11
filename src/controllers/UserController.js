@@ -85,7 +85,8 @@ class UserController {
       const { id } = req.params;
       const { currentPassword, newPassword, confirmPassword } = req.body;
       const requestingUserId = req.user.id;
-      
+      console.log("Não lembro o que é isso:", requestingUserId);
+
       const result = await UserService.changePassword(
         id, 
         { currentPassword, newPassword, confirmPassword },

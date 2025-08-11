@@ -1,5 +1,6 @@
-import commonResponses from "../schemas/swaggerCommonResponses.js";
-import parameterGenerator from "../utils/simpleParameterGenerator.js";
+import { requestAccountAdminGet, requestAccountGet } from "../schemas/requestMold/AccountRequest.js";
+import { requestUserId, requestWithIdAndUserId } from "../schemas/requestMold/UniversalRequest.js";
+import commonResponses from "../utils/swaggerCommonResponses.js";
 
 const accountsRoutes = {
   "/admin/account": {
@@ -25,25 +26,9 @@ const accountsRoutes = {
         Retorna uma lista paginada de contas com informações detalhadas.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getCustomParameters('Accounts', {
-        excludeFields: ['icon', 'user', 'transactions', 'userId'],
-        customDescriptions: {
-          id: "Filtrar por ID da conta",
-          name: "Filtrar por nome da conta",
-          type: "Filtrar por tipo da conta"
-        },
-        extraParameters: [
-          {
-            name: "userId",
-            in: "query",
-            description: "Filtrar por ID do usuário dono da conta",
-            required: false,
-            schema: { type: "integer" }
-          }
-        ]
-      }),
+      ...requestAccountAdminGet(),
       responses: {
-        200: commonResponses[200]("#/components/schemas/AccountResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/AccountResponseGet"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -76,27 +61,19 @@ const accountsRoutes = {
         Returns the created account data and status 201.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "userId",
-          in: "query",
-          description: "ID do usuário para quem a conta será criada",
-          required: true,
-          schema: { type: "integer", minimum: 1 }
-        }
-      ],
+      ...requestUserId(),
       requestBody: {
         required: true,
         content: {
           "multipart/form-data": {
             schema: {
-              $ref: "#/components/schemas/CreateAccountFormRequest"
+              $ref: "#/components/schemas/requestMold/CreateAccountFormRequest"
             }
           }
         }
       },
       responses: {
-        201: commonResponses[201]("#/components/schemas/CreateAccountResponse"),
+        201: commonResponses[201]("#/components/schemas/responseMold/CreateAccountResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -104,50 +81,34 @@ const accountsRoutes = {
         498: commonResponses[498](),
         500: commonResponses[500]()
       }
-    }
+    },
   },
   "/account/{id}": {
     get: {
       tags: ["Accounts"],
       summary: "Get account by ID",
       description: `
-        #### Use Case
-        Allows users to retrieve information about a specific account by its ID.
-
-        #### Business Rule
-        Retrieves detailed information about a specific account, ensuring data privacy and access control.
-
-        #### Business Rules Involved
-        - User must be authenticated.
-        - Users can ONLY access accounts that belong to them (except administrators).
-        - Administrators can access any account information.
-        - ID must be a valid positive integer.
-        - Account must exist in the system.
-        - Access is controlled by adminOrOwnerMiddleware.
-
-        #### Expected Result
-        Returns the account data and a 200 status code.
-      `,
+    #### Use Case
+    Allows users to retrieve information about a specific account by its ID.
+  
+    #### Business Rule
+    Retrieves detailed information about a specific account, ensuring data privacy and access control.
+  
+    #### Business Rules Involved
+    - User must be authenticated.
+    - Users can ONLY access accounts that belong to them (except administrators).
+    - Administrators can access any account information.
+    - ID must be a valid positive integer.
+    - Account must exist in the system.
+    - Access is controlled by adminOrOwnerMiddleware.
+  
+    #### Expected Result
+    Returns the account data and a 200 status code.
+  `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getCustomParameters('Accounts', {
-        excludeFields: ['icon', 'user', 'transactions', 'userId'],
-        customDescriptions: {
-          id: "Filtrar por ID da conta",
-          name: "Filtrar por nome da conta",
-          type: "Filtrar por tipo da conta"
-        },
-        extraParameters: [
-          {
-            name: "userId",
-            in: "query",
-            description: "Filtrar por ID do usuário dono da conta",
-            required: false,
-            schema: { type: "integer" }
-          }
-        ]
-      }),
+      ...requestAccountGet(),
       responses: {
-        200: commonResponses[200]("#/components/schemas/AccountResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/AccountResponseGet"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -160,7 +121,7 @@ const accountsRoutes = {
       tags: ["Accounts"],
       summary: "Atualiza uma conta",
       description: `
-        #### Caso de Uso
+      #### Caso de Uso
         Permite ao sistema atualizar as informações de uma conta existente.
 
         #### Regra de Negócio
@@ -175,19 +136,19 @@ const accountsRoutes = {
         Retorna os dados da conta atualizada e status 200.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getQueryIdAndUserParameter("ID da conta a ser deletada"),
+      ...requestWithIdAndUserId(),
       requestBody: {
         required: false,
         content: {
           "multipart/form-data": {
             schema: {
-              $ref: "#/components/schemas/UpdateAccountFormRequest"
+              $ref: "#/components/schemas/requestMold/UpdateAccountFormRequest"
             }
           }
         }
       },
       responses: {
-        200: commonResponses[200]("#/components/schemas/UpdateAccountResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/UpdateAccountResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),
@@ -216,9 +177,9 @@ const accountsRoutes = {
         Retorna mensagem de sucesso confirmando a exclusão da conta.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: parameterGenerator.getQueryIdAndUserParameter("ID da conta a ser deletada"),
+      ...requestWithIdAndUserId(),
       responses: {
-        200: commonResponses[200]("#/components/schemas/DeleteAccountResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/DeleteAccountResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         403: commonResponses[403](),

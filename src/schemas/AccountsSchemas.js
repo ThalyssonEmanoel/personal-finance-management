@@ -6,8 +6,8 @@ class AccountSchemas {
       .refine((val) => !/^[0-9]+$/.test(val), { message: "The account name must contain words, not only numbers." })
       .optional(),
     type: z.string({ message: "The type must be a string/text." })
-    .refine((val) => !/^[0-9]+$/.test(val), { message: "The type must contain words, not only numbers." })
-    .optional(),
+      .refine((val) => !/^[0-9]+$/.test(val), { message: "The type must contain words, not only numbers." })
+      .optional(),
     balance: z.coerce.number({ message: "The balance must be a number." }).optional(),
     userId: z.coerce.number({ message: "The user ID must be an integer." })
       .int({ message: "The user ID must be an integer." })
@@ -33,11 +33,20 @@ class AccountSchemas {
       .refine((val) => !/^[0-9]+$/.test(val), { message: "The account name must be a string/text." }),
     type: z.string({ message: "Account type must be a string." }),
     balance: z.coerce.number({ message: "Account balance must be a number." }),
-    icon: z.string({ message: "Account icon must be a string (image path)." })
-      .regex(/\.(jpg|jpeg|png|gif|bmp|webp)$/i, { message: "Icon must be an image file (jpg, jpeg, png, gif, bmp, webp)." })
+    icon: z.string({ message: "O icon precisa ser definido como uma string/texto." }).optional().nullable(),
+    paymentMethodIds: z.union([
+      z.string(),
+      z.undefined(),
+      z.null(),
+      z.array(z.number())
+    ], { message: "Payment method IDs must be a string, array, or empty." })
       .optional()
-      .nullable()
-      .or(z.literal("")),
+      .transform((val) => {
+        if (!val) return [];
+        if (Array.isArray(val)) return val.filter(id => !isNaN(id) && id > 0);
+        if (val.toString().trim() === "" || val === "undefined" || val === "null") return [];
+        return val.toString().split(",").map(id => parseInt(id.trim())).filter(id => !isNaN(id) && id > 0);
+      }),
     userId: z.coerce.number({ message: "User ID must be an integer." })
       .int({ message: "User ID must be an integer." })
       .positive({ message: "User ID must be at least 1." })
@@ -48,11 +57,17 @@ class AccountSchemas {
       .refine((val) => !/^[0-9]+$/.test(val), { message: "The account name must be a string/text." }),
     type: z.string({ message: "Account type must be a string." }),
     balance: z.coerce.number({ message: "Account balance must be a number." }),
-    icon: z.string({ message: "Account icon must be a string (image path)." })
-      .regex(/\.(jpg|jpeg|png|gif|bmp|webp)$/i, { message: "Icon must be an image file (jpg, jpeg, png, gif, bmp, webp)." })
+    icon: z.string({ message: "O icon precisa ser definido como uma string/texto." }).optional().nullable(),
+    paymentMethodIds: z.union([
+      z.string(),
+      z.undefined(),
+      z.null()
+    ], { message: "Payment method IDs must be a string or empty." })
       .optional()
-      .nullable()
-      .or(z.literal(""))
+      .transform((val) => {
+        if (!val || val.toString().trim() === "" || val === "undefined" || val === "null") return [];
+        return val.toString().split(",").map(id => parseInt(id.trim())).filter(id => !isNaN(id) && id > 0);
+      })
   });
 
   static createAccountQuery = z.object({
@@ -67,7 +82,13 @@ class AccountSchemas {
       .optional(),
     type: z.string({ message: "The type must be a string/text." }).optional(),
     balance: z.coerce.number({ message: "The balance must be a number." }).optional(),
-    icon: z.string({ message: "The icon must be a string/text." }).optional(),
+    icon: z.string({ message: "O icon precisa ser definido como uma string/texto." }).optional().nullable(),
+    paymentMethodIds: z.string({ message: "Payment method IDs must be a string." })
+      .optional()
+      .transform((val) => {
+        if (!val || val.trim() === "") return [];
+        return val.split(",").map(id => parseInt(id.trim())).filter(id => !isNaN(id) && id > 0);
+      })
   });
 
   static accountIdParam = z.object({
@@ -87,8 +108,8 @@ class AccountSchemas {
       .refine((val) => !/^[0-9]+$/.test(val), { message: "The account name must contain words, not only numbers." })
       .optional(),
     type: z.string({ message: "The type must be a string/text." })
-    .refine((val) => !/^[0-9]+$/.test(val), { message: "The type must contain words, not only numbers." })
-    .optional(),
+      .refine((val) => !/^[0-9]+$/.test(val), { message: "The type must contain words, not only numbers." })
+      .optional(),
     balance: z.coerce.number({ message: "The balance must be a number." }).optional(),
     userId: z.coerce.number({ message: "The user ID must be an integer." })
       .int({ message: "The user ID must be an integer." })

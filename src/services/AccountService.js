@@ -37,7 +37,6 @@ class AccountService {
 
   static async createAccount(account) {
     const validAccount = AccountSchemas.createAccount.parse(account);
-    
     const newAccount = await AccountRepository.createAccount(validAccount);
     if (!newAccount) {
       throw { code: 404 };
@@ -46,6 +45,7 @@ class AccountService {
   }
 
   static async updateAccount(id, userId, accountData) {
+
     const validId = AccountSchemas.accountIdParam.parse({ id });
     const validUserId = AccountSchemas.userIdParam.parse({ userId });
     const validAccountData = AccountSchemas.updateAccount.parse(accountData);
