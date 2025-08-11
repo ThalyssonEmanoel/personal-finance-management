@@ -346,7 +346,7 @@ const usersRoutes = {
         500: commonResponses[500]()
       }
     }
-  }
+  },
 };
 
 export default usersRoutes;

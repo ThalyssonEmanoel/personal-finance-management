@@ -5,6 +5,7 @@ import authPaths from "../routes/auth.js";
 import transactionPaths from "../routes/transaction.js";
 import paymentMethodsPaths from "../routes/paymentMethods.js";
 import bankTransferPaths from "../routes/bankTransfer.js";
+import goalPaths from "../routes/goal.js";
 
 //request schemas
 import AccountRequest from "../schemas/requestMold/AccountRequest.js";
@@ -13,6 +14,7 @@ import UserRequest from "../schemas/requestMold/UserRequest.js";
 import TransactionRequest from "../schemas/requestMold/TransactionRequest.js";
 import PaymentMethodsRequest from "../schemas/requestMold/PaymentMethodsRequest.js";
 import BankTransferRequest from "../schemas/requestMold/BankTransferRequest.js";
+import GoalRequest from "../schemas/requestMold/GoalRequest.js";
 
 //response schemas
 import AccountResponse from "../schemas/responseMold/AccountResponse.js";
@@ -21,6 +23,7 @@ import UserResponse from "../schemas/responseMold/UserResponse.js";
 import TransactionResponse from "../schemas/responseMold/TransactionResponse.js";
 import PaymentMethodsResponse from "../schemas/responseMold/PaymentMethodsResponse.js";
 import BankTransferResponse from "../schemas/responseMold/BankTransferResponse.js";
+import GoalResponse from "../schemas/responseMold/GoalResponse.js";
 
 // Function to define the server URLs depending on the environment
 const getServersInCorrectOrder = () => {
@@ -66,6 +69,10 @@ const getSwaggerOptions = () => {
         {
           name: "Bank Transfers",
           description: "Bank transfer management route for transferring money between user accounts."
+        },
+        {
+          name: "Goals",
+          description: "Financial goals management route for setting and tracking income and expense targets."
         }
       ],
       paths: {
@@ -75,6 +82,7 @@ const getSwaggerOptions = () => {
         ...transactionPaths,
         ...paymentMethodsPaths,
         ...bankTransferPaths,
+        ...goalPaths,
       },
       components: {
         securitySchemes: {
@@ -91,7 +99,8 @@ const getSwaggerOptions = () => {
             ...AccountRequest,
             ...TransactionRequest,
             ...PaymentMethodsRequest,
-            ...BankTransferRequest
+            ...BankTransferRequest,
+            ...GoalRequest
           },
           responseMold: {
             ...AuthResponse,
@@ -99,7 +108,8 @@ const getSwaggerOptions = () => {
             ...AccountResponse,
             ...TransactionResponse,
             ...PaymentMethodsResponse,
-            ...BankTransferResponse
+            ...BankTransferResponse,
+            ...GoalResponse
           }
         }
       },

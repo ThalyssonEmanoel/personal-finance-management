@@ -20,6 +20,7 @@ model Users {
   accounts      Accounts[]
   transactions  Transactions[]
   bankTransfers BankTransfers[]
+  goals         Goals[]
 }
 
 model Accounts {
@@ -96,6 +97,19 @@ model BankTransfers {
 
   paymentMethodId Int
   paymentMethod   PaymentMethods @relation(fields: [paymentMethodId], references: [id])
+
+  userId Int
+  user   Users @relation(fields: [userId], references: [id])
+}
+
+model Goals {
+  id               Int             @id @default(autoincrement())
+  name             String          @db.VarChar(255)
+  date             DateTime        @db.Date
+  transaction_type TransactionType
+  value            Decimal         @db.Decimal(10, 2)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   userId Int
   user   Users @relation(fields: [userId], references: [id])

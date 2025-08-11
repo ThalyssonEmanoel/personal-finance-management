@@ -18,6 +18,7 @@ async function clearDatabase() {
     // Limpar dados existentes (optional)
     await prisma.bankTransfers.deleteMany();
     await prisma.transactions.deleteMany();
+    await prisma.goals.deleteMany();
     await prisma.paymentMethods.deleteMany();
     await prisma.accounts.deleteMany();
     await prisma.users.deleteMany();
@@ -28,13 +29,13 @@ async function clearDatabase() {
     await prisma.$executeRaw`ALTER TABLE Accounts AUTO_INCREMENT = 1`;
     await prisma.$executeRaw`ALTER TABLE PaymentMethods AUTO_INCREMENT = 1`;
     await prisma.$executeRaw`ALTER TABLE Transactions AUTO_INCREMENT = 1`;
+    await prisma.$executeRaw`ALTER TABLE Goals AUTO_INCREMENT = 1`;
 
   } catch (error) {
     console.error('Erro ao limpar o banco de dados:', error);
   }
 }
 
-// Função para obter avatares disponíveis
 function getAvailableAvatars() {
   const avatarPaths = [];
 
@@ -114,7 +115,6 @@ async function seedDatabase() {
   const createdAccounts = await prisma.accounts.createMany({ data: accountsData });
   console.log(` Criadas ${createdAccounts.count} contas para os usuários.`);
 
-  // Criar formas de pagamento
   const paymentMethods = [
     { name: "Dinheiro" },
     { name: "Cartão de Débito" },
@@ -129,15 +129,12 @@ async function seedDatabase() {
   const createdPaymentMethods = await prisma.paymentMethods.createMany({ data: paymentMethods });
   console.log(` Criadas ${createdPaymentMethods.count} formas de pagamento.`);
 
-  // Buscar todas as contas e formas de pagamento criadas
   const allAccounts = await prisma.accounts.findMany();
   const allPaymentMethods = await prisma.paymentMethods.findMany();
 
-  // Criar relacionamentos entre contas e métodos de pagamento
   const accountPaymentMethodsData = [];
   
   allAccounts.forEach(account => {
-    // Definir quais métodos de pagamento são compatíveis com cada tipo de conta
     let compatiblePaymentMethods = [];
     
     switch (account.type.toLowerCase()) {
@@ -147,25 +144,21 @@ async function seedDatabase() {
         break;
       case 'corrente':
       case 'poupanca':
-        // Contas bancárias aceitam quase todos os métodos, exceto vale alimentação/refeição
         compatiblePaymentMethods = allPaymentMethods.filter(pm => 
           !pm.name.includes("Vale")
         );
         break;
       case 'digital':
-        // Contas digitais aceitam métodos eletrônicos
         compatiblePaymentMethods = allPaymentMethods.filter(pm => 
           ["PIX", "Cartão de Débito", "Cartão de Crédito", "Transferência Bancária"].includes(pm.name)
         );
         break;
       case 'investimento':
-        // Conta de investimento aceita transferências e PIX principalmente
         compatiblePaymentMethods = allPaymentMethods.filter(pm => 
           ["PIX", "Transferência Bancária", "Cartão de Débito"].includes(pm.name)
         );
         break;
       default:
-        // Para outros tipos, aceita métodos básicos
         compatiblePaymentMethods = allPaymentMethods.filter(pm => 
           ["Dinheiro", "PIX", "Cartão de Débito", "Cartão de Crédito"].includes(pm.name)
         );
@@ -185,7 +178,6 @@ async function seedDatabase() {
   });
   console.log(` Criados ${createdAccountPaymentMethods.count} relacionamentos entre contas e métodos de pagamento.`);
 
-  // Categorias para transações
   const expenseCategories = [
     "Alimentação", "Transporte", "Moradia", "Saúde", "Educação",
     "Entretenimento", "Roupas", "Tecnologia", "Viagem", "Outros"
@@ -211,7 +203,6 @@ async function seedDatabase() {
     "Outros": ["Diversos", "Variado"]
   };
 
-  // Gerar transações
   const transactionsData = [];
 
   allAccounts.forEach(account => {
@@ -225,7 +216,6 @@ async function seedDatabase() {
       return;
     }
 
-    // Cada conta terá entre 5 e 15 transações
     const numTransactions = faker.number.int({ min: 1, max: 5 });
 
     for (let i = 0; i < numTransactions; i++) {
@@ -235,7 +225,6 @@ async function seedDatabase() {
       const categories = isExpense ? expenseCategories : incomeCategories;
       const category = faker.helpers.arrayElement(categories);
 
-      // Gerar nome da transação baseado na categoria
       let name;
       switch (category) {
         case "Alimentação":
@@ -257,7 +246,7 @@ async function seedDatabase() {
         to: new Date('2024-12-31')
       });
 
-      const recurring = faker.datatype.boolean(0.2); // 20% chance de ser recorrente
+      const recurring = faker.datatype.boolean(0.2); // 20% 
       const number_installments = !recurring && faker.datatype.boolean(0.3)
         ? faker.number.int({ min: 2, max: 12 })
         : null;
@@ -291,15 +280,14 @@ async function seedDatabase() {
 
   allUsers.forEach(user => {
     const userAccounts = allAccounts.filter(account => account.userId === user.id);
-    
+
     if (userAccounts.length < 2) {
-      console.warn(`Usuário ${user.name} tem menos de 2 contas, não pode fazer transferências internas`);
+      console.log(`Usuário ${user.name} tem menos de 2 contas, não pode fazer transferências internas`);
       return;
     }
 
     // Cada usuário terá 2 transferências bancárias
     for (let i = 0; i < 2; i++) {
-      // Selecionar conta de origem e destino aleatoriamente
       const sourceAccount = faker.helpers.arrayElement(userAccounts);
       const availableDestinations = userAccounts.filter(acc => acc.id !== sourceAccount.id);
       const destinationAccount = faker.helpers.arrayElement(availableDestinations);
@@ -312,7 +300,6 @@ async function seedDatabase() {
         continue;
       }
 
-      // Preferir métodos eletrônicos para transferências
       const preferredMethods = sourceAccountPaymentMethods.filter(apm => {
         const method = allPaymentMethods.find(pm => pm.id === apm.paymentMethodId);
         return ["PIX", "Transferência Bancária", "Cartão de Débito"].includes(method.name);
@@ -351,6 +338,56 @@ async function seedDatabase() {
 
   const createdBankTransfers = await prisma.bankTransfers.createMany({ data: bankTransfersData });
   console.log(` Criadas ${createdBankTransfers.count} transferências bancárias.`);
+
+  const goalsData = [];
+
+  allUsers.forEach(user => {
+    const numGoals = faker.number.int({ min: 2, max: 4 });
+    
+    for (let i = 0; i < numGoals; i++) {
+      const monthOffset = faker.number.int({ min: -6, max: 6 });
+      const currentDate = new Date();
+      const goalDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + monthOffset, 15);
+      const transactionType = i % 2 === 0 ? 'income' : 'expense';
+      const incomeGoalNames = [
+        'Meta de Renda Mensal',
+        'Objetivo de Freelances',
+        'Meta de Vendas',
+        'Receita Extra',
+        'Renda de Investimentos',
+        'Meta de Salário'
+      ];
+      
+      const expenseGoalNames = [
+        'Controle de Gastos',
+        'Limite de Entretenimento',
+        'Meta de Economia',
+        'Redução de Despesas',
+        'Controle Alimentação',
+        'Limite Compras',
+        'Meta Transporte'
+      ];
+      
+      const goalName = transactionType === 'income' 
+        ? faker.helpers.arrayElement(incomeGoalNames)
+        : faker.helpers.arrayElement(expenseGoalNames);
+
+      const goalValue = transactionType === 'income'
+        ? faker.number.float({ min: 2000, max: 8000, precision: 0.01 })
+        : faker.number.float({ min: 500, max: 3000, precision: 0.01 });
+      
+      goalsData.push({
+        name: goalName,
+        date: goalDate,
+        transaction_type: transactionType,
+        value: goalValue,
+        userId: user.id
+      });
+    }
+  });
+
+  const createdGoals = await prisma.goals.createMany({ data: goalsData });
+  console.log(` Criadas ${createdGoals.count} metas financeiras.`);
 
   console.log(' Seed concluído com sucesso!');
 }
