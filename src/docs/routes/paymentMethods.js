@@ -1,25 +1,25 @@
-import { requestPaymentMethodsGet } from "../schemas/requestMold/PaymentMethodsRequest.js";
+import { requestAccountPaymentMethodsGet, requestPaymentMethodsGet } from "../schemas/requestMold/PaymentMethodsRequest.js";
 import commonResponses from "../utils/swaggerCommonResponses.js";
 
 const paymentMethodsRoutes = {
   "/payment-methods": {
     get: {
       tags: ["Payment Methods"],
-      summary: "Lista todos os métodos de pagamento",
+      summary: "Lists all payment methods (Admin Only)",
       description: `
-        #### Caso de Uso
-        Permite listar todos os métodos de pagamento cadastrados no sistema.
+        #### Use Case
+        Allows listing all registered payment methods in the system.
 
-        #### Regra de Negócio
-        Fornece uma listagem paginada dos métodos de pagamento com contadores de uso.
+        #### Business Rule
+        Provides a paginated list of payment methods with usage counters.
 
-        #### Resultado Esperado
-        Retorna uma lista paginada de métodos de pagamento com informações de quantas contas e transações usam cada método.
+        #### Expected Result
+        Returns a paginated list of payment methods with information about how many accounts and transactions use each method.
       `,
       security: [{ bearerAuth: [] }],
       ...requestPaymentMethodsGet(),
       responses: {
-        200: commonResponses[200]("#/components/schemas/responseMold/PaymentMethodsResponse"),
+        200: commonResponses[200]("#/components/schemas/responseMold/PaymentMethodResponseGet"),
         400: commonResponses[400](),
         401: commonResponses[401](),
         404: commonResponses[404](),
@@ -29,16 +29,16 @@ const paymentMethodsRoutes = {
     },
     post: {
       tags: ["Payment Methods"],
-      summary: "Cria um novo método de pagamento",
+      summary: "Creates a new payment method (Admin Only)",
       description: `
-        #### Caso de Uso
-        Permite criar um novo método de pagamento no sistema.
+        #### Use Case
+        Allows creating a new payment method in the system.
 
-        #### Regra de Negócio
-        O nome do método de pagamento deve ser único no sistema.
+        #### Business Rule
+        The name of the payment method must be unique in the system.
 
-        #### Resultado Esperado
-        Retorna o método de pagamento criado com seu ID.
+        #### Expected Result
+        Returns the created payment method with its ID.
       `,
       security: [{ bearerAuth: [] }],
       requestBody: {
@@ -64,23 +64,23 @@ const paymentMethodsRoutes = {
   "/payment-methods/{id}": {
     get: {
       tags: ["Payment Methods"],
-      summary: "Busca um método de pagamento por ID",
+      summary: "Fetch a payment method by ID (Admin Only)",
       description: `
-        #### Caso de Uso
-        Permite buscar um método de pagamento específico por seu ID.
+        #### Use Case
+        Allows fetching a specific payment method by its ID.
 
-        #### Regra de Negócio
-        Retorna informações detalhadas do método de pagamento incluindo contadores de uso.
+        #### Business Rule
+        Returns detailed information about the payment method including usage counters.
 
-        #### Resultado Esperado
-        Retorna os dados do método de pagamento encontrado.
+        #### Expected Result
+        Returns the data of the found payment method.
       `,
       security: [{ bearerAuth: [] }],
       parameters: [
         {
           name: "id",
           in: "path",
-          description: "ID do método de pagamento",
+          description: "ID of the payment method",
           required: true,
           schema: { type: "integer", minimum: 1 }
         }
@@ -96,23 +96,23 @@ const paymentMethodsRoutes = {
     },
     patch: {
       tags: ["Payment Methods"],
-      summary: "Atualiza um método de pagamento",
+      summary: "Update a payment method (Admin Only)",
       description: `
-        #### Caso de Uso
-        Permite atualizar um método de pagamento existente.
+        #### Use Case
+        Allows updating an existing payment method.
 
-        #### Regra de Negócio
-        O nome do método de pagamento deve ser único no sistema.
+        #### Business Rule
+        The name of the payment method must be unique in the system.
 
-        #### Resultado Esperado
-        Retorna o método de pagamento atualizado.
+        #### Expected Result
+        Returns the updated payment method.
       `,
       security: [{ bearerAuth: [] }],
       parameters: [
         {
           name: "id",
           in: "path",
-          description: "ID do método de pagamento",
+          description: "ID of the payment method",
           required: true,
           schema: { type: "integer", minimum: 1 }
         }
@@ -139,23 +139,23 @@ const paymentMethodsRoutes = {
     },
     delete: {
       tags: ["Payment Methods"],
-      summary: "Deleta um método de pagamento",
+      summary: "Delete a payment method (Admin Only)",
       description: `
-        #### Caso de Uso
-        Permite deletar um método de pagamento do sistema.
+        #### Use Case
+        Allows deleting a payment method from the system.
 
-        #### Regra de Negócio
-        Não é possível deletar um método de pagamento que está sendo usado por contas ou transações.
+        #### Business Rule
+        It is not possible to delete a payment method that is being used by accounts or transactions.
 
-        #### Resultado Esperado
-        Retorna confirmação da exclusão do método de pagamento.
+        #### Expected Result
+        Returns confirmation of the deletion of the payment method.
       `,
       security: [{ bearerAuth: [] }],
       parameters: [
         {
           name: "id",
           in: "path",
-          description: "ID do método de pagamento",
+          description: "ID of the payment method",
           required: true,
           schema: { type: "integer", minimum: 1 }
         }
@@ -174,69 +174,19 @@ const paymentMethodsRoutes = {
   "/account-payment-methods": {
     get: {
       tags: ["Payment Methods"],
-      summary: "Lista relacionamentos entre contas e métodos de pagamento",
+      summary: "List relationships between accounts and payment methods (Admin Only)",
       description: `
-        #### Caso de Uso
-        Permite listar todos os relacionamentos entre contas e métodos de pagamento.
+        #### Use Case
+        Allows listing all relationships between accounts and payment methods.
 
-        #### Regra de Negócio
-        Mostra quais métodos de pagamento estão disponíveis para cada conta.
+        #### Business Rule
+        Shows which payment methods are available for each account.
 
-        #### Resultado Esperado
-        Retorna uma lista paginada dos relacionamentos com informações das contas, métodos de pagamento e usuários.
+        #### Expected Result
+        Returns a paginated list of relationships with information about the accounts, payment methods, and users.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "id",
-          in: "query",
-          description: "Filtrar por ID do relacionamento",
-          required: false,
-          schema: { type: "integer" }
-        },
-        {
-          name: "accountId",
-          in: "query",
-          description: "Filtrar por ID da conta",
-          required: false,
-          schema: { type: "integer" }
-        },
-        {
-          name: "paymentMethodId",
-          in: "query",
-          description: "Filtrar por ID do método de pagamento",
-          required: false,
-          schema: { type: "integer" }
-        },
-        {
-          name: "accountName",
-          in: "query",
-          description: "Filtrar por nome da conta",
-          required: false,
-          schema: { type: "string" }
-        },
-        {
-          name: "paymentMethodName",
-          in: "query",
-          description: "Filtrar por nome do método de pagamento",
-          required: false,
-          schema: { type: "string" }
-        },
-        {
-          name: "page",
-          in: "query",
-          description: "Número da página",
-          required: false,
-          schema: { type: "integer", default: 1 }
-        },
-        {
-          name: "limit",
-          in: "query",
-          description: "Limite de itens por página",
-          required: false,
-          schema: { type: "integer", default: 10 }
-        }
-      ],
+      ...requestAccountPaymentMethodsGet(),
       responses: {
         200: commonResponses[200]("#/components/schemas/responseMold/AccountPaymentMethodsResponse"),
         400: commonResponses[400](),
@@ -245,7 +195,7 @@ const paymentMethodsRoutes = {
         498: commonResponses[498](),
         500: commonResponses[500]()
       }
-    },
+    }
   }
 };
 

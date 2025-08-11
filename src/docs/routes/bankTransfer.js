@@ -1,3 +1,5 @@
+import { requestBankTransferAdminGet, requestBankTransferGet } from "../schemas/requestMold/BankTransferRequest.js";
+import { requestGetId, requestUserId, requestWithIdAndUserId } from "../schemas/requestMold/UniversalRequest.js";
 import commonResponses from "../utils/swaggerCommonResponses.js";
 
 const bankTransferRoutes = {
@@ -21,71 +23,7 @@ const bankTransferRoutes = {
         Returns a paginated list of bank transfers with detailed information and related data.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "id",
-          in: "query",
-          description: "Filter by bank transfer ID",
-          required: false,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "sourceAccountId",
-          in: "query",
-          description: "Filter by source account ID",
-          required: false,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "destinationAccountId",
-          in: "query",
-          description: "Filter by destination account ID",
-          required: false,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "amount",
-          in: "query",
-          description: "Filter by transfer amount",
-          required: false,
-          schema: { type: "number" }
-        },
-        {
-          name: "transfer_date",
-          in: "query",
-          description: "Filter by transfer date (YYYY-MM-DD format)",
-          required: false,
-          schema: { type: "string", format: "date" }
-        },
-        {
-          name: "paymentMethodId",
-          in: "query",
-          description: "Filter by payment method ID",
-          required: false,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "userId",
-          in: "query",
-          description: "Filter by user ID",
-          required: false,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "page",
-          in: "query",
-          description: "Page number for pagination",
-          required: false,
-          schema: { type: "integer", minimum: 1, default: 1 }
-        },
-        {
-          name: "limit",
-          in: "query",
-          description: "Number of items per page",
-          required: false,
-          schema: { type: "integer", minimum: 1, default: 10 }
-        }
-      ],
+      ...requestBankTransferAdminGet(),
       responses: {
         200: commonResponses[200]("#/components/schemas/responseMold/BankTransferListResponse"),
         400: commonResponses[400](),
@@ -117,71 +55,7 @@ const bankTransferRoutes = {
         Returns a paginated list of user's bank transfers with detailed information and related data.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "id",
-          in: "query",
-          description: "Filter by bank transfer ID",
-          required: false,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "sourceAccountId",
-          in: "query",
-          description: "Filter by source account ID",
-          required: false,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "destinationAccountId",
-          in: "query",
-          description: "Filter by destination account ID",
-          required: false,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "amount",
-          in: "query",
-          description: "Filter by transfer amount",
-          required: false,
-          schema: { type: "number" }
-        },
-        {
-          name: "transfer_date",
-          in: "query",
-          description: "Filter by transfer date (YYYY-MM-DD format)",
-          required: false,
-          schema: { type: "string", format: "date" }
-        },
-        {
-          name: "paymentMethodId",
-          in: "query",
-          description: "Filter by payment method ID",
-          required: false,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "userId",
-          in: "query",
-          description: "User ID (required for user transfers)",
-          required: true,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "page",
-          in: "query",
-          description: "Page number for pagination",
-          required: false,
-          schema: { type: "integer", minimum: 1, default: 1 }
-        },
-        {
-          name: "limit",
-          in: "query",
-          description: "Number of items per page",
-          required: false,
-          schema: { type: "integer", minimum: 1, default: 10 }
-        }
-      ],
+      ...requestBankTransferGet(),
       responses: {
         200: commonResponses[200]("#/components/schemas/responseMold/BankTransferListResponse"),
         400: commonResponses[400](),
@@ -216,15 +90,7 @@ const bankTransferRoutes = {
         Returns the created bank transfer data and status 201. Account balances are automatically adjusted.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "userId",
-          in: "query",
-          description: "ID for user who will own the bank transfer",
-          required: true,
-          schema: { type: "integer", minimum: 1 }
-        }
-      ],
+      ...requestUserId(),
       requestBody: {
         required: true,
         content: {
@@ -270,22 +136,7 @@ const bankTransferRoutes = {
         Returns the updated bank transfer data and status 200.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "id",
-          in: "path",
-          description: "ID da transferência bancária a ser atualizada",
-          required: true,
-          schema: { type: "integer", minimum: 1 }
-        },
-        {
-          name: "userId",
-          in: "query",
-          description: "User ID for authorization",
-          required: true,
-          schema: { type: "integer", minimum: 1 }
-        }
-      ],
+      ...requestWithIdAndUserId(),
       requestBody: {
         required: false,
         content: {
@@ -327,15 +178,7 @@ const bankTransferRoutes = {
         Returns success message confirming bank transfer deletion.
       `,
       security: [{ bearerAuth: [] }],
-      parameters: [
-        {
-          name: "id",
-          in: "path",
-          description: "ID of the bank transfer to be deleted",
-          required: true,
-          schema: { type: "integer", minimum: 1 }
-        }
-      ],
+      ...requestWithIdAndUserId(),
       responses: {
         200: commonResponses[200]("#/components/schemas/responseMold/DeleteBankTransferResponse"),
         400: commonResponses[400](),

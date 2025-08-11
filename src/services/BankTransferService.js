@@ -1,7 +1,5 @@
 import BankTransferRepository from '../repositories/BankTransferRepository.js';
 import BankTransferSchemas from '../schemas/BankTransferSchemas.js';
-import AccountRepository from '../repositories/AccountRepository.js';
-import { prisma } from "../config/prismaClient.js";
 import Decimal from "decimal.js";
 
 class BankTransferService {
@@ -27,12 +25,12 @@ class BankTransferService {
 
   static async createTransfer(bankTransferData) {
     const validBankTransfer = BankTransferSchemas.createBankTransfer.parse(bankTransferData);
-    
+
     // Converter transfer_date string para Date object
     if (validBankTransfer.transfer_date) {
       validBankTransfer.transfer_date = new Date(validBankTransfer.transfer_date);
     }
-    
+
     // Validar que o usuário possui ambas as contas
     const [isSourceOwner, isDestinationOwner] = await Promise.all([
       BankTransferRepository.validateAccountOwnership(validBankTransfer.sourceAccountId, validBankTransfer.userId),
@@ -47,71 +45,121 @@ class BankTransferService {
       throw { code: 403, message: "Você não possui acesso à conta de destino." };
     }
 
-    // Verificar se a conta de origem tem saldo suficiente
     const sourceAccountBalance = await BankTransferRepository.getAccountBalance(validBankTransfer.sourceAccountId);
     if (new Decimal(sourceAccountBalance).lessThan(validBankTransfer.amount)) {
       throw { code: 400, message: "Saldo insuficiente na conta de origem." };
     }
 
-    try {
-      // Usar transação para garantir consistência dos dados
-      const result = await prisma.$transaction(async (prisma) => {
-        // Criar a transferência bancária no banco de dados
-        const newBankTransfer = await BankTransferRepository.createBankTransfer(validBankTransfer);
-        
-        // Atualizar os saldos das contas
-        await Promise.all([
-          this.updateAccountBalance({
-            accountId: validBankTransfer.sourceAccountId,
-            userId: validBankTransfer.userId,
-            amount: validBankTransfer.amount,
-            operation: 'subtract'
-          }),
-          this.updateAccountBalance({
-            accountId: validBankTransfer.destinationAccountId,
-            userId: validBankTransfer.userId,
-            amount: validBankTransfer.amount,
-            operation: 'add'
-          })
-        ]);
+    const sourceNewBalance = new Decimal(sourceAccountBalance).minus(validBankTransfer.amount).toNumber();
+    const destinationAccountBalance = await BankTransferRepository.getAccountBalance(validBankTransfer.destinationAccountId);
+    const destinationNewBalance = new Decimal(destinationAccountBalance).plus(validBankTransfer.amount).toNumber();
 
-        return newBankTransfer;
-      });
+    const accountUpdates = [
+      {
+        accountId: validBankTransfer.sourceAccountId,
+        userId: validBankTransfer.userId,
+        newBalance: sourceNewBalance
+      },
+      {
+        accountId: validBankTransfer.destinationAccountId,
+        userId: validBankTransfer.userId,
+        newBalance: destinationNewBalance
+      }
+    ];
 
-      return result;
-    } catch (error) {
-      console.error("Erro ao criar transferência bancária:", error);
-      throw { code: 500, message: "Erro interno ao processar transferência." };
-    }
-  }
-
-  static async updateAccountBalance({ accountId, userId, amount, operation }) {
-    const accounts = await AccountRepository.listAccounts({ id: accountId, userId }, 0, 1, 'asc');
-    const account = accounts[0];
-    const balance = new Decimal(account.balance);
-    const newBalance = operation === 'add' ? balance.plus(amount) : balance.minus(amount);
-    await AccountRepository.updateAccount(accountId, userId, { balance: newBalance.toNumber() });
+    const result = await BankTransferRepository.createBankTransferWithTransaction(validBankTransfer, accountUpdates);
+    return result;
   }
 
   static async updateTransfer(id, userId, bankTransferData) {
     const validId = BankTransferSchemas.bankTransferIdParam.parse({ id });
     const validBankTransferData = BankTransferSchemas.updateBankTransfer.parse(bankTransferData);
 
-    // Converter transfer_date string para Date object se presente
     if (validBankTransferData.transfer_date) {
       validBankTransferData.transfer_date = new Date(validBankTransferData.transfer_date);
     }
 
-    const updatedBankTransfer = await BankTransferRepository.updateBankTransfer(validId.id, userId, validBankTransferData);
-    if (!updatedBankTransfer) {
+    // Buscar a transferência atual para comparar valores
+    const currentTransfer = await BankTransferRepository.getBankTransferById(validId.id, userId);
+    if (!currentTransfer) {
       throw { code: 404, message: "Transferência bancária não encontrada." };
     }
-    return updatedBankTransfer;
+
+    let accountUpdates = null;
+
+    // Se o amount foi alterado, calcular os novos saldos das contas
+    if (validBankTransferData.amount !== undefined && validBankTransferData.amount !== currentTransfer.amount) {
+      const oldAmount = new Decimal(currentTransfer.amount);
+      const newAmount = new Decimal(validBankTransferData.amount);
+      const difference = newAmount.minus(oldAmount);
+
+      if (difference.greaterThan(0)) {
+        const sourceAccountBalance = await BankTransferRepository.getAccountBalance(currentTransfer.sourceAccountId);
+        if (new Decimal(sourceAccountBalance).lessThan(difference)) {
+          throw { code: 400, message: "Saldo insuficiente na conta de origem para esta atualização." };
+        }
+      }
+
+      // Calcular novos saldos
+      const sourceAccountBalance = await BankTransferRepository.getAccountBalance(currentTransfer.sourceAccountId);
+      const destinationAccountBalance = await BankTransferRepository.getAccountBalance(currentTransfer.destinationAccountId);
+
+      const sourceNewBalance = difference.greaterThan(0) 
+        ? new Decimal(sourceAccountBalance).minus(difference.abs()).toNumber()
+        : new Decimal(sourceAccountBalance).plus(difference.abs()).toNumber();
+
+      const destinationNewBalance = difference.greaterThan(0)
+        ? new Decimal(destinationAccountBalance).plus(difference.abs()).toNumber()
+        : new Decimal(destinationAccountBalance).minus(difference.abs()).toNumber();
+
+      accountUpdates = [
+        {
+          accountId: currentTransfer.sourceAccountId,
+          userId: userId,
+          newBalance: sourceNewBalance
+        },
+        {
+          accountId: currentTransfer.destinationAccountId,
+          userId: userId,
+          newBalance: destinationNewBalance
+        }
+      ];
+    }
+
+    const result = await BankTransferRepository.updateBankTransferWithTransaction(validId.id, userId, validBankTransferData, accountUpdates);
+    return result;
   }
 
-  static async deleteTransfer(id) {
+  static async deleteTransfer(id, userId) {
     const validId = BankTransferSchemas.bankTransferIdParam.parse({ id });
-    const result = await BankTransferRepository.deleteBankTransfer(validId.id);
+    const validUserId = BankTransferSchemas.userIdParam.parse({ userId });
+
+    const transferToDelete = await BankTransferRepository.getBankTransferById(validId.id, validUserId.userId);
+    if (!transferToDelete) {
+      throw { code: 404, message: "Transferência bancária não encontrada ou você não tem acesso a ela." };
+    }
+
+    // Calcular os novos saldos após reverter a transferência
+    const sourceAccountBalance = await BankTransferRepository.getAccountBalance(transferToDelete.sourceAccountId);
+    const destinationAccountBalance = await BankTransferRepository.getAccountBalance(transferToDelete.destinationAccountId);
+
+    const sourceNewBalance = new Decimal(sourceAccountBalance).plus(transferToDelete.amount).toNumber();
+    const destinationNewBalance = new Decimal(destinationAccountBalance).minus(transferToDelete.amount).toNumber();
+
+    const accountUpdates = [
+      {
+        accountId: transferToDelete.sourceAccountId,
+        userId: transferToDelete.userId,
+        newBalance: sourceNewBalance
+      },
+      {
+        accountId: transferToDelete.destinationAccountId,
+        userId: transferToDelete.userId,
+        newBalance: destinationNewBalance
+      }
+    ];
+
+    const result = await BankTransferRepository.deleteBankTransferWithTransaction(validId.id, accountUpdates);
     return result;
   }
 

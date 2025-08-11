@@ -48,6 +48,33 @@ class PaymentMethodsService {
     ]);
     return { accountPaymentMethods, total, take };
   }
+
+  static async getPaymentMethodById(id) {
+    const validId = PaymentMethodsSchemas.getPaymentMethodById.parse({ id });
+    return await PaymentMethodsRepository.getPaymentMethodById(validId.id);
+  }
+
+  static async createPaymentMethod(data) {
+    const validData = PaymentMethodsSchemas.createPaymentMethod.parse(data);
+    return await PaymentMethodsRepository.createPaymentMethod(validData);
+  }
+
+  static async updatePaymentMethod(id, data) {
+    const validId = PaymentMethodsSchemas.getPaymentMethodById.parse({ id });
+    const validData = PaymentMethodsSchemas.updatePaymentMethod.parse(data);
+    
+    // Só atualizar se houver dados válidos
+    if (Object.keys(validData).length === 0) {
+      throw { code: 400, message: "Nenhum dado válido fornecido para atualização" };
+    }
+    
+    return await PaymentMethodsRepository.updatePaymentMethod(validId.id, validData);
+  }
+
+  static async deletePaymentMethod(id) {
+    const validId = PaymentMethodsSchemas.getPaymentMethodById.parse({ id });
+    return await PaymentMethodsRepository.deletePaymentMethod(validId.id);
+  }
 }
 
 export default PaymentMethodsService;

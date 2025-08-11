@@ -156,6 +156,13 @@ class BankTransferSchemas {
       .int({ message: "The 'id' must be an integer." })
       .positive({ message: "The 'id' must be at least 1." })
   });
+
+  static userIdParam = z.object({
+    userId: z.coerce.number({ message: "The 'userId' must be an integer." })
+      .int({ message: "The 'userId' must be an integer." })
+      .positive({ message: "The 'userId' must be at least 1." })
+  });
+
 }
 
 export default BankTransferSchemas;

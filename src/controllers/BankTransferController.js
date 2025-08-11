@@ -53,7 +53,7 @@ class BankTransferController {
     try {
       const { id, userId } = req.query;
       const bankTransferData = req.body;
-      const updatedBankTransfer = await BankTransferService.updateTransfer(id, userId, bankTransferData);
+      const updatedBankTransfer = await BankTransferService.updateTransfer(parseInt(id), parseInt(userId), bankTransferData);
       res.status(200).json(CommonResponse.success(updatedBankTransfer));
     } catch (err) {
       next(err);
@@ -62,8 +62,9 @@ class BankTransferController {
 
   static deleteTransfer = async (req, res, next) => {
     try {
-      const { id } = req.params;
-      const result = await BankTransferService.deleteTransfer(id);
+      const { id } = req.query;
+      const { userId } = req.query;
+      const result = await BankTransferService.deleteTransfer(parseInt(id), parseInt(userId));
       res.status(200).json(CommonResponse.success(result));
     } catch (err) {
       next(err);

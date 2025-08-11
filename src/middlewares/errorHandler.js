@@ -20,7 +20,7 @@ function errorHandler(err, req, res, next) {
     });
   }
 
-  // Tratamento específico para erros do Multer, enche muito o saco
+  // Tratamento específico para erros do Multer
   if (err.code && typeof err.code === 'string') {
     let statusCode = 400;
     let message = err.message;

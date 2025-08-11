@@ -110,6 +110,13 @@ export function requestBankTransferGet() {
       }
     },
     {
+      "name": "userId",
+      "in": "query",
+      "description": "Filter by user ID",
+      "required": true,
+      "schema": { "type": "integer", "minimum": 1 }
+    },
+    {
       "name": "sourceAccountId",
       "in": "query",
       "description": "Filter by source account ID",
@@ -275,7 +282,11 @@ const BankTransferRequest = {
     description: "Schema for updating a bank transfer.",
     example: {
       amount: 750.00,
-      description: "Updated transfer description"
+      transfer_date: "2024-01-15",
+      description: "Updated transfer description",
+      sourceAccountId: 1,
+      destinationAccountId: 2,
+      paymentMethodId: 1
     }
   },
 };

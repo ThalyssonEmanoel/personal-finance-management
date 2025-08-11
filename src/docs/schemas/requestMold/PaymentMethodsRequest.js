@@ -47,6 +47,63 @@ export function requestPaymentMethodsGet() {
   };
 }
 
+export function requestAccountPaymentMethodsGet() {
+  const parameters = [
+    {
+      "name": "id",
+      "in": "query",
+      "description": "Filter by relationship ID",
+      "required": false,
+      "schema": { "type": "integer" }
+    },
+    {
+      "name": "accountId",
+      "in": "query",
+      "description": "Filter by account ID",
+      "required": false,
+      "schema": { "type": "integer" }
+    },
+    {
+      "name": "paymentMethodId",
+      "in": "query",
+      "description": "Filter by payment method ID",
+      "required": false,
+      "schema": { "type": "integer" }
+    },
+    {
+      "name": "accountName",
+      "in": "query",
+      "description": "Filter by account name",
+      "required": false,
+      "schema": { "type": "string" }
+    },
+    {
+      "name": "paymentMethodName",
+      "in": "query",
+      "description": "Filter by payment method name",
+      "required": false,
+      "schema": { "type": "string" }
+    },
+    {
+      "name": "page",
+      "in": "query",
+      "description": "Page number",
+      "required": false,
+      "schema": { "type": "integer", "default": 1 }
+    },
+    {
+      "name": "limit",
+      "in": "query",
+      "description": "Number of items per page",
+      "required": false,
+      "schema": { "type": "integer", "default": 10 }
+    }
+  ];
+  return {
+    parameters,
+  };
+}
+
 const PaymentMethodsRequest = {
   CreatePaymentMethodRequest: {
     title: "CreatePaymentMethodRequest",

@@ -48,6 +48,25 @@ class PaymentMethodsSchemas {
       .positive({ message: "The 'limit' must be at least 1." })
       .default(10),
   });
+
+  static createPaymentMethod = z.object({
+    name: z.string({ message: "The name is required and must be a text." })
+      .min(1, { message: "The name cannot be empty." })
+      .refine((val) => !/^[0-9]+$/.test(val), { message: "The name must contain words, not only numbers." })
+  });
+
+  static updatePaymentMethod = z.object({
+    name: z.string({ message: "The name must be a text." })
+      .min(1, { message: "The name cannot be empty." })
+      .refine((val) => !/^[0-9]+$/.test(val), { message: "The name must contain words, not only numbers." })
+      .optional()
+  });
+
+  static getPaymentMethodById = z.object({
+    id: z.coerce.number({ message: "The 'id' must be an integer." })
+      .int({ message: "The 'id' must be an integer." })
+      .positive({ message: "The 'id' must be at least 1." })
+  });
 }
 
 export default PaymentMethodsSchemas;
