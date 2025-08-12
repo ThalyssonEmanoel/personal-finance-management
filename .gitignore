@@ -405,3 +405,5 @@ data/
 /src/generated/
 
 /coverage
+
+/.vscode
