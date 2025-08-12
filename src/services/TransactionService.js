@@ -105,7 +105,16 @@ class TransactionService {
     const validUserId = AccountSchemas.userIdParam.parse({ userId });
     const validTransactionData = TransactionSchemas.updateTransaction.parse(transactionData);
 
-    const updatedTransaction = await TransactionRepository.updateTransaction(validId.id, validUserId.userId, validTransactionData);
+    // Filtrar campos vazios/nulos para não serem processados
+    const filteredData = {};
+    Object.keys(validTransactionData).forEach(key => {
+      const value = validTransactionData[key];
+      if (value !== undefined && value !== null && value !== "") {
+        filteredData[key] = value;
+      }
+    });
+
+    const updatedTransaction = await TransactionRepository.updateTransaction(validId.id, validUserId.userId, filteredData);
     if (!updatedTransaction) {
       throw { code: 404 };
     }
