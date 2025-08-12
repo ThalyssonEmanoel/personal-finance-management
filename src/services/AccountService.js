@@ -49,7 +49,17 @@ class AccountService {
     const validId = AccountSchemas.accountIdParam.parse({ id });
     const validUserId = AccountSchemas.userIdParam.parse({ userId });
     const validAccountData = AccountSchemas.updateAccount.parse(accountData);
-    const updatedAccount = await AccountRepository.updateAccount(validId.id, validUserId.userId, validAccountData);
+    
+    // Filtrar campos vazios/nulos para não serem processados
+    const filteredData = {};
+    Object.keys(validAccountData).forEach(key => {
+      const value = validAccountData[key];
+      if (value !== undefined && value !== null && value !== "") {
+        filteredData[key] = value;
+      }
+    });
+
+    const updatedAccount = await AccountRepository.updateAccount(validId.id, validUserId.userId, filteredData);
     if (!updatedAccount) {
       throw { code: 404 };
     }

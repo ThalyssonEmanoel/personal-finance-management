@@ -1,4 +1,4 @@
-import { requestGoalGet, requestGoalPost, requestGoalPut } from "../schemas/requestMold/GoalRequest.js";
+import { requestGoalGet, requestGoalPost } from "../schemas/requestMold/GoalRequest.js";
 import { requestGetId, requestUserId, requestWithIdAndUserId } from "../schemas/requestMold/UniversalRequest.js";
 import commonResponses from "../utils/swaggerCommonResponses.js";
 
@@ -119,7 +119,17 @@ const goalRoutes = {
         Returns the updated goal with detailed information and related user data.
       `,
       security: [{ bearerAuth: [] }],
-      ...requestGoalPut(),
+      ...requestWithIdAndUserId(),
+      requestBody: {
+        required: false,
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/requestMold/UpdateGoalRequest"
+            }
+          }
+        }
+      },
       responses: {
         200: commonResponses[200]("#/components/schemas/responseMold/GoalResponse"),
         400: commonResponses[400](),

@@ -51,11 +51,11 @@ class GoalController {
 
   static updateGoal = async (req, res, next) => {
     try {
-      const { id } = GoalSchemas.goalIdParam.parse(req.query);
-      const { userId } = GoalSchemas.goalUserIdParam.parse(req.query);
+      const { id } = req.query;
+      const { userId } = req.query;
       const goalData = GoalSchemas.updateGoal.parse(req.body);
-      
-      const updatedGoal = await GoalService.updateGoal(id, userId, goalData);
+
+      const updatedGoal = await GoalService.updateGoal(parseInt(id), parseInt(userId), goalData);
       res.status(200).json(CommonResponse.success(updatedGoal));
     } catch (err) {
       next(err);

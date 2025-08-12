@@ -1,3 +1,5 @@
+import { date } from "zod/v4";
+
 export function requestGoalGet() {
   const parameters = [
     {
@@ -121,69 +123,6 @@ export function requestGoalPost() {
   return { parameters, requestBody };
 }
 
-export function requestGoalPut() {
-  const parameters = [
-    {
-      "name": "id",
-      "in": "path",
-      "description": "ID of the goal to update",
-      "required": true,
-      "schema": {
-        "type": "integer",
-        "minimum": 1
-      }
-    },
-    {
-      "name": "userId",
-      "in": "query",
-      "description": "ID of the user updating the goal",
-      "required": true,
-      "schema": {
-        "type": "integer",
-        "minimum": 1
-      }
-    }
-  ];
-
-  const requestBody = {
-    "required": true,
-    "content": {
-      "application/json": {
-        "schema": {
-          "type": "object",
-          "properties": {
-            "name": {
-              "type": "string",
-              "description": "Name of the goal",
-              "example": "Meta de Renda Mensal Atualizada"
-            },
-            "date": {
-              "type": "string",
-              "format": "date",
-              "description": "Date for the goal (month reference)",
-              "example": "2024-02-15"
-            },
-            "transaction_type": {
-              "type": "string",
-              "enum": ["expense", "income"],
-              "description": "Type of transaction for the goal",
-              "example": "income"
-            },
-            "value": {
-              "type": "number",
-              "format": "float",
-              "minimum": 0.01,
-              "description": "Target value for the goal",
-              "example": 6000.00
-            }
-          }
-        }
-      }
-    }
-  };
-
-  return { parameters, requestBody };
-}
 
 export function requestGoalsByMonth() {
   const parameters = [
@@ -222,13 +161,45 @@ export function requestGoalsByMonth() {
       }
     }
   ];
-
+  
   return { parameters };
 }
-
 const GoalRequest = {
-  // Placeholder for Swagger schema definitions if needed
-  // This file primarily exports functions for request parameters
+  UpdateGoalRequest: {
+    title: "UpdateGoalRequest",
+    type: "object",
+    properties: {
+      name: {
+        type: "string",
+        description: "Name of the goal",
+        example: "Meta de Renda Mensal"
+      },
+      date: {
+        type: "string",
+        format: "date",
+        description: "Goal date",
+        example: "2025-08-12"
+      },
+      transaction_type: {
+        type: "string",
+        nullable: true,
+        description: "Type of transaction for the goal",
+        example: "income"
+      },
+      value: {
+        type: "integer",
+        description: "Target value for the goal",
+        example: 5000
+      },
+    },
+    description: "Schema for updating a goal.",
+    example: {
+      name: "Updated Goal Name",
+      date: "2025-08-12",
+      transaction_type: "income",
+      value: 7500
+    }
+  },
 };
 
 export default GoalRequest;

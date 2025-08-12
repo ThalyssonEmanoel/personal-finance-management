@@ -75,8 +75,17 @@ class BankTransferService {
     const validId = BankTransferSchemas.bankTransferIdParam.parse({ id });
     const validBankTransferData = BankTransferSchemas.updateBankTransfer.parse(bankTransferData);
 
-    if (validBankTransferData.transfer_date) {
-      validBankTransferData.transfer_date = new Date(validBankTransferData.transfer_date);
+    // Filtrar campos vazios/nulos para não serem processados
+    const filteredData = {};
+    Object.keys(validBankTransferData).forEach(key => {
+      const value = validBankTransferData[key];
+      if (value !== undefined && value !== null && value !== "") {
+        filteredData[key] = value;
+      }
+    });
+
+    if (filteredData.transfer_date) {
+      filteredData.transfer_date = new Date(filteredData.transfer_date);
     }
 
     // Buscar a transferência atual para comparar valores
@@ -88,9 +97,9 @@ class BankTransferService {
     let accountUpdates = null;
 
     // Se o amount foi alterado, calcular os novos saldos das contas
-    if (validBankTransferData.amount !== undefined && validBankTransferData.amount !== currentTransfer.amount) {
+    if (filteredData.amount !== undefined && filteredData.amount !== currentTransfer.amount) {
       const oldAmount = new Decimal(currentTransfer.amount);
-      const newAmount = new Decimal(validBankTransferData.amount);
+      const newAmount = new Decimal(filteredData.amount);
       const difference = newAmount.minus(oldAmount);
 
       if (difference.greaterThan(0)) {
@@ -126,7 +135,7 @@ class BankTransferService {
       ];
     }
 
-    const result = await BankTransferRepository.updateBankTransferWithTransaction(validId.id, userId, validBankTransferData, accountUpdates);
+    const result = await BankTransferRepository.updateBankTransferWithTransaction(validId.id, userId, filteredData, accountUpdates);
     return result;
   }
 
