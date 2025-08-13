@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         - name: personal-finance-api
-          image: ghcr.io/thalyssonEmanoel/personal-finance-management:latest
+          image: ghcr.io/thalyssonemanoel/personal-finance-management:latest
           ports:
             - containerPort: 3100
           resources:
