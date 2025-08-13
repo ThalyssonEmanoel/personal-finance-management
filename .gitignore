@@ -407,3 +407,7 @@ data/
 /coverage
 
 /.vscode
+
+# Ignorar somente os arquivos de secrets
+configmap/mysql-secrets.yaml
+configmap/api-secrets.yaml

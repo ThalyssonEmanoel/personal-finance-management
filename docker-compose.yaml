@@ -24,6 +24,28 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
       - '5001:80'
+  personal-finance-api:
+    container_name: "personal-finance-api"
+    build: "."
+    restart: "unless-stopped"
+    depends_on:
+      - financas-db-web
+    environment:
+      NODE_ENV: development
+      PORT: ${PORT}
+      DATABASE_URL: ${DATABASE_URL}
+      SALT: ${SALT}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_ACCESS_TOKEN: ${JWT_EXPIRATION_ACCESS_TOKEN}
+      JWT_EXPIRATION_REFRESH_TOKEN: ${JWT_EXPIRATION_REFRESH_TOKEN}
+      SWAGGER_DEV_URL: ${SWAGGER_DEV_URL}
+      SWAGGER_PROD_URL: ${SWAGGER_PROD_URL}
+    ports:
+      - "${PORT}:${PORT}"
+    volumes:
+      - ./src/uploads:/app/src/uploads
+    env_file:
+      - .env
 
 volumes:
   data:
