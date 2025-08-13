@@ -13,7 +13,7 @@ class AuthRepository {
         message: "Email ou senha inválidos.",
       };
     }
-    const { password: _, refreshToken: s, isAdmin, ...usuarioSemSenha } = usuario;
+    const { password: _, refreshToken: s, ...usuarioSemSenha } = usuario;
 
     return usuarioSemSenha;
   }
