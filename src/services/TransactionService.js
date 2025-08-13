@@ -99,7 +99,6 @@ class TransactionService {
   }
 
   static async updateTransaction(id, userId, transactionData) {
-    console.log("Deve ser inteiro:", id);
     
     const validId = TransactionSchemas.transactionIdParam.parse({ id });
     const validUserId = AccountSchemas.userIdParam.parse({ userId });
