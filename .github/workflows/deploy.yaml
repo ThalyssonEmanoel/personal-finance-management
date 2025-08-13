@@ -54,7 +54,11 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
           
           kubectl apply -f configmap/api-configmap.yaml
+          
+          # Deletar PVC existente se houver conflito e recriar
+          kubectl delete pvc mysql-pvc --ignore-not-found=true
           kubectl apply -f deploy/mysql-pvc.yaml
+          
           kubectl apply -f deploy/mysql-deployment.yaml
           kubectl apply -f deploy/phpmyadmin.yaml
           kubectl apply -f deploy/personal-finance-api.yaml
