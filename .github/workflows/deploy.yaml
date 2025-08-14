@@ -70,15 +70,14 @@ jobs:
         run: |
           cp .env.example .env
         env:
-          DATABASE_URL: ${env.DATABASE_URL}
-          MYSQL_NAME: ${env.MYSQL_NAME}
-          MYSQL_USER: ${env.MYSQL_USER}
-          MYSQL_PASSWORD: ${env.MYSQL_PASSWORD}
-          MYSQL_ROOT_PASSWORD: ${env.MYSQL_ROOT_PASSWORD}
-          JWT_SECRET: ${env.JWT_SECRET}
-          JWT_EXPIRATION_ACCESS_TOKEN: ${env.JWT_EXPIRATION_ACCESS_TOKEN}
-          JWT_EXPIRATION_REFRESH_TOKEN: ${env.JWT_EXPIRATION_REFRESH_TOKEN}
-          SALT: ${env.SALT}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_NAME }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRATION_ACCESS_TOKEN: ${{ secrets.JWT_EXPIRATION_ACCESS_TOKEN }}
+          JWT_EXPIRATION_REFRESH_TOKEN: ${{ secrets.JWT_EXPIRATION_REFRESH_TOKEN }}
+          SALT: ${{ secrets.SALT }}
 
 
       - name: Instalar dependências
