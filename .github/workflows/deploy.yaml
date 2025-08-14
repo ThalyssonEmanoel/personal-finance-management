@@ -48,10 +48,10 @@ jobs:
       mysql:
         image: mysql:latest
         env:
-          MYSQL_DATABASE: ${env.MYSQL_NAME}
-          MYSQL_ROOT_PASSWORD: ${env.MYSQL_ROOT_PASSWORD}
-          MYSQL_USER: ${env.MYSQL_USER}
-          MYSQL_PASSWORD: ${env.MYSQL_PASSWORD}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_NAME }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
@@ -68,18 +68,23 @@ jobs:
 
       - name: Configurar ambiente
         run: |
-          cp .env.example .env
+          echo "DATABASE_URL=\"mysql://root:${{ secrets.MYSQL_ROOT_PASSWORD }}@localhost:3306/${{ secrets.MYSQL_NAME }}\"" > .env
+          echo "PORT=${{ env.PORT }}" >> .env
+          echo "DEBUGLOG=${{ env.DEBUGLOG }}" >> .env
+          echo "SWAGGER_PROD_URL=${{ env.SWAGGER_PROD_URL }}" >> .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "JWT_EXPIRATION_ACCESS_TOKEN=${{ secrets.JWT_EXPIRATION_ACCESS_TOKEN }}" >> .env
+          echo "JWT_EXPIRATION_REFRESH_TOKEN=${{ secrets.JWT_EXPIRATION_REFRESH_TOKEN }}" >> .env
+          echo "SALT=${{ secrets.SALT }}" >> .env
         env:
-          DATABASE_URL: ${env.DATABASE_URL}
-          MYSQL_NAME: ${env.MYSQL_NAME}
-          MYSQL_USER: ${env.MYSQL_USER}
-          MYSQL_PASSWORD: ${env.MYSQL_PASSWORD}
-          MYSQL_ROOT_PASSWORD: ${env.MYSQL_ROOT_PASSWORD}
-          JWT_SECRET: ${env.JWT_SECRET}
-          JWT_EXPIRATION_ACCESS_TOKEN: ${env.JWT_EXPIRATION_ACCESS_TOKEN}
-          JWT_EXPIRATION_REFRESH_TOKEN: ${env.JWT_EXPIRATION_REFRESH_TOKEN}
-          SALT: ${env.SALT}
-
+          MYSQL_DATABASE: ${{ secrets.MYSQL_NAME }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRATION_ACCESS_TOKEN: ${{ secrets.JWT_EXPIRATION_ACCESS_TOKEN }}
+          JWT_EXPIRATION_REFRESH_TOKEN: ${{ secrets.JWT_EXPIRATION_REFRESH_TOKEN }}
+          SALT: ${{ secrets.SALT }}
 
       - name: Instalar dependências
         run: npm install
@@ -96,8 +101,7 @@ jobs:
   # Job para build e push da imagem Docker
   buildar-docker-api:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') ||
-    github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'master')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') || github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'master')
     needs: testar-app
 
     steps:
@@ -128,8 +132,7 @@ jobs:
   # Job para fazer o deploy
   fazer-deploy:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') ||
-    github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'master')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') || github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'master')
     needs: buildar-docker-api
 
     steps:
