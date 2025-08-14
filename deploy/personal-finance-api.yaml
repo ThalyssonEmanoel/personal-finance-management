@@ -11,6 +11,8 @@ spec:
       labels:
         app: personal-finance-api
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: personal-finance-api
           image: ghcr.io/thalyssonemanoel/personal-finance-management:latest
