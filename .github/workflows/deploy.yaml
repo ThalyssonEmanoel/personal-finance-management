@@ -63,6 +63,8 @@ jobs:
           
           kubectl apply -f configmap/api-configmap.yaml
           
+          # Criar PV primeiro, depois PVC
+          kubectl apply -f deploy/mysql-pv.yaml
           # Deletar PVC existente se houver conflito e recriar
           kubectl delete pvc mysql-pvc --ignore-not-found=true
           kubectl apply -f deploy/mysql-pvc.yaml
