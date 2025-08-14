@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: api-config
-data:
-  NODE_ENV: production
-  PORT: "3100"
-  SWAGGER_DEV_URL: http://localhost:3100/docs
-  SWAGGER_PROD_URL: http://meu-dominio.com/docs
