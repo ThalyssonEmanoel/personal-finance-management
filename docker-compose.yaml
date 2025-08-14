@@ -1,8 +1,20 @@
 version: '3.8'
 #Nem precisa de secretos, só precisa criar o arquivo .env com as variáveis de ambiente ou chumbar ai mesmo ksskks
 services:
+  app:
+    build: .
+    environment:
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    volumes:
+      - .:/usr/src/app
+    command: npm run dev
   financas-db-web:
-    restart: always
+    restart: alwaays
     image: mysql:latest
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -20,32 +32,10 @@ services:
     image: phpmyadmin/phpmyadmin
     restart: always
     environment:
-      PMA_HOST: financas-db-web
+      PMA_HOST: ${PMA_HOST}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
       - '5001:80'
-  personal-finance-api:
-    container_name: "personal-finance-api"
-    build: "."
-    restart: "unless-stopped"
-    depends_on:
-      - financas-db-web
-    environment:
-      NODE_ENV: development
-      PORT: ${PORT}
-      DATABASE_URL: ${DATABASE_URL}
-      SALT: ${SALT}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRATION_ACCESS_TOKEN: ${JWT_EXPIRATION_ACCESS_TOKEN}
-      JWT_EXPIRATION_REFRESH_TOKEN: ${JWT_EXPIRATION_REFRESH_TOKEN}
-      SWAGGER_DEV_URL: ${SWAGGER_DEV_URL}
-      SWAGGER_PROD_URL: ${SWAGGER_PROD_URL}
-    ports:
-      - "${PORT}:${PORT}"
-    volumes:
-      - ./src/uploads:/app/src/uploads
-    env_file:
-      - .env
 
 volumes:
   data:

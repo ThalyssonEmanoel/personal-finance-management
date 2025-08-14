@@ -11,10 +11,14 @@ EXPOSE ${PORT}
 
 # Primeiro instala as dependências
 COPY package.json package-lock.json ./
-RUN npm ci --include=dev
+RUN npm ci
+RUN npm install jest
+RUN npm install supertest
 
 # Depois copia o projeto (Isto torna mais rápido o build devido ao cache)
 COPY . .
+RUN npx prisma generate
+
 
 # Eu sinceramente prefiro dessa forma, mas se deer B.O eu coloco o ENTRYPOINT npm start de volta 
 # Acho melhor pq ele permite que eu passe argumentos para o npm start tipo: --port=3000

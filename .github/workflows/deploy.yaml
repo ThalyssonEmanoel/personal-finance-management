@@ -1,80 +1,171 @@
-name: Deploy to Kubernetes
+# GitHub Actions workflow para CI/CD completo (testes, build e deploy)
+# A ideia é demonstrar como funciona esta configuração
+# para então ser possível realizar o CI/CD de qualquer
+# aplicação que você queira
 
+name: CI/CD Pipeline
+
+# Define quando o workflow será executado
 on:
   push:
-    branches:
-      - master
-      - develop
+    branches: [ develop, master ]
   pull_request:
-    branches:
-      - develop
+    branches: [ develop, master ]
 
+# Variáveis de ambiente que poderão ser usadas nos Jobs para chamar elas é só fazer assim: ${env.VARIABLE_NAME}
+env:
+  # SENSÍVEIS 
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  SALT: ${{ secrets.SALT }}
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  JWT_EXPIRATION_ACCESS_TOKEN: ${{ secrets.JWT_EXPIRATION_ACCESS_TOKEN }}
+  JWT_EXPIRATION_REFRESH_TOKEN: ${{ secrets.JWT_EXPIRATION_REFRESH_TOKEN }}
+  KUBECTL_CONFIG: ${{ secrets.KUBECTL_CONFIG }}
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  MYSQL_NAME: ${{ secrets.MYSQL_NAME }}
+  MYSQL_USER: ${{ secrets.MYSQL_USER }}
+  MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+  MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+
+  # NÃO SENSÍVEIS 
+  IMAGEM_DOCKER: thalyssoemanoel/personal-finance-api:latest
+  PORT: 8080
+  DEBUGLOG: "false"
+  SWAGGER_PROD_URL: "https://personal-finance-api.app.fslab.dev"
+
+# Define os jobs que serão executados
 jobs:
-  build-and-deploy:
+  # Este Job irá executar todos os testes da aplicação
+  # A ideia é que se os testes falharem os próximos Jobs não serão executados
+  testar-app:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') ||
+        github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'master')
+
+    # Serviços necessários para os testes
+    services:
+      mysql:
+        image: mysql:latest
+        env:
+          MYSQL_DATABASE: ${env.MYSQL_NAME}
+          MYSQL_ROOT_PASSWORD: ${env.MYSQL_ROOT_PASSWORD}
+          MYSQL_USER: ${env.MYSQL_USER}
+          MYSQL_PASSWORD: ${env.MYSQL_PASSWORD}
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v2
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          node-version: '20'
+          cache: 'npm'
 
-          
-
-      - name: Build and push Docker image
+      - name: Configurar ambiente
         run: |
-          docker build -t ghcr.io/thalyssonemanoel/personal-finance-management:latest .
-          docker push ghcr.io/thalyssonemanoel/personal-finance-management:latest
+          cp .env.example .env
+        env:
+          DATABASE_URL: ${env.DATABASE_URL}
+          MYSQL_NAME: ${env.MYSQL_NAME}
+          MYSQL_USER: ${env.MYSQL_USER}
+          MYSQL_PASSWORD: ${env.MYSQL_PASSWORD}
+          MYSQL_ROOT_PASSWORD: ${env.MYSQL_ROOT_PASSWORD}
+          JWT_SECRET: ${env.JWT_SECRET}
+          JWT_EXPIRATION_ACCESS_TOKEN: ${env.JWT_EXPIRATION_ACCESS_TOKEN}
+          JWT_EXPIRATION_REFRESH_TOKEN: ${env.JWT_EXPIRATION_REFRESH_TOKEN}
+          SALT: ${env.SALT}
 
-      # - name: Run tests
-      #   run: |
-      #     docker run --rm ghcr.io/thalyssonemanoel/personal-finance-management:latest npm test
 
-      - name: Set up kubectl
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Executar migrações do Prisma
+        run: npx prisma migrate dev
+
+      - name: Executar seed do banco
+        run: npm run seed
+
+      - name: Executar testes
+        run: npm run test
+
+  # Job para build e push da imagem Docker
+  buildar-docker-api:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') ||
+    github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'master')
+    needs: testar-app
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${env.DOCKERHUB_USERNAME}
+          password: ${env.DOCKERHUB_TOKEN}
+
+      - name: Configurar ambiente
+        run: |
+          cp .env.example .env
+          echo "DATABASE_URL=${{ env.DATABASE_URL }}" >> .env
+
+      - name: Build e Push da imagem Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGEM_DOCKER }}
+
+  # Job para fazer o deploy
+  fazer-deploy:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') ||
+    github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'master')
+    needs: buildar-docker-api
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
         uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
 
-      - name: Apply Kubernetes manifests
+      - name: Configurar kubectl
         run: |
-          echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
-          export KUBECONFIG=kubeconfig.yaml
-          
-          # Criar secret para acessar GitHub Container Registry
-          kubectl create secret docker-registry ghcr-secret \
-            --docker-server=ghcr.io \
-            --docker-username=${{ github.actor }} \
-            --docker-password=${{ secrets.GITHUB_TOKEN }} \
-            --docker-email=${{ github.actor }}@users.noreply.github.com \
-            --dry-run=client -o yaml | kubectl apply -f -
-          
-          # Criar secrets diretamente via kubectl
-          kubectl create secret generic mysql-secrets \
-            --from-literal=database="${{ secrets.MYSQL_DATABASE }}" \
-            --from-literal=user="${{ secrets.MYSQL_USER }}" \
-            --from-literal=password="${{ secrets.MYSQL_PASSWORD }}" \
-            --from-literal=root-password="${{ secrets.MYSQL_ROOT_PASSWORD }}" \
-            --dry-run=client -o yaml | kubectl apply -f -
-          
-          kubectl create secret generic api-secrets \
-            --from-literal=jwt-secret="${{ secrets.JWT_SECRET }}" \
-            --from-literal=jwt-expiration-access="${{ secrets.JWT_EXPIRATION_ACCESS }}" \
-            --from-literal=jwt-expiration-refresh="${{ secrets.JWT_EXPIRATION_REFRESH }}" \
-            --from-literal=salt="${{ secrets.SALT }}" \
-            --dry-run=client -o yaml | kubectl apply -f -
-          
-          kubectl apply -f configmap/api-configmap.yaml
-          
-          # Deletar PV e PVC existentes e recriar
-          kubectl delete pvc mysql-pvc --ignore-not-found=true
-          kubectl delete pv mysql-pv --ignore-not-found=true
-          kubectl apply -f deploy/mysql-pv.yaml
-          kubectl apply -f deploy/mysql-pvc.yaml
-          
-          kubectl apply -f deploy/mysql-deployment.yaml
-          kubectl apply -f deploy/phpmyadmin.yaml
-          kubectl apply -f deploy/personal-finance-api.yaml
+          echo "${{ env.KUBECTL_CONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Verificar cluster
+        run: |
+          kubectl config get-contexts
+          kubectl get node
+          kubectl get pods
+
+      - name: Remover deployment anterior
+        run: |
+          kubectl delete deployment personal-finance-api || true
+
+      - name: Aguardar remoção
+        run: sleep 10
+
+      - name: Aplicar novo deployment
+        run: kubectl apply -f deploy/personal-finance-api-deployment.yaml
+
+      - name: Aguardar deployment
+        run: sleep 60
+
+      - name: Verificar status do deployment
+        run: |
+          kubectl get pods
+          kubectl describe deploy/personal-finance-api
+          kubectl logs deploy/personal-finance-api
