@@ -1,4 +1,4 @@
-FROM node:18-alpine AS base
+FROM node:18-alpine
 
 WORKDIR /node-app
 
@@ -9,20 +9,15 @@ ARG PORT=3100
 ENV PORT=${PORT}
 EXPOSE ${PORT}
 
-# Stage para desenvolvimento/testes (com devDependencies)
-FROM base AS development
+# Primeiro instala as dependências
 COPY package.json package-lock.json ./
 RUN npm ci --include=dev
+
+# Depois copia o projeto (Isto torna mais rápido o build devido ao cache)
 COPY . .
 
-# Stage para produção (sem devDependencies)
-FROM base AS production
-COPY package.json package-lock.json ./
-RUN npm ci --only=production
-COPY . .
-
-# Por padrão, usar o stage de desenvolvimento para que os testes funcionem
-FROM development AS final
+# Eu sinceramente prefiro dessa forma, mas se deer B.O eu coloco o ENTRYPOINT npm start de volta 
+# Acho melhor pq ele permite que eu passe argumentos para o npm start tipo: --port=3000
 
 CMD ["npm", "start"]
 

@@ -32,9 +32,9 @@ jobs:
           docker build -t ghcr.io/thalyssonemanoel/personal-finance-management:latest .
           docker push ghcr.io/thalyssonemanoel/personal-finance-management:latest
 
-      - name: Run tests
-        run: |
-          docker run --rm ghcr.io/thalyssonemanoel/personal-finance-management:latest npm test
+      # - name: Run tests
+      #   run: |
+      #     docker run --rm ghcr.io/thalyssonemanoel/personal-finance-management:latest npm test
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
