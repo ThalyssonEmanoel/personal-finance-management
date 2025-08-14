@@ -11,9 +11,13 @@ EXPOSE ${PORT}
 
 # Primeiro instala as dependências
 COPY package.json package-lock.json ./
+<<<<<<< HEAD
 RUN npm ci
 RUN npm install jest
 RUN npm install supertest
+=======
+RUN npm ci --include=dev
+>>>>>>> 2ce995cc55a48d7b358b016afa2078a1cf292833
 
 # Depois copia o projeto (Isto torna mais rápido o build devido ao cache)
 COPY . .
