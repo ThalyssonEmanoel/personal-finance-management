@@ -25,10 +25,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+          
+
       - name: Build and push Docker image
         run: |
           docker build -t ghcr.io/thalyssonemanoel/personal-finance-management:latest .
           docker push ghcr.io/thalyssonemanoel/personal-finance-management:latest
+
+      - name: Run tests
+        run: |
+          docker run --rm ghcr.io/thalyssonemanoel/personal-finance-management:latest npm test
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
@@ -63,10 +69,10 @@ jobs:
           
           kubectl apply -f configmap/api-configmap.yaml
           
-          # Criar PV primeiro, depois PVC
-          kubectl apply -f deploy/mysql-pv.yaml
-          # Deletar PVC existente se houver conflito e recriar
+          # Deletar PV e PVC existentes e recriar
           kubectl delete pvc mysql-pvc --ignore-not-found=true
+          kubectl delete pv mysql-pv --ignore-not-found=true
+          kubectl apply -f deploy/mysql-pv.yaml
           kubectl apply -f deploy/mysql-pvc.yaml
           
           kubectl apply -f deploy/mysql-deployment.yaml
