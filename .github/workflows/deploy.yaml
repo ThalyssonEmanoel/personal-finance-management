@@ -1,27 +1,18 @@
-# GitHub Actions workflow para CI/CD completo (testes, build e deploy)
-# A ideia é demonstrar como funciona esta configuração
-# para então ser possível realizar o CI/CD de qualquer
-# aplicação que você queira
-
 name: CI/CD Pipeline
 
-# Define quando o workflow será executado
 on:
   push:
     branches: [ develop, master ]
   pull_request:
     branches: [ develop, master ]
 
-# Define os jobs que serão executados
 jobs:
-  # Este Job irá executar todos os testes da aplicação
-  # A ideia é que se os testes falharem os próximos Jobs não serão executados
   testar-app:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') ||
-        github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'master')
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'master'))
 
-    # Serviços necessários para os testes
     services:
       mysql:
         image: mysql:latest
@@ -35,11 +26,9 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -54,45 +43,30 @@ jobs:
           echo "JWT_EXPIRATION_ACCESS_TOKEN=${{ secrets.JWT_EXPIRATION_ACCESS_TOKEN }}" >> .env
           echo "JWT_EXPIRATION_REFRESH_TOKEN=${{ secrets.JWT_EXPIRATION_REFRESH_TOKEN }}" >> .env
           echo "SALT=${{ secrets.SALT }}" >> .env
-        env:
-          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_USER: ${{ secrets.MYSQL_USER }}
-          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_EXPIRATION_ACCESS_TOKEN: ${{ secrets.JWT_EXPIRATION_ACCESS_TOKEN }}
-          JWT_EXPIRATION_REFRESH_TOKEN: ${{ secrets.JWT_EXPIRATION_REFRESH_TOKEN }}
-          SALT: ${{ secrets.SALT }}
 
-      - name: Instalar dependências
-        run: npm install
+      - run: npm install
 
-      - name: Executar migrações do Prisma
-        run: npx prisma migrate dev
+      - run: npx prisma migrate dev
 
-      - name: Executar seed do banco
-        run: npm run seed
+      - run: npm run seed
 
-      - name: Executar testes
-        run: npm test -- --forceExit
+      - run: npm test -- --forceExit
 
-  # Job para build e push da imagem Docker
   buildar-docker-api:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') || github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'master')
     needs: testar-app
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'master'))
 
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Login no Docker Hub
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
-          username: ${{secrets.DOCKERHUB_USERNAME}}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Configurar ambiente
@@ -100,61 +74,49 @@ jobs:
           cp .env.example .env
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
 
-      - name: Build e Push da imagem Docker
-        uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: ${{ secrets.IMAGEM_DOCKER }}
 
-  # Job para fazer o deploy
   fazer-deploy:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') || github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'master')
     needs: buildar-docker-api
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'master'))
 
     steps:
       - name: Criar pasta kube
         run: mkdir -p ~/.kube
-
-      - name: Criar kubeconfig
-        run: echo "$KUBECTL_CONFIG" | base64 -d > ~/.kube/config
+  
+      - name: Criar kubeconfig a partir do secret
+        run: echo "${KUBECTL_CONFIG}" > ~/.kube/config
         env:
-          KUBECTL_CONFIG: ${{ variables.KUBECTL_CONFIG }}
-      
-      - name: Ajustar permissões
-        run: chmod 600 ~/.kube/config
-
-      - name: Checkout código
-        uses: actions/checkout@v4
-
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v3
+          KUBECTL_CONFIG: ${{ secrets.KUBECTL_CONFIG }}
+  
+      - run: chmod 600 ~/.kube/config
+  
+      - uses: actions/checkout@v4
+  
+      - uses: azure/setup-kubectl@v3
         with:
           version: 'latest'
-
-      - name: Configurar kubectl
-        run: |
-          echo "${{ variables.KUBECTL_CONFIG }}" | base64 -d > ~/.kube/config
-
+  
       - name: Verificar cluster
         run: |
           kubectl config get-contexts
-          kubectl get node
-          kubectl get pods
+          kubectl get nodes
 
       - name: Remover deployment anterior
-        run: |
-          kubectl delete deployment personal-finance-api || true
+        run: kubectl delete deployment personal-finance-api || true
 
-      - name: Aguardar remoção
-        run: sleep 10
+      - run: sleep 10
 
-      - name: Aplicar novo deployment
-        run: kubectl apply -f deploy/personal-finance-api-deployment.yaml
+      - run: kubectl apply -f deploy/personal-finance-api-deployment.yaml
 
-      - name: Aguardar deployment
-        run: sleep 60
+      - run: sleep 60
 
       - name: Verificar status do deployment
         run: |
