@@ -92,7 +92,7 @@ jobs:
       - name: Login no Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{secrets.DOCKERHUB_USERNAME}}
+          username: ${secrets.DOCKERHUB_USERNAME}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Configurar ambiente
@@ -120,7 +120,7 @@ jobs:
       - name: Criar kubeconfig
         run: echo "$KUBECTL_CONFIG" | base64 -d > ~/.kube/config
         env:
-          KUBECTL_CONFIG: ${{ secrets.KUBECTL_CONFIG }}
+          KUBECTL_CONFIG: ${{ variables.KUBECTL_CONFIG }}
       
       - name: Ajustar permissões
         run: chmod 600 ~/.kube/config
@@ -135,7 +135,7 @@ jobs:
 
       - name: Configurar kubectl
         run: |
-          echo "${{ secrets.KUBECTL_CONFIG }}" | base64 -d > ~/.kube/config
+          echo "${{ variables.KUBECTL_CONFIG }}" | base64 -d > ~/.kube/config
 
       - name: Verificar cluster
         run: |
