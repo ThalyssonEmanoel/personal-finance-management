@@ -2,6 +2,7 @@ import request from "supertest";
 import { expect, it, describe, beforeAll, jest } from "@jest/globals";
 import app from "../../app.js";
 import { faker } from '@faker-js/faker';
+import { prisma } from "../../config/prismaClient.js";
 
 let account_faker = faker.finance.accountName();
 let token;
@@ -34,6 +35,10 @@ beforeAll(async () => {
   }
 
 }, 1000);
+
+afterAll(async () => {
+  await prisma.$disconnect();
+});
 
 function getRandomAccountType() {
   const types = ["Salário", "Corrente", "Poupança"];

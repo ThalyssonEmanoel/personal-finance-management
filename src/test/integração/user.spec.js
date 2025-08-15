@@ -2,6 +2,7 @@ import request from "supertest";
 import { expect, it, describe, beforeAll, jest } from "@jest/globals";
 import app from "../../app.js";
 import { faker } from '@faker-js/faker';
+import { prisma } from "../../config/prismaClient.js";
 
 let user_faker = faker.person.fullName();
 let email_faker = faker.internet.email();
@@ -39,6 +40,10 @@ beforeAll(async () => {
   }
 
 }, 1000);
+
+afterAll(async () => {
+  await prisma.$disconnect();
+});
 
 function gerarSenhaForte() {
   const maiuscula = faker.string.fromCharacters('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
