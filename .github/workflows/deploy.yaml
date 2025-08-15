@@ -46,10 +46,10 @@ jobs:
 
       - name: Configurar ambiente
         run: |
-          echo "DATABASE_URL=${{ env.DATABASE_URL }}" > .env
-          echo "PORT=${{ env.PORT }}" >> .env
-          echo "DEBUGLOG=${{ env.DEBUGLOG }}" >> .env
-          echo "SWAGGER_PROD_URL=${{ env.SWAGGER_PROD_URL }}" >> .env
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
+          echo "PORT=${{ secrets.PORT }}" >> .env
+          echo "DEBUGLOG=${{ secrets.DEBUGLOG }}" >> .env
+          echo "SWAGGER_PROD_URL=${{ secrets.SWAGGER_PROD_URL }}" >> .env
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
           echo "JWT_EXPIRATION_ACCESS_TOKEN=${{ secrets.JWT_EXPIRATION_ACCESS_TOKEN }}" >> .env
           echo "JWT_EXPIRATION_REFRESH_TOKEN=${{ secrets.JWT_EXPIRATION_REFRESH_TOKEN }}" >> .env
