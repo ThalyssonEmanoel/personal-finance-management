@@ -211,6 +211,7 @@ PublishScripts/
 # Microsoft Azure Build Output
 csx/
 *.build.csdef
+mysql.yaml
 
 # Microsoft Azure Emulator
 ecf/
