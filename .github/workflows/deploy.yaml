@@ -15,7 +15,7 @@ on:
 # Define os jobs que serão executados
 jobs:
   # Este Job irá executar todos os testes da aplicação
-  # A ideia é que se os testes falharem os próximos Jobs não serão executados a
+  # A ideia é que se os testes falharem os próximos Jobs não serão executados
   testar-app:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') ||
@@ -92,7 +92,7 @@ jobs:
       - name: Login no Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          username: ${secrets.DOCKERHUB_USERNAME}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Configurar ambiente
