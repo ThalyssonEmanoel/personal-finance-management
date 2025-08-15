@@ -68,7 +68,7 @@ jobs:
 
       - name: Configurar ambiente
         run: |
-          echo "DATABASE_URL=\"mysql://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@localhost:3306/${{ secrets.MYSQL_DATABASE }}\"" > .env
+          echo "DATABASE_URL=${{ env.DATABASE_URL }}" > .env
           echo "PORT=${{ env.PORT }}" >> .env
           echo "DEBUGLOG=${{ env.DEBUGLOG }}" >> .env
           echo "SWAGGER_PROD_URL=${{ env.SWAGGER_PROD_URL }}" >> .env
