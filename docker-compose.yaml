@@ -9,9 +9,9 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     expose:
-      - "3396"
+      - "3306"
     ports:
-      - "3396:3396"
+      - "3306:3306"
     volumes:
       - ./data:/var/lib/mysql
 
