@@ -23,7 +23,7 @@ env:
   KUBECTL_CONFIG: ${{ secrets.KUBECTL_CONFIG }}
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-  MYSQL_NAME: ${{ secrets.MYSQL_NAME }}
+  MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
   MYSQL_USER: ${{ secrets.MYSQL_USER }}
   MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
   MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
@@ -48,7 +48,7 @@ jobs:
       mysql:
         image: mysql:latest
         env:
-          MYSQL_DATABASE: ${{ secrets.MYSQL_NAME }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
           MYSQL_USER: ${{ secrets.MYSQL_USER }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
@@ -68,7 +68,7 @@ jobs:
 
       - name: Configurar ambiente
         run: |
-          echo "DATABASE_URL=\"mysql://root:${{ secrets.MYSQL_ROOT_PASSWORD }}@localhost:3306/${{ secrets.MYSQL_NAME }}\"" > .env
+          echo "DATABASE_URL=\"mysql://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@localhost:3306/${{ secrets.MYSQL_DATABASE }}\"" > .env
           echo "PORT=${{ env.PORT }}" >> .env
           echo "DEBUGLOG=${{ env.DEBUGLOG }}" >> .env
           echo "SWAGGER_PROD_URL=${{ env.SWAGGER_PROD_URL }}" >> .env
@@ -77,7 +77,7 @@ jobs:
           echo "JWT_EXPIRATION_REFRESH_TOKEN=${{ secrets.JWT_EXPIRATION_REFRESH_TOKEN }}" >> .env
           echo "SALT=${{ secrets.SALT }}" >> .env
         env:
-          MYSQL_DATABASE: ${{ secrets.MYSQL_NAME }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
           MYSQL_USER: ${{ secrets.MYSQL_USER }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
