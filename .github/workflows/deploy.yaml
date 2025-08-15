@@ -15,7 +15,7 @@ on:
 # Define os jobs que serão executados
 jobs:
   # Este Job irá executar todos os testes da aplicação
-  # A ideia é que se os testes falharem os próximos Jobs não serão executados
+  # A ideia é que se os testes falharem os próximos Jobs não serão executados a
   testar-app:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') ||
