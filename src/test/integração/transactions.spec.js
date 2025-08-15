@@ -2,7 +2,7 @@ import request from "supertest";
 import { expect, it, describe, beforeAll, jest } from "@jest/globals";
 import app from "../../app.js";
 import { faker } from '@faker-js/faker';
-
+import { prisma } from "../../config/prismaClient.js";
 let token;
 let adminToken;
 let userInformation;
@@ -77,6 +77,10 @@ beforeAll(async () => {
   }
 
 }, 10000);
+
+afterAll(async () => {
+  await prisma.$disconnect();
+});
 
 function getRandomTransactionType() {
   const types = ["expense", "income"];

@@ -1,19 +1,7 @@
 #Nem precisa de secretos, só precisa criar o arquivo .env com as variáveis de ambiente ou chumbar ai mesmo ksskks
 services:
-  app:
-    build: .
-    environment:
-      PORT: 3000
-      DATABASE_URL: ${DATABASE_URL}
-    ports:
-      - "3000:3000"
-    depends_on:
-      - financas-db-web
-    volumes:
-      - .:/usr/src/app
-    command: npm run dev
-  financas-db-web:
-    restart: alwaays
+  financas-db-service:
+    restart: always
     image: mysql:latest
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -31,7 +19,7 @@ services:
     image: phpmyadmin/phpmyadmin
     restart: always
     environment:
-      PMA_HOST: ${PMA_HOST}
+      PMA_HOST: financas-db-service
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
       - '5001:80'
