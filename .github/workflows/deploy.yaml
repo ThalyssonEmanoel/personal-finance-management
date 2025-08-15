@@ -114,6 +114,17 @@ jobs:
     needs: buildar-docker-api
 
     steps:
+      - name: Criar pasta kube
+        run: mkdir -p ~/.kube
+
+      - name: Criar kubeconfig
+        run: echo "$KUBECTL_CONFIG" | base64 -d > ~/.kube/config
+        env:
+          KUBECTL_CONFIG: ${{ secrets.KUBECTL_CONFIG }}
+      
+      - name: Ajustar permissões
+        run: chmod 600 ~/.kube/config
+
       - name: Checkout código
         uses: actions/checkout@v4
 
