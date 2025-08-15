@@ -12,28 +12,6 @@ on:
   pull_request:
     branches: [ develop, master ]
 
-# Variáveis de ambiente que poderão ser usadas nos Jobs para chamar elas é só fazer assim: ${env.VARIABLE_NAME}
-env:
-  # SENSÍVEIS 
-  DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  SALT: ${{ secrets.SALT }}
-  JWT_SECRET: ${{ secrets.JWT_SECRET }}
-  JWT_EXPIRATION_ACCESS_TOKEN: ${{ secrets.JWT_EXPIRATION_ACCESS_TOKEN }}
-  JWT_EXPIRATION_REFRESH_TOKEN: ${{ secrets.JWT_EXPIRATION_REFRESH_TOKEN }}
-  KUBECTL_CONFIG: ${{ secrets.KUBECTL_CONFIG }}
-  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-  MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
-  MYSQL_USER: ${{ secrets.MYSQL_USER }}
-  MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-  MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-
-  # NÃO SENSÍVEIS 
-  IMAGEM_DOCKER: thalyssoemanoel/personal-finance-api:latest
-  PORT: 8080
-  DEBUGLOG: "false"
-  SWAGGER_PROD_URL: "https://personal-finance-api.app.fslab.dev"
-
 # Define os jobs que serão executados
 jobs:
   # Este Job irá executar todos os testes da aplicação
@@ -114,20 +92,20 @@ jobs:
       - name: Login no Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${env.DOCKERHUB_USERNAME}
-          password: ${env.DOCKERHUB_TOKEN}
+          username: ${secrets.DOCKERHUB_USERNAME}
+          password: ${secrets.DOCKERHUB_TOKEN}
 
       - name: Configurar ambiente
         run: |
           cp .env.example .env
-          echo "DATABASE_URL=${{ env.DATABASE_URL }}" >> .env
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
 
       - name: Build e Push da imagem Docker
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ env.IMAGEM_DOCKER }}
+          tags: ${{ secrets.IMAGEM_DOCKER }}
 
   # Job para fazer o deploy
   fazer-deploy:
@@ -146,7 +124,7 @@ jobs:
 
       - name: Configurar kubectl
         run: |
-          echo "${{ env.KUBECTL_CONFIG }}" | base64 -d > ~/.kube/config
+          echo "${{ secrets.KUBECTL_CONFIG }}" | base64 -d > ~/.kube/config
 
       - name: Verificar cluster
         run: |
