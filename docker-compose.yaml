@@ -1,6 +1,6 @@
 #Nem precisa de secretos, só precisa criar o arquivo .env com as variáveis de ambiente ou chumbar ai mesmo ksskks
 services:
-  financas-db-service:
+  financas-db-web:
     restart: always
     image: mysql:latest
     environment:
@@ -8,6 +8,7 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_TCP_PORT: 3396
     expose:
       - "3396"
     ports:
@@ -19,7 +20,7 @@ services:
     image: phpmyadmin/phpmyadmin
     restart: always
     environment:
-      PMA_HOST: financas-db-service
+      PMA_HOST: financas-db-web
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
       - '5001:80'
