@@ -115,6 +115,16 @@ model Goals {
   user   Users @relation(fields: [userId], references: [id])
 }
 
+model ResetCodes {
+  id        Int      @id @default(autoincrement())
+  email     String   @db.VarChar(45)
+  code      String   @db.Char(6)
+  expiresAt DateTime @db.DateTime
+  used      Boolean  @default(false)
+
+  @@unique([email, code])
+}
+
 enum TransactionType {
   expense
   income

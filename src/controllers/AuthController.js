@@ -28,7 +28,7 @@ class AuthController {
   static RefreshToken = async (req, res, next) => {
     try {
       const response = await AuthService.refreshToken(req.body);
-      
+
       res.status(200).json(CommonResponse.success({
         accessToken: response.accessToken,
         refreshToken: response.refreshToken
@@ -47,6 +47,28 @@ class AuthController {
       next(error);
     }
   };
+
+  static forgotPassword = async (req, res, next) => {
+    try {
+      const { email } = req.body;
+      await AuthService.forgotPassword(email);
+      res.status(200).json(CommonResponse.success());
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static resetPassword = async (req, res, next) => {
+    try {
+      const { email, code, password } = req.body;
+      const response = await AuthService.resetPassword(email, code, password);
+
+      res.status(200).json(CommonResponse.success(response));
+    }
+    catch (error) {
+      next(error);
+    }
+  }
 
 }
 

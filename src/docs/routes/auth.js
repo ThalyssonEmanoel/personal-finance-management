@@ -166,6 +166,76 @@ const authRoutes = {
         500: commonResponses[500]()
       }
     }
+  },
+  "/forgot-password": {
+    post: {
+      tags: ["Auth"],
+      summary: "Request password recovery",
+      description: `
+      #### Use Case
+      Allows the system to receive data for password recovery.
+
+      #### Business Function
+      Allows the system to receive the data for password recovery and perform the necessary checks to register the new password.
+
+      #### Business Rules Involved
+      - **Verification of submitted data:** Checks if the submitted data, such as the access code, matches the one sent by the API and if the new password meets the required criteria.
+
+      #### Expected Result
+      Updates the user's password, allowing them to authenticate with the new password.
+      `,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/requestMold/ForgotPasswordRequest"
+            }
+          }
+        }
+      },
+      responses: {
+        200: commonResponses[200]("#/components/schemas/responseMold/ForgotPasswordResponse"),
+        400: commonResponses[400](),
+        404: commonResponses[404](),
+        500: commonResponses[500]()
+      }
+    }
+  },
+  "/reset-password": {
+    post: {
+      tags: ["Auth"],
+      summary: "Reset user password",
+      description: `
+      #### Use Case
+      Allows the system to receive data for password reset.
+
+      #### Business Function
+      Allows the system to receive the data for password reset and perform the necessary checks to register the new password.
+
+      #### Business Rules Involved
+      - **Verification of submitted data:** Checks if the submitted data, such as the access code, matches the one sent by the API and if the new password meets the required criteria.
+
+      #### Expected Result
+      Updates the user's password, allowing them to authenticate with the new password.
+      `,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/requestMold/ResetPasswordRequest"
+            }
+          }
+        }
+      },
+      responses: {
+        200: commonResponses[200]("#/components/schemas/responseMold/ResetPasswordResponse"),
+        400: commonResponses[400](),
+        404: commonResponses[404](),
+        500: commonResponses[500]()
+      }
+    }
   }
 };
 

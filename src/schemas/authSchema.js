@@ -17,6 +17,16 @@ class AuthSchema {
   static revokeToken = z.object({
     userId: z.number().int().positive("ID do usuário deve ser um número positivo"),
   });
+
+  static forgotPassword = z.object({
+    email: z.string().email("Email deve ter um formato válido"),
+  });
+
+  static resetPassword = z.object({
+    email: z.string().email("Email deve ter um formato válido"),
+    code: z.string().length(6, "Código deve ter exatamente 6 dígitos"),
+    password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  });
 };
 
 export default AuthSchema;
