@@ -45,6 +45,35 @@ class UserRepository {
     });
   }
 
+  static async findByEmail(email) {
+    return await prisma.users.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password: true,
+        avatar: true,
+        isAdmin: false
+      }
+    });
+  }
+
+  static async updateUserPassword(id, hashedPassword) {
+    const user = await prisma.users.update({
+      where: { id: parseInt(id) },
+      data: { password: hashedPassword },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatar: true,
+        isAdmin: false
+      }
+    });
+    return user;
+  }
+
   static async createUser(userData) {
 
     const { name, email, password, avatar } = userData;

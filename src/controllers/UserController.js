@@ -58,8 +58,12 @@ class UserController {
   };
   static updateUser = async (req, res, next) => {
     try {
+      console.log("sdsad", req.body);
+      
       const { id } = req.params;
       const { name, email } = req.body;
+      console.log("sdsad", name, email);
+
       const avatar = req.file ? req.file.path : req.body.avatar;
 
       const userData = { name, email, avatar };

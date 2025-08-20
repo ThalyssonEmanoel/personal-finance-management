@@ -72,6 +72,55 @@ const AuthRequests = {
       userId: 1
     }
   },
+  ForgotPasswordRequest: {
+    title: "ForgotPasswordRequest",
+    type: "object",
+    required: ["email"],
+    properties: {
+      email: {
+        type: "string",
+        format: "Email",
+        description: "Email do usuário para recuperação de senha",
+        example: "thalysson140105@gmail.com"
+      }
+    },
+    description: "Schema para requisição de recuperação de senha",
+    example: {
+      email: "thalysson140105@gmail.com"
+    }
+  },
+  ResetPasswordRequest: {
+    title: "ResetPasswordRequest",
+    type: "object",
+    required: ["email", "code", "password"],
+    properties: {
+      email: {
+        type: "string",
+        format: "Email",
+        description: "Email do usuário para recuperação de senha",
+        example: "thalysson140105@gmail.com"
+      },
+      code: {
+        type: "string",
+        minLength: 6,
+        maxLength: 6,
+        description: "Código de verificação enviado por email",
+        example: "123456"
+      },
+      password: {
+        type: "string",
+        minLength: 6,
+        description: "Nova senha do usuário",
+        example: "NovaSenha@123"
+      }
+    },
+    description: "Schema para requisição de redefinição de senha",
+    example: {
+      email: "thalysson140105@gmail.com",
+      code: "123456",
+      password: "NovaSenha@123"
+    }
+  }
 };
 
 export default AuthRequests;
