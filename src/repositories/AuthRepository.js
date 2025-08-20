@@ -71,6 +71,28 @@ class AuthRepository {
     return usuarioSemToken;
   }
 
+  static async createResetCode({ email, code, expiresAt }) {
+    return await prisma.resetCodes.create({ data: { email, code, expiresAt } });
+  }
+
+  static async findValidResetCode(email, code) {
+    return await prisma.resetCodes.findFirst({
+      where: {
+        email,
+        code,
+        used: false,
+        expiresAt: { gt: new Date() },
+      },
+    });
+  }
+
+  static async markCodeAsUsed(id) {
+    return await prisma.resetCodes.update({
+      where: { id: id },
+      data: { used: true },
+    });
+  }
+
 }
 
 export default AuthRepository;

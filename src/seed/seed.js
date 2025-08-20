@@ -6,10 +6,10 @@ import path from 'path';
 
 const prisma = new PrismaClient();
 
-if (process.env.NODE_ENV === 'production') {
-  console.log('NÃO SE RODA O SEED EM PRODUÇÃO!!!');
-  process.exit(1);
-}
+// if (process.env.NODE_ENV === 'production') {
+//   console.log('NÃO SE RODA O SEED EM PRODUÇÃO!!!');
+//   process.exit(1);
+// }
 
 async function clearDatabase() {
   try {

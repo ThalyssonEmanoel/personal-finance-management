@@ -96,6 +96,36 @@ const AuthResponse = {
       message: "Token revogado com sucesso."
     }
   },
+  ForgotPasswordResponse: {
+    title: "ForgotPasswordResponse",
+    type: "object",
+    properties: {
+      message: {
+        type: "string",
+        description: "Mensagem de confirmação da solicitação de recuperação de senha",
+        example: "Instruções para recuperação de senha enviadas para o email."
+      }
+    },
+    description: "Schema para resposta de solicitação de recuperação de senha bem-sucedida",
+    example: {
+      message: "Instruções para recuperação de senha enviadas para o email."
+    }
+  },
+  ResetPasswordResponse: {
+    title: "ResetPasswordResponse",
+    type: "object",
+    properties: {
+      message: {
+        type: "string",
+        description: "Mensagem de confirmação da redefinição de senha",
+        example: "Senha redefinida com sucesso."
+      }
+    },
+    description: "Schema para resposta de redefinição de senha bem-sucedida",
+    example: {
+      message: "Senha redefinida com sucesso."
+    }
+  }
 };
 
 export default AuthResponse;

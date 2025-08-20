@@ -44,6 +44,8 @@ jobs:
           echo "JWT_EXPIRATION_ACCESS_TOKEN=${{ secrets.JWT_EXPIRATION_ACCESS_TOKEN }}" >> .env
           echo "JWT_EXPIRATION_REFRESH_TOKEN=${{ secrets.JWT_EXPIRATION_REFRESH_TOKEN }}" >> .env
           echo "SALT=${{ secrets.SALT }}" >> .env
+          echo "HOST=${{ secrets.HOST }}" >> .env
+          echo "PASS=${{ secrets.PASS }}" >> .env
 
       - run: npm install
 
