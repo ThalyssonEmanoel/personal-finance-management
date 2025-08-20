@@ -110,8 +110,8 @@ class AuthService {
     <meta charset="UTF-8" />
     <title>Recuperação de Senha</title>
   </head>
-  <body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color: rgb(232,222,146);">
-    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: rgb(232,222,146); padding: 20px;">
+  <body style="margin:0; padding:0; font-family: Arial, sans-serif">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="padding: 20px">
       <tr>
         <td align="center">
           <table width="600" border="0" cellspacing="0" cellpadding="0" style="background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
@@ -150,7 +150,7 @@ class AuthService {
 
             <!-- Footer -->
             <tr>
-              <td align="center" style="background:rgb(232,222,146); padding:15px; font-size:12px; color:#555;">
+              <td align="center" style="padding:15px; font-size:12px; color:#555;">
                 © ${new Date().getFullYear()} Sistema de Refeições — Todos os direitos reservados.
               </td>
             </tr>

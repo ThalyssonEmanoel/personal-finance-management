@@ -51,6 +51,16 @@ spec:
               secretKeyRef:
                 name: personal-finance-secrets
                 key: JWT_EXPIRATION_REFRESH_TOKEN
+          - name: HOST
+            valueFrom:
+              secretKeyRef:
+                name: personal-finance-secrets
+                key: HOST
+          - name: PASS
+            valueFrom:
+              secretKeyRef:
+                name: personal-finance-secrets
+                key: PASS
 ---
 apiVersion: v1
 kind: Service

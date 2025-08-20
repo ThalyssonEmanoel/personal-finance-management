@@ -21,8 +21,9 @@ jobs:
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
           MYSQL_USER: ${{ secrets.MYSQL_USER }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_TCP_PORT: 3396
         ports:
-          - 3306:3306
+          - 3396:3396
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
@@ -43,6 +44,8 @@ jobs:
           echo "JWT_EXPIRATION_ACCESS_TOKEN=${{ secrets.JWT_EXPIRATION_ACCESS_TOKEN }}" >> .env
           echo "JWT_EXPIRATION_REFRESH_TOKEN=${{ secrets.JWT_EXPIRATION_REFRESH_TOKEN }}" >> .env
           echo "SALT=${{ secrets.SALT }}" >> .env
+          echo "HOST=${{ secrets.HOST }}" >> .env
+          echo "PASS=${{ secrets.PASS }}" >> .env
 
       - run: npm install
 
