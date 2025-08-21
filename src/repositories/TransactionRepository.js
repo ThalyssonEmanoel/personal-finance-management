@@ -1,6 +1,39 @@
 import { prisma } from "../config/prismaClient.js";
 
 class TransactionRepository {
+  static async listTransactionsForPDF(userId, startDate, endDate, type, accountId) {
+    let where = {
+      userId: parseInt(userId),
+      release_date: {
+        gte: new Date(startDate),
+        lte: new Date(endDate)
+      }
+    };
+
+    if (type && (type === 'income' || type === 'expense')) {
+      where.type = type;
+    }
+
+    if (accountId) {
+      where.accountId = parseInt(accountId);
+    }
+
+    return await prisma.transactions.findMany({
+      where,
+      orderBy: { release_date: 'asc' },
+      select: {
+        id: true,
+        type: true,
+        name: true,
+        category: true,
+        value: true,
+        release_date: true,
+        account: { select: { name: true } },
+        paymentMethod: { select: { name: true } },
+        user: { select: { name: true } }
+      }
+    });
+  }
 
   static async listTransactions(filters, skip, take, order) {
     let where = { ...filters };

@@ -118,6 +118,63 @@ export function requestTransactionGet() {
   };
 }
 
+export function requestTransactionPdf() {
+  const parameters = [
+    {
+      "name": "userId",
+      "in": "query",
+      "description": "User ID to filter transactions",
+      "required": true,
+      "schema": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    {
+      "name": "startDate",
+      "in": "query",
+      "description": "Start date for the statement period (YYYY-MM-DD format)",
+      "required": true,
+      "schema": {
+        "type": "string",
+        "format": "date"
+      }
+    },
+    {
+      "name": "endDate",
+      "in": "query",
+      "description": "End date for the statement period (YYYY-MM-DD format)",
+      "required": true,
+      "schema": {
+        "type": "string",
+        "format": "date"
+      }
+    },
+    {
+      "name": "type",
+      "in": "query",
+      "description": "Type of transactions to include in the statement",
+      "required": true,
+      "schema": {
+        "type": "string",
+        "enum": ["all", "income", "expense"]
+      }
+    },
+    {
+      "name": "accountId",
+      "in": "query",
+      "description": "Account ID to filter transactions (optional - if not provided, includes all accounts)",
+      "required": false,
+      "schema": {
+        "type": "integer",
+        "minimum": 1
+      }
+    }
+  ];
+  return {
+    parameters,
+  };
+}
 const TransactionRequest = {
   CreateTransactionRequest: {
     title: "CreateTransactionRequest",
@@ -193,7 +250,7 @@ const TransactionRequest = {
       paymentMethodId: 1
     }
   },
-   UpdateTransactionRequest: {
+  UpdateTransactionRequest: {
     title: "UpdateTransactionRequest",
     type: "object",
     properties: {
