@@ -148,9 +148,10 @@ class TransactionService {
     }
 
     const today = new Date();
-    const currentDay = today.getUTCDate(); // Usar UTC para consistência UTC usar o horária de Brasília
-    const currentMonth = today.getUTCMonth() + 1; // getUTCMonth() retorna 0-11 por isso o +1
-    const currentYear = today.getUTCFullYear();
+    const rondonia = new Date(today.getTime() - (4 * 60 * 60 * 1000)); // UTC-4, se eu não deixar dessa forma buga horário de rondônia
+    const currentDay = rondonia.getUTCDate();
+    const currentMonth = rondonia.getUTCMonth() + 1; 
+    const currentYear = rondonia.getUTCFullYear();
 
     // Calcular mês anterior
     const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
@@ -224,10 +225,12 @@ class TransactionService {
       return;
     }
 
+    // Usar fuso horário de Rondônia (UTC-4)
     const today = new Date();
-    const currentDay = today.getUTCDate();
-    const currentMonth = today.getUTCMonth() + 1;
-    const currentYear = today.getUTCFullYear();
+    const rondonia = new Date(today.getTime() - (4 * 60 * 60 * 1000)); // UTC-4
+    const currentDay = rondonia.getUTCDate();
+    const currentMonth = rondonia.getUTCMonth() + 1;
+    const currentYear = rondonia.getUTCFullYear();
 
     const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
     const previousYear = currentMonth === 1 ? currentYear - 1 : currentYear;
