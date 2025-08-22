@@ -1,6 +1,7 @@
 import TransactionService from '../services/TransactionService.js';
 import CommonResponse from "../utils/commonResponse.js";
 import TransactionSchemas from '../schemas/TransactionSchemas.js';
+import { generateTransactionPDF } from '../utils/pdfGenerator.js';
 
 class TransactionController {
 
@@ -14,7 +15,6 @@ class TransactionController {
       if (!transactions || transactions.length === 0) {
         return res.status(404).json({ error: 'Nenhuma transação encontrada para o período informado.' });
       }
-      const { generateTransactionPDF } = await import('../utils/pdfGenerator.js');
       const pdfDoc = generateTransactionPDF(transactions, startDate, endDate, type);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="extrato_${userId}_${startDate}_a_${endDate}.pdf"`);
