@@ -13,8 +13,9 @@ class TransactionSchemas {
       .refine((val) => !isNaN(Date.parse(val)), { message: "Payment date must be in a valid format." })
       .optional(),
     recurring: z.coerce.boolean({ message: "Recurring must be a boolean value." }).optional(),
-    accountName: z.string({ message: "The accountName must be a text." })
-      .refine((val) => !/^[0-9]+$/.test(val), { message: "The accountName must contain words, not only numbers." })
+    accountId: z.coerce.number({ message: "The account ID must be an integer." })
+      .int({ message: "The account ID must be an integer." })
+      .positive({ message: "The account ID must be greater than 0." })
       .optional(),
     number_installments: z.coerce.number({ message: "The number of installments must be a number." })
       .int({ message: "The number of installments must be an integer." })
@@ -60,8 +61,9 @@ class TransactionSchemas {
       .refine((val) => !isNaN(Date.parse(val)), { message: "Payment date must be in a valid format." })
       .optional(),
     recurring: z.coerce.boolean({ message: "Recurring must be a boolean value." }).optional(),
-    accountName: z.string({ message: "The accountName must be a text." })
-      .refine((val) => !/^[0-9]+$/.test(val), { message: "The accountName must contain words, not only numbers." })
+    accountId: z.coerce.number({ message: "The account ID must be an integer." })
+      .int({ message: "The account ID must be an integer." })
+      .positive({ message: "The account ID must be greater than 0." })
       .optional(),
     number_installments: z.coerce.number({ message: "The number of installments must be a number." })
       .int({ message: "The number of installments must be an integer." })
