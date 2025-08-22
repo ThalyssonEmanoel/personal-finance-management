@@ -5,6 +5,14 @@ import AccountRepository from '../repositories/AccountRepository.js';
 import Decimal from "decimal.js";
 
 class TransactionService {
+  static async getTransactionsForPDF({ userId, startDate, endDate, type, accountId }) {
+    if (!userId || !startDate || !endDate || !type) {
+      throw { code: 400, message: 'Parâmetros obrigatórios: userId, startDate, endDate, type' };
+    }
+    // type pode ser 'all', 'income', 'expense'
+    const queryType = type === 'all' ? undefined : type;
+    return await TransactionRepository.listTransactionsForPDF(parseInt(userId), startDate, endDate, queryType, accountId);
+  }
   /**
    * Calcula os valores das parcelas para transações parceladas
    * @private

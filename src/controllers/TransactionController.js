@@ -1,8 +1,29 @@
 import TransactionService from '../services/TransactionService.js';
 import CommonResponse from "../utils/commonResponse.js";
 import TransactionSchemas from '../schemas/TransactionSchemas.js';
+import { generateTransactionPDF } from '../utils/pdfGenerator.js';
 
 class TransactionController {
+
+  static downloadStatementPDF = async (req, res, next) => {
+    try {
+      const { userId, startDate, endDate, type, accountId } = req.query;
+      if (!userId || !startDate || !endDate || !type) {
+        return res.status(400).json({ error: 'Parâmetros obrigatórios: userId, startDate, endDate, type' });
+      }
+      const transactions = await TransactionService.getTransactionsForPDF({ userId, startDate, endDate, type, accountId });
+      if (!transactions || transactions.length === 0) {
+        return res.status(404).json({ error: 'Nenhuma transação encontrada para o período informado.' });
+      }
+      const pdfDoc = generateTransactionPDF(transactions, startDate, endDate, type);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="Lista_de_transações${startDate}_a_${endDate}.pdf"`);
+      pdfDoc.pipe(res);
+      pdfDoc.end();
+    } catch (err) {
+      next(err);
+    }
+  };
 
   static listAllTransactionsAdmin = async (req, res, next) => {
     try {

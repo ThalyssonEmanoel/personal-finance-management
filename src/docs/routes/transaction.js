@@ -1,4 +1,4 @@
-import { requestTransactionGet } from "../schemas/requestMold/TransactionRequest.js";
+import { requestTransactionGet, requestTransactionPdf } from "../schemas/requestMold/TransactionRequest.js";
 import { requestGetId, requestUserId, requestWithIdAndUserId } from "../schemas/requestMold/UniversalRequest.js";
 import commonResponses from "../utils/swaggerCommonResponses.js";
 
@@ -109,6 +109,39 @@ const transactionRoutes = {
         401: commonResponses[401](),
         404: commonResponses[404](),
         409: commonResponses[409](),
+        498: commonResponses[498](),
+        500: commonResponses[500]()
+      }
+    }
+  },
+  "/transactions/download": {
+    get: {
+      tags: ["Transactions"],
+      summary: "Download transaction statement PDF",
+      description: `
+        #### Use Case
+        Allows users to download a PDF statement of their transactions for a specific period.
+
+        #### Business Rule
+        Generates and downloads a PDF file containing transaction details for the specified date range and type.
+
+        #### Business Rules Involved
+        - User can only download statements for their own transactions.
+        - All parameters (userId, startDate, endDate, type) are required.
+        - Date range must be valid.
+        - Type can be 'all', 'income', or 'expense'.
+        - Returns error if no transactions found for the period.
+
+        #### Expected Result
+        Returns a PDF file with transaction statement for download.
+      `,
+      security: [{ bearerAuth: [] }],
+      ...requestTransactionPdf(),
+      responses: {
+        200: commonResponses[200](),
+        400: commonResponses[400](),
+        401: commonResponses[401](),
+        404: commonResponses[404](),
         498: commonResponses[498](),
         500: commonResponses[500]()
       }
