@@ -17,7 +17,7 @@ class TransactionController {
       }
       const pdfDoc = generateTransactionPDF(transactions, startDate, endDate, type);
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="extrato_${userId}_${startDate}_a_${endDate}.pdf"`);
+      res.setHeader('Content-Disposition', `attachment; filename="Lista_de_transações${startDate}_a_${endDate}.pdf"`);
       pdfDoc.pipe(res);
       pdfDoc.end();
     } catch (err) {
