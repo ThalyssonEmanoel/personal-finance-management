@@ -11,33 +11,7 @@ class TransactionService {
     }
     // type pode ser 'all', 'income', 'expense'
     const queryType = type === 'all' ? undefined : type;
-    const transactions = await TransactionRepository.listTransactionsForPDF(parseInt(userId), startDate, endDate, queryType, accountId);
-    
-    const totals = transactions.reduce((acc, transaction) => {
-      const value = new Decimal(transaction.value_installment || transaction.value || 0);
-      
-      if (transaction.type === 'income') {
-        acc.totalIncome = acc.totalIncome.plus(value);
-      } else if (transaction.type === 'expense') {
-        acc.totalExpense = acc.totalExpense.plus(value);
-      }
-      
-      return acc;
-    }, {
-      totalIncome: new Decimal(0),
-      totalExpense: new Decimal(0)
-    });
-
-    return {
-      transactions,
-      summary: {
-        totalIncome: totals.totalIncome.toNumber(),
-        totalExpense: totals.totalExpense.toNumber(),
-        netBalance: totals.totalIncome.minus(totals.totalExpense).toNumber(),
-        period: { startDate, endDate },
-        transactionCount: transactions.length
-      }
-    };
+    return await TransactionRepository.listTransactionsForPDF(parseInt(userId), startDate, endDate, queryType, accountId);
   }
   /**
    * Calcula os valores das parcelas para transações parceladas
@@ -101,13 +75,13 @@ class TransactionService {
 
     const totals = transactions.reduce((acc, transaction) => {
       const value = new Decimal(transaction.value_installment || transaction.value || 0);
-      
+
       if (transaction.type === 'income') {
         acc.totalIncome = acc.totalIncome.plus(value);
       } else if (transaction.type === 'expense') {
         acc.totalExpense = acc.totalExpense.plus(value);
       }
-      
+
       return acc;
     }, {
       totalIncome: new Decimal(0),
@@ -116,7 +90,7 @@ class TransactionService {
 
     const data = { transactions, totalIncome: totals.totalIncome.toNumber(), totalExpense: totals.totalExpense.toNumber(), netBalance: totals.totalIncome.minus(totals.totalExpense).toNumber() };
 
-    return { 
+    return {
       data,
       total,
       take
@@ -155,7 +129,7 @@ class TransactionService {
   }
 
   static async updateTransaction(id, userId, transactionData) {
-    
+
     const validId = TransactionSchemas.transactionIdParam.parse({ id });
     const validUserId = AccountSchemas.userIdParam.parse({ userId });
     const validTransactionData = TransactionSchemas.updateTransaction.parse(transactionData);
@@ -182,20 +156,20 @@ class TransactionService {
     // Primeiro, buscar a transação para obter os dados antes de deletá-la
     const transactionToDelete = await TransactionRepository.listTransactions(
       { id: validId.id, userId: validUserId.userId }, 0, 1, 'asc');
-    
+
     if (!transactionToDelete || transactionToDelete.length === 0) {
       throw { code: 404, message: "Transação não encontrada" };
     }
-    
+
     const transaction = transactionToDelete[0];
-    
+
     // Reverter o impacto no saldo da conta antes de deletar a transação
     if (transaction.accountId && (transaction.type === 'income' || transaction.type === 'expense')) {
       const amountToRevert = transaction.value_installment || transaction.value;
-      
+
       // Para reverter: se foi expense (subtraiu), agora soma. Se foi income (somou), agora subtrai
       const reverseOperation = transaction.type === 'expense' ? 'add' : 'subtract';
-      
+
       await this.updateAccountBalance({
         accountId: transaction.accountId,
         userId: validUserId.userId,
@@ -223,7 +197,7 @@ class TransactionService {
     const today = new Date();
     const rondonia = new Date(today.getTime() - (4 * 60 * 60 * 1000)); // UTC-4, se eu não deixar dessa forma buga horário de rondônia
     const currentDay = rondonia.getUTCDate();
-    const currentMonth = rondonia.getUTCMonth() + 1; 
+    const currentMonth = rondonia.getUTCMonth() + 1;
     const currentYear = rondonia.getUTCFullYear();
 
     // Calcular mês anterior

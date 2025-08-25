@@ -27,6 +27,7 @@ class TransactionRepository {
         name: true,
         category: true,
         value: true,
+        value_installment: true,
         release_date: true,
         account: { select: { name: true } },
         paymentMethod: { select: { name: true } },

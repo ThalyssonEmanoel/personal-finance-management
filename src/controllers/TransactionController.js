@@ -24,7 +24,7 @@ class TransactionController {
       next(err);
     }
   };
-  
+
   static listAllTransactionsUsers = async (req, res, next) => {
     try {
       const query = req.query;

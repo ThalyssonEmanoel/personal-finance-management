@@ -24,7 +24,12 @@ function generateTransactionPDF(transactions, startDate, endDate, type) {
     { text: 'Forma Pagamento', style: 'tableHeader' },
     { text: 'Usuário', style: 'tableHeader' }
   ]);
-  transactions.forEach((transaction, i) => {
+
+  const sortedTransactions = [...transactions].sort(
+    (a, b) => new Date(a.release_date) - new Date(b.release_date)
+  );
+
+  sortedTransactions.forEach((transaction) => {
     body.push([
       transaction.id.toString(),
       transaction.type === 'income' ? 'Receita' : 'Despesa',
@@ -72,7 +77,7 @@ function generateTransactionPDF(transactions, startDate, endDate, type) {
         layout: {
           fillColor: function (rowIndex) {
             if (rowIndex === 0) return '#E8DE92';
-            return rowIndex % 2 === 0 ? '#F9F9F9' : null; 
+            return rowIndex % 2 === 0 ? '#F9F9F9' : null;
           },
           hLineWidth: function () { return 0.5; },
           vLineWidth: function () { return 0.5; },
