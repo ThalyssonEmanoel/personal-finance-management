@@ -4,17 +4,6 @@ import GoalSchemas from '../schemas/GoalSchemas.js';
 
 class GoalController {
 
-  static listAllGoalsAdmin = async (req, res, next) => {
-    try {
-      const query = req.query;
-      const page = query.page ? Number(query.page) : 1;
-      const { goals, total, take } = await GoalService.listGoals(query, 'desc');
-      res.status(200).json(CommonResponse.success(goals, total, page, take));
-    } catch (err) {
-      next(err);
-    }
-  };
-
   static listAllGoalsUsers = async (req, res, next) => {
     try {
       const query = req.query;

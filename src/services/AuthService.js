@@ -119,7 +119,7 @@ class AuthService {
             <!-- Header -->
             <tr>
               <td align="center" style="background:rgb(201,100,66); padding: 20px;">
-                <h1 style="margin:0; color:#fff; font-size:26px;">Sistema de Refeições</h1>
+                <h1 style="margin:0; color:#fff; font-size:26px;">Financial Record</h1>
               </td>
             </tr>
 
@@ -151,7 +151,7 @@ class AuthService {
             <!-- Footer -->
             <tr>
               <td align="center" style="padding:15px; font-size:12px; color:#555;">
-                © ${new Date().getFullYear()} Sistema de Refeições — Todos os direitos reservados.
+                © ${new Date().getFullYear()} Financial Record — Todos os direitos reservados.
               </td>
             </tr>
 

@@ -159,8 +159,8 @@ class AccountRepository {
       }
     }
 
-    // Verificar se os métodos de pagamento existem (se foram fornecidos)
-    if (paymentMethodIds && paymentMethodIds.length > 0) {
+    // Verificar se os métodos de pagamento existem (se foram fornecidos no update)
+    if (paymentMethodIds && Array.isArray(paymentMethodIds) && paymentMethodIds.length > 0) {
       const existingPaymentMethods = await prisma.paymentMethods.findMany({
         where: {
           id: { in: paymentMethodIds }
@@ -194,21 +194,18 @@ class AccountRepository {
           data: updateData
         });
       }
-
-      if (paymentMethodIds !== undefined) {
+      if (paymentMethodIds !== undefined && paymentMethodIds !== null && paymentMethodIds.length > 0) {
         await prisma.accountPaymentMethods.deleteMany({
           where: { accountId: parseInt(id) }
         });
-        if (paymentMethodIds.length > 0) {
-          const accountPaymentMethodsData = paymentMethodIds.map(paymentMethodId => ({
-            accountId: parseInt(id),
-            paymentMethodId: paymentMethodId
-          }));
+        const accountPaymentMethodsData = paymentMethodIds.map(paymentMethodId => ({
+          accountId: parseInt(id),
+          paymentMethodId: paymentMethodId
+        }));
 
-          await prisma.accountPaymentMethods.createMany({
-            data: accountPaymentMethodsData
-          });
-        }
+        await prisma.accountPaymentMethods.createMany({
+          data: accountPaymentMethodsData
+        });
       }
       return await prisma.accounts.findUnique({
         where: { id: parseInt(id) },

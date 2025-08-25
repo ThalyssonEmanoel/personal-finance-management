@@ -3,39 +3,6 @@ import { requestGetId, requestUserId, requestWithIdAndUserId } from "../schemas/
 import commonResponses from "../utils/swaggerCommonResponses.js";
 
 const goalRoutes = {
-  "/admin/goals": {
-    get: {
-      tags: ["Goals"],
-      summary: "List all goals (Admin Only)",
-      description: `
-        #### Use Case
-        Allows administrators to list all registered goals in the system, with the possibility of filtering by specific parameters.
-
-        #### Business Rule
-        Provides a paginated listing of all goals from all users, with detailed information for each goal.
-
-        #### Business Rules Involved
-        - Admin access only.
-        - Allow filtering by defined parameters.
-        - Return error if no goals are registered.
-        - Include related user data.
-
-        #### Expected Result
-        Returns a paginated list of goals with detailed information and related user data.
-      `,
-      security: [{ bearerAuth: [] }],
-      ...requestGoalGet(),
-      responses: {
-        200: commonResponses[200]("#/components/schemas/responseMold/GoalListResponse"),
-        400: commonResponses[400](),
-        401: commonResponses[401](),
-        403: commonResponses[403](),
-        404: commonResponses[404](),
-        498: commonResponses[498](),
-        500: commonResponses[500]()
-      }
-    },
-  },
   "/goals": {
     get: {
       tags: ["Goals"],

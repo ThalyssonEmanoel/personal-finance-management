@@ -56,11 +56,11 @@ export function requestTransactionGet() {
       "schema": { "type": "boolean" }
     },
     {
-      "name": "accountName",
+      "name": "accountId",
       "in": "query",
-      "description": "Filter by account name",
+      "description": "Filter by account id",
       "required": false,
-      "schema": { "type": "string" }
+      "schema": { "type": "integer", "minimum": 1 }
     },
     {
       "name": "number_installments",

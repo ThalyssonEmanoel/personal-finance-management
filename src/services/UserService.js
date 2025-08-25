@@ -56,24 +56,6 @@ class UserService {
     return newUser;
   }
 
-  static async createUserAdmin(user) {
-    const validUser = UserSchema.createUserAdmin.parse(user);
-
-    const saltRounds = parseInt(process.env.SALT) || 10;
-    const hashedPassword = await bcrypt.hash(validUser.password, saltRounds);
-
-    const userWithHashedPassword = {
-      ...validUser,
-      password: hashedPassword
-    };
-
-    const newUser = await UserRepository.createUserAdmin(userWithHashedPassword);
-    if (!newUser) {
-      throw { code: 404 }
-    }
-    return newUser;
-  }
-
   static async updateUser(id, userData) {
     const validId = UserSchema.userIdParam.parse({ id });
     const validUserData = UserSchema.updateUser.parse(userData);
@@ -88,28 +70,6 @@ class UserService {
     });
 
     const updatedUser = await UserRepository.updateUser(validId.id, filteredData);
-
-    if (!updatedUser) {
-      throw { code: 404 };
-    }
-
-    return updatedUser;
-  }
-
-  static async updateUserAdmin(id, userData) {
-    const validId = UserSchema.userIdParam.parse({ id });
-    const validUserData = UserSchema.updateUserAdmin.parse(userData);
-
-    // Filtrar campos vazios/nulos para não serem processados
-    const filteredData = {};
-    Object.keys(validUserData).forEach(key => {
-      const value = validUserData[key];
-      if (value !== undefined && value !== null && value !== "") {
-        filteredData[key] = value;
-      }
-    });
-
-    const updatedUser = await UserRepository.updateUserAdmin(validId.id, filteredData);
 
     if (!updatedUser) {
       throw { code: 404 };

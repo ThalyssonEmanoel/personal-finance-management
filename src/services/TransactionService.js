@@ -11,7 +11,33 @@ class TransactionService {
     }
     // type pode ser 'all', 'income', 'expense'
     const queryType = type === 'all' ? undefined : type;
-    return await TransactionRepository.listTransactionsForPDF(parseInt(userId), startDate, endDate, queryType, accountId);
+    const transactions = await TransactionRepository.listTransactionsForPDF(parseInt(userId), startDate, endDate, queryType, accountId);
+    
+    const totals = transactions.reduce((acc, transaction) => {
+      const value = new Decimal(transaction.value_installment || transaction.value || 0);
+      
+      if (transaction.type === 'income') {
+        acc.totalIncome = acc.totalIncome.plus(value);
+      } else if (transaction.type === 'expense') {
+        acc.totalExpense = acc.totalExpense.plus(value);
+      }
+      
+      return acc;
+    }, {
+      totalIncome: new Decimal(0),
+      totalExpense: new Decimal(0)
+    });
+
+    return {
+      transactions,
+      summary: {
+        totalIncome: totals.totalIncome.toNumber(),
+        totalExpense: totals.totalExpense.toNumber(),
+        netBalance: totals.totalIncome.minus(totals.totalExpense).toNumber(),
+        period: { startDate, endDate },
+        transactionCount: transactions.length
+      }
+    };
   }
   /**
    * Calcula os valores das parcelas para transações parceladas
@@ -72,7 +98,29 @@ class TransactionService {
       TransactionRepository.listTransactions(dbFilters, skip, take, order),
       TransactionRepository.countTransactions(dbFilters)
     ]);
-    return { transactions, total, take };
+
+    const totals = transactions.reduce((acc, transaction) => {
+      const value = new Decimal(transaction.value_installment || transaction.value || 0);
+      
+      if (transaction.type === 'income') {
+        acc.totalIncome = acc.totalIncome.plus(value);
+      } else if (transaction.type === 'expense') {
+        acc.totalExpense = acc.totalExpense.plus(value);
+      }
+      
+      return acc;
+    }, {
+      totalIncome: new Decimal(0),
+      totalExpense: new Decimal(0)
+    });
+
+    const data = { transactions, totalIncome: totals.totalIncome.toNumber(), totalExpense: totals.totalExpense.toNumber(), netBalance: totals.totalIncome.minus(totals.totalExpense).toNumber() };
+
+    return { 
+      data,
+      total,
+      take
+    };
   }
 
   /**
@@ -131,6 +179,31 @@ class TransactionService {
   static async deleteTransaction(id, userId) {
     const validId = AccountSchemas.accountIdParam.parse({ id });
     const validUserId = AccountSchemas.userIdParam.parse({ userId });
+    // Primeiro, buscar a transação para obter os dados antes de deletá-la
+    const transactionToDelete = await TransactionRepository.listTransactions(
+      { id: validId.id, userId: validUserId.userId }, 0, 1, 'asc');
+    
+    if (!transactionToDelete || transactionToDelete.length === 0) {
+      throw { code: 404, message: "Transação não encontrada" };
+    }
+    
+    const transaction = transactionToDelete[0];
+    
+    // Reverter o impacto no saldo da conta antes de deletar a transação
+    if (transaction.accountId && (transaction.type === 'income' || transaction.type === 'expense')) {
+      const amountToRevert = transaction.value_installment || transaction.value;
+      
+      // Para reverter: se foi expense (subtraiu), agora soma. Se foi income (somou), agora subtrai
+      const reverseOperation = transaction.type === 'expense' ? 'add' : 'subtract';
+      
+      await this.updateAccountBalance({
+        accountId: transaction.accountId,
+        userId: validUserId.userId,
+        amount: amountToRevert,
+        operation: reverseOperation
+      });
+    }
+
     const result = await TransactionRepository.deleteTransaction(validId.id, validUserId.userId);
     return result;
   }

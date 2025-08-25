@@ -1,39 +1,8 @@
-import { requestBankTransferAdminGet, requestBankTransferGet } from "../schemas/requestMold/BankTransferRequest.js";
-import { requestGetId, requestUserId, requestWithIdAndUserId } from "../schemas/requestMold/UniversalRequest.js";
+import { requestBankTransferGet } from "../schemas/requestMold/BankTransferRequest.js";
+import { requestUserId, requestWithIdAndUserId } from "../schemas/requestMold/UniversalRequest.js";
 import commonResponses from "../utils/swaggerCommonResponses.js";
 
 const bankTransferRoutes = {
-  "/BankTransfer/admin": {
-    get: {
-      tags: ["Bank Transfers"],
-      summary: "List all bank transfers (Admin Only)",
-      description: `
-        #### Use Case
-        Allows the system to list all registered bank transfers, with the possibility of filtering by specific parameters.
-
-        #### Business Rule
-        Provides a paginated listing of registered bank transfers, with detailed information for each transfer including source and destination account details.
-
-        #### Business Rules Involved
-        - Allow filtering by defined parameters.
-        - Return error if no bank transfers are registered.
-        - Include related data (source account, destination account, payment method, user).
-
-        #### Expected Result
-        Returns a paginated list of bank transfers with detailed information and related data.
-      `,
-      security: [{ bearerAuth: [] }],
-      ...requestBankTransferAdminGet(),
-      responses: {
-        200: commonResponses[200]("#/components/schemas/responseMold/BankTransferListResponse"),
-        400: commonResponses[400](),
-        401: commonResponses[401](),
-        404: commonResponses[404](),
-        498: commonResponses[498](),
-        500: commonResponses[500]()
-      }
-    },
-  },
   "/BankTransfer": {
     get: {
       tags: ["Bank Transfers"],

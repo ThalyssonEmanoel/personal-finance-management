@@ -24,40 +24,6 @@ const UserResponse = {
       }
     }
   },
-  CreateUserResponseAdmin: {
-    title: "CreateUserResponse",
-    type: "object",
-    properties: {
-      user: {
-        type: "object",
-        description: "Dados do usuário criado.",
-        properties: {
-          id: { type: "integer" },
-          name: { type: "string" },
-          email: { type: "string" },
-          avatar: {
-            type: "string",
-            nullable: true,
-            description: "Caminho do arquivo de avatar salvo no servidor"
-          },
-          isAdmin: {
-            type: "boolean",
-            description: "Indica se o usuário é administrador (sempre false na criação)"
-          }
-        }
-      }
-    },
-    description: "Schema para a resposta de criação de usuário.",
-    example: {
-      user: {
-        id: 1,
-        name: "Thalysson Emanoel",
-        email: "thalysson@example.com",
-        avatar: "src/uploads/avatares/1699030930148-Avatar.jpg",
-        isAdmin: false
-      }
-    }
-  },
   CreateUserResponse: {
     title: "CreateUserResponse",
     type: "object",
@@ -84,41 +50,6 @@ const UserResponse = {
         name: "Thalysson Emanoel",
         email: "thalysson@example.com",
         avatar: "src/uploads/avatares/1699030930148-Avatar.jpg",
-        isAdmin: false
-      }
-    }
-  },
-  UpdateUserResponseAdmin: {
-    title: "UpdateUserResponse",
-    type: "object",
-    properties: {
-      user: {
-        type: "object",
-        description: "Dados do usuário atualizado.",
-        properties: {
-          id: { type: "integer" },
-          name: { type: "string" },
-          email: { type: "string", nullable: true },
-          avatar: {
-            type: "string",
-            nullable: true,
-            description: "Caminho do arquivo de avatar atualizado no servidor"
-          },
-          isAdmin: {
-            type: "boolean",
-            description: "Indica se o usuário é administrador"
-          }
-        }
-      }
-    },
-    description: "Schema para a resposta de atualização de usuário.",
-    example: {
-      user: {
-        id: 1,
-        name: "Thalysson Emanoel Atualizado",
-        email: "thalysson.novo@example.com",
-        avatar: "src/uploads/avatares/1699030930148-Avatar-updated.jpg",
-        isAdmin: true
       }
     }
   },

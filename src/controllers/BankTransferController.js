@@ -4,17 +4,6 @@ import BankTransferSchemas from '../schemas/BankTransferSchemas.js';
 
 class BankTransferController {
 
-  static listAllBankTransferAdmin = async (req, res, next) => {
-    try {
-      const query = req.query;
-      const page = query.page ? Number(query.page) : 1;
-      const { bankTransfers, total, take } = await BankTransferService.listBankTransfers(query, 'desc');
-      res.status(200).json(CommonResponse.success(bankTransfers, total, page, take));
-    } catch (err) {
-      next(err)
-    }
-  };
-
   static listAllBankTransferUsers = async (req, res, next) => {
     try {
       const query = req.query;

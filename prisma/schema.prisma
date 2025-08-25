@@ -15,7 +15,6 @@ model Users {
   password     String  @db.VarChar(255)
   avatar       String? @db.VarChar(100)
   refreshToken String? @db.Text
-  isAdmin      Boolean @default(false)
 
   accounts      Accounts[]
   transactions  Transactions[]

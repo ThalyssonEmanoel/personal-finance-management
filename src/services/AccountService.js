@@ -1,5 +1,6 @@
 import AccountRepository from '../repositories/AccountRepository.js';
 import AccountSchemas from '../schemas/AccountsSchemas.js';
+import Decimal from "decimal.js";
 //TypeScript: Restart TS server
 
 class AccountService {
@@ -21,7 +22,19 @@ class AccountService {
       AccountRepository.listAccounts(dbFilters, skip, take, order),
       AccountRepository.contAccounts()
     ]);
-    return { contas, total, take };
+
+    const totalBalance = contas.reduce((acc, conta) => {
+      const balance = new Decimal(conta.balance || 0);
+      return acc.plus(balance);
+    }, new Decimal(0));
+
+    //Incrementar o atributo "totalBalance"
+    const data = { contas, totalBalance: totalBalance.toNumber() };
+    return { 
+      data, 
+      total, 
+      take, 
+    };
   }
 
   static async getAccountById(id) {
