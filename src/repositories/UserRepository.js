@@ -74,7 +74,6 @@ class UserRepository {
 
     const { name, email, password, avatar } = userData;
 
-    // Verificar se o email já existe
     const existingUser = await prisma.users.findUnique({
       where: { email }
     });
@@ -82,8 +81,7 @@ class UserRepository {
     if (existingUser) {
       throw { code: 409, message: "Email já cadastrado" };
     }
-
-    // Criar o novo usuário
+    
     return await prisma.users.create({
       data: {
         name: name,

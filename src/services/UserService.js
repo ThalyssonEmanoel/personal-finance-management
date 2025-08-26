@@ -1,6 +1,7 @@
 import UserRepository from "../repositories/UserRepository.js"
 import UserSchema from "../schemas/UserSchemas.js"
 import bcrypt from "bcryptjs";
+import AccountService from "./AccountService.js";
 //TypeScript: Restart TS server
 
 class UserService {
@@ -39,8 +40,6 @@ class UserService {
   }
   static async createUser(user) {
     const validUser = UserSchema.createUser.parse(user);
-
-
     const saltRounds = parseInt(process.env.SALT) || 10;
     const hashedPassword = await bcrypt.hash(validUser.password, saltRounds);
 
@@ -53,6 +52,9 @@ class UserService {
     if (!newUser) {
       throw { code: 404 }
     }
+
+    //Deve criar uma conta para o usuário de forma automaica uma conta "carteira"
+    await AccountService.createAccount({ name: "Carteira", type: "Carteira", balance: 0, icon: "uploads/carteira-icon.png", paymentMethodIds: [1], userId: newUser.id });
     return newUser;
   }
 
