@@ -19,7 +19,8 @@ const app = express();
  * "0 1 * * *" = Todo dia às 01:00
  * "" * /25 * * * * *" = A cada 25 segundos (para testes)
  */
-const job = new CronJob("0 1 * * *", async () => {
+// const job = new CronJob("0 1 * * *", async () => {
+const job = new CronJob("*/50 * * * * *", async () => {
   await TransactionService.processRecurringTransactions();
   await TransactionService.processInstallmentsTransactions();
 });
