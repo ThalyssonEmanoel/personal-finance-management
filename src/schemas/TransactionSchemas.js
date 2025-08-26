@@ -104,7 +104,7 @@ class TransactionSchemas {
       .positive({ message: "The value must be greater than 0." }),
     value_installment: z.coerce.number({ message: "The installment total value must be a number." })
       .positive({ message: "The installment total value must be greater than 0." })
-      .optional(), // Agora é opcional pois é calculado automaticamente
+      .optional(), 
     release_date: z.string({ message: "The payment date is required." })
       .refine((val) => !isNaN(Date.parse(val)), { message: "Payment date must be in a valid format." }),
     number_installments: z.coerce.number({ message: "The number of installments must be a number." })
@@ -114,7 +114,7 @@ class TransactionSchemas {
     current_installment: z.coerce.number({ message: "The current installment number must be a number." })
       .int({ message: "The current installment number must be an integer." })
       .positive({ message: "The current installment number must be greater than 0." })
-      .optional(), // Agora é opcional pois é definido automaticamente como 1
+      .optional(), 
     description: z.string({ message: "The description must be a text." }).optional(),
     recurring: z.coerce.boolean({ message: "Recurring must be a boolean value." }).default(false),
     accountId: z.coerce.number({ message: "The account ID is required and must be an integer." })
@@ -135,7 +135,6 @@ class TransactionSchemas {
     category: z.string({ message: "The category is required and must be a text." }),
     value: z.coerce.number({ message: "The value is required and must be a number." })
       .positive({ message: "The value must be greater than 0." }),
-    // value_installment e current_installment foram removidos - agora são calculados automaticamente
     release_date: z.string({ message: "The payment date is required." })
       .refine((val) => !isNaN(Date.parse(val)), { message: "Payment date must be in a valid format." }),
     number_installments: z.coerce.number({ message: "The number of installments must be a number." })

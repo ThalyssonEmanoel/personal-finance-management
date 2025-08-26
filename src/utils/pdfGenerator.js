@@ -32,14 +32,14 @@ function generateTransactionPDF(transactions, startDate, endDate, type) {
   sortedTransactions.forEach((transaction) => {
     body.push([
       transaction.id.toString(),
-      transaction.type === 'income' ? 'Receita' : 'Despesa',
-      transaction.name,
-      transaction.category,
-      { text: `R$ ${Number(transaction.value).toFixed(2).replace('.', ',')}`, alignment: 'right' },
-      { text: new Date(transaction.release_date).toLocaleDateString('pt-BR'), alignment: 'center' },
-      transaction.account.name,
-      transaction.paymentMethod.name,
-      transaction.user.name
+      { text: transaction.type === 'income' ? 'Receita' : 'Despesa', style: 'tableRow' },
+      { text: transaction.name, style: 'tableRow' },
+      { text: transaction.category, style: 'tableRow' },
+      { text: `R$ ${Number(transaction.value).toFixed(2).replace('.', ',')}`, alignment: 'center', style: 'tableRow' },
+      { text: new Date(transaction.release_date).toLocaleDateString('pt-BR'), alignment: 'center', style: 'tableRow' },
+      { text: transaction.account.name, style: 'tableRow' },
+      { text: transaction.paymentMethod.name, style: 'tableRow' },
+      { text: transaction.user.name, style: 'tableRow' }
     ]);
   });
 
@@ -93,7 +93,7 @@ function generateTransactionPDF(transactions, startDate, endDate, type) {
             [
               { text: `Receitas\nR$ ${totalReceitas.toFixed(2).replace('.', ',')}`, style: 'TotalReceitas', alignment: 'center' },
               { text: `Despesas\nR$ ${totalDespesas.toFixed(2).replace('.', ',')}`, style: 'TotalDespesas', alignment: 'center' },
-              { text: `Total desse período\nR$ ${saldo.toFixed(2).replace('.', ',')}`, style: 'balance', color: saldo >= 0 ? 'green' : 'red', alignment: 'center' }
+              { text: `Saldo total desse período\nR$ ${saldo.toFixed(2).replace('.', ',')}`, style: 'balance', color: saldo >= 0 ? 'green' : 'red', alignment: 'center' }
             ]
           ]
         },
@@ -128,9 +128,13 @@ function generateTransactionPDF(transactions, startDate, endDate, type) {
         bold: true,
         fontSize: 10,
         color: 'black',
-        fillColor: '#E8DE92',
+        fillColor: '#FAF9F4',
         alignment: 'center',
         margin: [0, 3, 0, 3]
+      },
+      tableRow: {
+        fontSize: 10,
+        margin: [0, 8, 0, 8]
       },
       TotalReceitas: {
         fontSize: 12,
