@@ -59,10 +59,12 @@ class TransactionRepository {
       console.log('Final where condition:', JSON.stringify(where, null, 2));
     }
 
+    const takeSafe = (typeof take === 'number' && !isNaN(take)) ? take : 5;
+
     const result = await prisma.transactions.findMany({
       where,
       skip: skip,
-      take: take,
+      take: takeSafe,
       orderBy: { id: order },
       select: {
         id: true,

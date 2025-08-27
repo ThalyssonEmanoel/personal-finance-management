@@ -13,6 +13,49 @@ class TransactionService {
     const queryType = type === 'all' ? undefined : type;
     return await TransactionRepository.listTransactionsForPDF(parseInt(userId), startDate, endDate, queryType, accountId);
   }
+  
+  static async listTransactions(filtros, order = 'asc') {
+    const validFiltros = TransactionSchemas.listTransaction.parse(filtros);
+    const page = validFiltros.page ?? 1;
+    const limit = validFiltros.limit ?? 5;
+    console.log("limit:", limit);
+
+    const { page: _p, limit: _l, ...dbFilters } = validFiltros;
+
+    if (dbFilters.id) {
+      dbFilters.id = parseInt(dbFilters.id);
+    }
+
+    const skip = (page - 1) * limit;
+    const take = parseInt(limit) || 5;
+    const [transactions, total] = await Promise.all([
+      TransactionRepository.listTransactions(dbFilters, skip, take, order),
+      TransactionRepository.countTransactions(dbFilters)
+    ]);
+
+    const totals = transactions.reduce((acc, transaction) => {
+      const value = new Decimal(transaction.value_installment || transaction.value || 0);
+
+      if (transaction.type === 'income') {
+        acc.totalIncome = acc.totalIncome.plus(value);
+      } else if (transaction.type === 'expense') {
+        acc.totalExpense = acc.totalExpense.plus(value);
+      }
+
+      return acc;
+    }, {
+      totalIncome: new Decimal(0),
+      totalExpense: new Decimal(0)
+    });
+
+    const data = { transactions, totalIncome: totals.totalIncome.toNumber(), totalExpense: totals.totalExpense.toNumber(), netBalance: totals.totalIncome.minus(totals.totalExpense).toNumber() };
+
+    return {
+      data,
+      total,
+      take
+    };
+  }
   /**
    * Calcula os valores das parcelas para transações parceladas
    * @private
@@ -56,50 +99,6 @@ class TransactionService {
     }
   }
 
-  static async listTransactions(filtros, order = 'asc') {
-    const validFiltros = TransactionSchemas.listTransaction.parse(filtros);
-    const page = validFiltros.page ?? 1;
-    const limit = validFiltros.limit ?? 5;
-    console.log("limit:", limit);
-
-    const { page: _p, limit: _l, ...dbFilters } = validFiltros;
-
-    if (dbFilters.id) {
-      dbFilters.id = parseInt(dbFilters.id);
-    }
-
-    const skip = (page - 1) * limit;
-    const take = parseInt(limit, 5);
-    console.log("Take:", take);
-
-    const [transactions, total] = await Promise.all([
-      TransactionRepository.listTransactions(dbFilters, skip, take, order),
-      TransactionRepository.countTransactions(dbFilters)
-    ]);
-
-    const totals = transactions.reduce((acc, transaction) => {
-      const value = new Decimal(transaction.value_installment || transaction.value || 0);
-
-      if (transaction.type === 'income') {
-        acc.totalIncome = acc.totalIncome.plus(value);
-      } else if (transaction.type === 'expense') {
-        acc.totalExpense = acc.totalExpense.plus(value);
-      }
-
-      return acc;
-    }, {
-      totalIncome: new Decimal(0),
-      totalExpense: new Decimal(0)
-    });
-
-    const data = { transactions, totalIncome: totals.totalIncome.toNumber(), totalExpense: totals.totalExpense.toNumber(), netBalance: totals.totalIncome.minus(totals.totalExpense).toNumber() };
-
-    return {
-      data,
-      total,
-      take
-    };
-  }
 
   /**
    * 

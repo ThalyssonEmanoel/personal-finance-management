@@ -28,9 +28,8 @@ class TransactionController {
   static listAllTransactionsUsers = async (req, res, next) => {
     try {
       const query = req.query;
-      const validQuery = TransactionSchemas.listTransactionUser.parse(query);
-      const page = validQuery.page ? Number(validQuery.page) : 1;
-      const { data, total, take } = await TransactionService.listTransactions(validQuery, 'desc');
+      const page = query.page ? Number(query.page) : 1;
+      const { data, total, take } = await TransactionService.listTransactions(query, 'desc');
       res.status(200).json(CommonResponse.success(data, total, page, take));
     } catch (err) {
       next(err)
