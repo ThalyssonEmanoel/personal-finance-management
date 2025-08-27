@@ -13,7 +13,8 @@
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma": "npx prisma db pull",
     "prisma:push": "npx prisma db push --force-reset",
-    "seed": "node src/seed/seed.js"
+    "seed": "node src/seed/seed.js",
+    "prisma:studio": "prisma studio"
   },
   "repository": {
     "type": "git",

@@ -59,7 +59,7 @@ class TransactionService {
   static async listTransactions(filtros, order = 'asc') {
     const validFiltros = TransactionSchemas.listTransaction.parse(filtros);
     const page = validFiltros.page ?? 1;
-    const limit = validFiltros.limit ?? 10;
+    const limit = validFiltros.limit ?? 5;
     const { page: _p, limit: _l, ...dbFilters } = validFiltros;
 
     if (dbFilters.id) {
@@ -67,7 +67,7 @@ class TransactionService {
     }
 
     const skip = (page - 1) * limit;
-    const take = parseInt(limit, 10);
+    const take = parseInt(limit, 5);
     const [transactions, total] = await Promise.all([
       TransactionRepository.listTransactions(dbFilters, skip, take, order),
       TransactionRepository.countTransactions(dbFilters)
