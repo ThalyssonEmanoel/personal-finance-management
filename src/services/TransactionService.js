@@ -67,7 +67,7 @@ class TransactionService {
     }
 
     const skip = (page - 1) * limit;
-    const take = parseInt(limit, 5);
+    const take = parseInt(limit, 10);
     const [transactions, total] = await Promise.all([
       TransactionRepository.listTransactions(dbFilters, skip, take, order),
       TransactionRepository.countTransactions(dbFilters)
