@@ -59,7 +59,7 @@ class TransactionService {
   static async listTransactions(filtros, order = 'asc') {
     const validFiltros = TransactionSchemas.listTransaction.parse(filtros);
     const page = validFiltros.page ?? 1;
-    const limit = validFiltros.limit ?? 10;
+    const limit = validFiltros.limit ?? 5;
     const { page: _p, limit: _l, ...dbFilters } = validFiltros;
 
     if (dbFilters.id) {
