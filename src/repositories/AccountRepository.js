@@ -261,6 +261,24 @@ class AccountRepository {
       throw error;
     }
   }
+
+  /**
+   * Calcula o total de saldos baseado nos filtros aplicados
+   */
+  static async calculateTotalBalance(filters) {
+    const { userId, ...otherFilters } = filters;
+    let where = { ...otherFilters };
+    if (userId) {
+      where.userId = userId;
+    }
+
+    const result = await prisma.accounts.aggregate({
+      where,
+      _sum: { balance: true }
+    });
+
+    return result._sum.balance || 0;
+  }
 }
 
 export default AccountRepository;

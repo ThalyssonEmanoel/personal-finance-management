@@ -1,4 +1,5 @@
 import { prisma } from "../config/prismaClient.js";
+import Decimal from "decimal.js";
 
 class TransactionRepository {
   static async listTransactionsForPDF(userId, startDate, endDate, type, accountId) {
@@ -55,8 +56,6 @@ class TransactionRepository {
         gte: startDate,
         lte: endDate
       };
-
-      console.log('Final where condition:', JSON.stringify(where, null, 2));
     }
 
     const takeSafe = (typeof take === 'number' && !isNaN(take)) ? take : 5;
@@ -76,6 +75,7 @@ class TransactionRepository {
         release_date: true,
         number_installments: true,
         current_installment: true,
+        description: true,
         recurring: true,
         accountId: true,
         paymentMethodId: true,
@@ -401,6 +401,60 @@ class TransactionRepository {
     });
 
     return existingInstallment !== null;
+  }
+
+  /**
+   * @calculateTotals Calcula os totais de receitas e despesas baseado nos filtros aplicados
+   */
+  static async calculateTotals(filters) {
+    let where = { ...filters };
+    if (filters.release_date) {
+      const inputDate = new Date(filters.release_date + 'T00:00:00.000Z');
+      const year = inputDate.getUTCFullYear();
+      const month = inputDate.getUTCMonth();
+      const day = inputDate.getUTCDate();
+
+      const startDate = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+      const endDate = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
+
+      delete where.release_date;
+      where.release_date = {
+        gte: startDate,
+        lte: endDate
+      };
+    }
+
+    // Buscar todas as transações para calcular corretamente
+    const allTransactions = await prisma.transactions.findMany({
+      where,
+      select: {
+        type: true,
+        value: true,
+        value_installment: true
+      }
+    });
+
+    const totals = allTransactions.reduce((acc, transaction) => {
+      // Usar value_installment se existir, senão usar value
+      const value = new Decimal(transaction.value_installment || transaction.value || 0);
+      
+      if (transaction.type === 'income') {
+        acc.totalIncome = acc.totalIncome.plus(value);
+      } else if (transaction.type === 'expense') {
+        acc.totalExpense = acc.totalExpense.plus(value);
+      }
+
+      return acc;
+    }, {
+      totalIncome: new Decimal(0),
+      totalExpense: new Decimal(0)
+    });
+
+    return {
+      totalIncome: totals.totalIncome.toNumber(),
+      totalExpense: totals.totalExpense.toNumber(),
+      netBalance: totals.totalIncome.minus(totals.totalExpense).toNumber()
+    };
   }
 }
 

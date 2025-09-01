@@ -18,18 +18,14 @@ class AccountService {
 
     const skip = (page - 1) * limit;
     const take = parseInt(limit, 10);
-    const [contas, total] = await Promise.all([
+    const [contas, total, totalBalance] = await Promise.all([
       AccountRepository.listAccounts(dbFilters, skip, take, order),
-      AccountRepository.contAccounts()
+      AccountRepository.contAccounts(),
+      AccountRepository.calculateTotalBalance(dbFilters)
     ]);
 
-    const totalBalance = contas.reduce((acc, conta) => {
-      const balance = new Decimal(conta.balance || 0);
-      return acc.plus(balance);
-    }, new Decimal(0));
-
     //Incrementar o atributo "totalBalance"
-    const data = { contas, totalBalance: totalBalance.toNumber() };
+    const data = { contas, totalBalance };
     return { 
       data, 
       total, 

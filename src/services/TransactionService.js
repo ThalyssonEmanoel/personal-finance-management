@@ -16,10 +16,10 @@ class TransactionService {
   
   static async listTransactions(filtros, order = 'asc') {
     const validFiltros = TransactionSchemas.listTransaction.parse(filtros);
+    console.log("Data", validFiltros);
+    
     const page = validFiltros.page ?? 1;
     const limit = validFiltros.limit ?? 5;
-    console.log("limit:", limit);
-
     const { page: _p, limit: _l, ...dbFilters } = validFiltros;
 
     if (dbFilters.id) {
@@ -28,27 +28,18 @@ class TransactionService {
 
     const skip = (page - 1) * limit;
     const take = parseInt(limit) || 5;
-    const [transactions, total] = await Promise.all([
+    const [transactions, total, totals] = await Promise.all([
       TransactionRepository.listTransactions(dbFilters, skip, take, order),
-      TransactionRepository.countTransactions(dbFilters)
+      TransactionRepository.countTransactions(dbFilters),
+      TransactionRepository.calculateTotals(dbFilters)
     ]);
 
-    const totals = transactions.reduce((acc, transaction) => {
-      const value = new Decimal(transaction.value_installment || transaction.value || 0);
-
-      if (transaction.type === 'income') {
-        acc.totalIncome = acc.totalIncome.plus(value);
-      } else if (transaction.type === 'expense') {
-        acc.totalExpense = acc.totalExpense.plus(value);
-      }
-
-      return acc;
-    }, {
-      totalIncome: new Decimal(0),
-      totalExpense: new Decimal(0)
-    });
-
-    const data = { transactions, totalIncome: totals.totalIncome.toNumber(), totalExpense: totals.totalExpense.toNumber(), netBalance: totals.totalIncome.minus(totals.totalExpense).toNumber() };
+    const data = { 
+      transactions, 
+      totalIncome: totals.totalIncome, 
+      totalExpense: totals.totalExpense, 
+      netBalance: totals.netBalance 
+    };
 
     return {
       data,
