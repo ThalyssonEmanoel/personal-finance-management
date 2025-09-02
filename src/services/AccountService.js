@@ -1,6 +1,5 @@
 import AccountRepository from '../repositories/AccountRepository.js';
 import AccountSchemas from '../schemas/AccountsSchemas.js';
-import Decimal from "decimal.js";
 //TypeScript: Restart TS server
 
 class AccountService {

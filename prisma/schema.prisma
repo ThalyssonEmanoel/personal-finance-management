@@ -28,6 +28,7 @@ model Accounts {
   type    String  @db.VarChar(45)
   balance Decimal @db.Decimal(10, 2)
   icon    String? @db.VarChar(100)
+  active  Boolean @default(true)
 
   userId Int
   user   Users @relation(fields: [userId], references: [id])

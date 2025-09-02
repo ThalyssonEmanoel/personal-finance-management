@@ -95,9 +95,10 @@ async function seedDatabase() {
     return Array.from({ length: numAccounts }, () => ({
       name: faker.finance.accountName(),
       type: faker.helpers.arrayElement(accountTypes),
-      balance: parseFloat(faker.finance.amount(0, 10000, 2)),
+      balance: 0,
       icon: getRandomAvatar(availableAvatars),
-      userId: user.id
+      userId: user.id,
+      active: true
     }));
   });
 
