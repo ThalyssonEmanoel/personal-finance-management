@@ -45,7 +45,7 @@ function getAvailableAvatars() {
     const imageFiles = fs.readdirSync(imagesDir);
     imageFiles.forEach(file => {
       if (file.match(/\.(png|jpg|jpeg|gif)$/i)) {
-        avatarPaths.push(`src/seed/images/${file}`);
+        avatarPaths.push(`src/uploads/${file}`);
       }
     });
   }
