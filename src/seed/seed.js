@@ -3,6 +3,7 @@ import { faker } from '@faker-js/faker';
 import bcrypt from 'bcryptjs';
 import fs from 'fs';
 import path from 'path';
+import { Decimal } from 'decimal.js';
 
 const prisma = new PrismaClient();
 
@@ -78,9 +79,8 @@ async function seedDatabase() {
 
   const users = await prisma.users.createMany({
     data: [
-      { name: "Thalysson", email: "thalysson140105@gmail.com", password: senhaHash, avatar: getRandomAvatar(availableAvatars)},
-      { name: "Random", email: "random123@gmail.com", password: senhaHash, avatar: getRandomAvatar(availableAvatars)},
-      { name: faker.person.fullName(), email: faker.internet.email(), password: await gerarSenhaSegura(), avatar: getRandomAvatar(availableAvatars)},
+      { name: "Thalysson", email: "thalysson140105@gmail.com", password: senhaHash, avatar: getRandomAvatar(availableAvatars) },
+      { name: "Random", email: "random123@gmail.com", password: senhaHash, avatar: getRandomAvatar(availableAvatars) },
     ],
   });
 
@@ -91,7 +91,7 @@ async function seedDatabase() {
   const accountTypes = ["corrente", "poupanca", "investimento", "carteira", "digital"];
 
   const accountsData = allUsers.flatMap(user => {
-    const numAccounts = faker.number.int({ min: 1, max: 3 });
+    const numAccounts = 3; // Cada usuário terá exatamente 3 contas
     return Array.from({ length: numAccounts }, () => ({
       name: faker.finance.accountName(),
       type: faker.helpers.arrayElement(accountTypes),
@@ -123,10 +123,10 @@ async function seedDatabase() {
   const allPaymentMethods = await prisma.paymentMethods.findMany();
 
   const accountPaymentMethodsData = [];
-  
+
   allAccounts.forEach(account => {
     let compatiblePaymentMethods = [];
-    
+
     switch (account.type.toLowerCase()) {
       case 'carteira':
         // Carteira só aceita dinheiro
@@ -134,22 +134,22 @@ async function seedDatabase() {
         break;
       case 'corrente':
       case 'poupanca':
-        compatiblePaymentMethods = allPaymentMethods.filter(pm => 
+        compatiblePaymentMethods = allPaymentMethods.filter(pm =>
           !pm.name.includes("Vale")
         );
         break;
       case 'digital':
-        compatiblePaymentMethods = allPaymentMethods.filter(pm => 
+        compatiblePaymentMethods = allPaymentMethods.filter(pm =>
           ["PIX", "Cartão de Débito", "Cartão de Crédito", "Transferência Bancária"].includes(pm.name)
         );
         break;
       case 'investimento':
-        compatiblePaymentMethods = allPaymentMethods.filter(pm => 
+        compatiblePaymentMethods = allPaymentMethods.filter(pm =>
           ["PIX", "Transferência Bancária", "Cartão de Débito"].includes(pm.name)
         );
         break;
       default:
-        compatiblePaymentMethods = allPaymentMethods.filter(pm => 
+        compatiblePaymentMethods = allPaymentMethods.filter(pm =>
           ["Dinheiro", "PIX", "Cartão de Débito", "Cartão de Crédito"].includes(pm.name)
         );
     }
@@ -163,8 +163,8 @@ async function seedDatabase() {
     });
   });
 
-  const createdAccountPaymentMethods = await prisma.accountPaymentMethods.createMany({ 
-    data: accountPaymentMethodsData 
+  const createdAccountPaymentMethods = await prisma.accountPaymentMethods.createMany({
+    data: accountPaymentMethodsData
   });
   console.log(` Criados ${createdAccountPaymentMethods.count} relacionamentos entre contas e métodos de pagamento.`);
 
@@ -200,13 +200,13 @@ async function seedDatabase() {
     const accountPaymentMethods = accountPaymentMethodsData.filter(
       apm => apm.accountId === account.id
     );
-    
+
     if (accountPaymentMethods.length === 0) {
       console.warn(`Conta ${account.name} (ID: ${account.id}) não tem métodos de pagamento compatíveis!`);
       return;
     }
 
-    const numTransactions = faker.number.int({ min: 1, max: 5 });
+    const numTransactions = 10; // Cada conta terá exatamente 10 transações
 
     for (let i = 0; i < numTransactions; i++) {
       const type = faker.helpers.arrayElement(["expense", "income"]);
@@ -232,11 +232,11 @@ async function seedDatabase() {
 
       const value = parseFloat(faker.finance.amount(10, isExpense ? 500 : 3000, 2));
       const release_date = faker.date.between({
-        from: new Date('2024-01-01'),
-        to: new Date('2024-12-31')
+        from: new Date('2025-01-01'),
+        to: new Date('2025-12-31')
       });
 
-      const recurring = faker.datatype.boolean(0.2); // 20% 
+      const recurring = faker.datatype.boolean(0.4); // 40%
       const number_installments = !recurring && faker.datatype.boolean(0.3)
         ? faker.number.int({ min: 2, max: 12 })
         : null;
@@ -265,6 +265,36 @@ async function seedDatabase() {
 
   const createdTransactions = await prisma.transactions.createMany({ data: transactionsData });
   console.log(` Criadas ${createdTransactions.count} transações.`);
+
+  // Calcular e atualizar o balance de cada conta com base nas transações
+  console.log('Calculando balance das contas com base nas transações...');
+  
+  for (const account of allAccounts) {
+    // Buscar todas as transações da conta
+    const accountTransactions = await prisma.transactions.findMany({
+      where: { accountId: account.id }
+    });
+
+    // Calcular o balance usando Decimal.js
+    let balance = new Decimal(0);
+    
+    accountTransactions.forEach(transaction => {
+      const value = new Decimal(transaction.value);
+      if (transaction.type === 'income') {
+        balance = balance.add(value);
+      } else if (transaction.type === 'expense') {
+        balance = balance.sub(value);
+      }
+    });
+
+    // Atualizar o balance da conta
+    await prisma.accounts.update({
+      where: { id: account.id },
+      data: { balance: balance.toNumber() }
+    });
+  }
+
+  console.log(' Balance das contas calculado e atualizado com sucesso!');
 
   const bankTransfersData = [];
 
@@ -295,14 +325,14 @@ async function seedDatabase() {
         return ["PIX", "Transferência Bancária", "Cartão de Débito"].includes(method.name);
       });
 
-      const selectedMethod = preferredMethods.length > 0 
+      const selectedMethod = preferredMethods.length > 0
         ? faker.helpers.arrayElement(preferredMethods)
         : faker.helpers.arrayElement(sourceAccountPaymentMethods);
 
       const amount = parseFloat(faker.finance.amount(50, 1000, 2));
       const transfer_date = faker.date.between({
-        from: new Date('2024-01-01'),
-        to: new Date('2024-12-31')
+        from: new Date('2025-01-01'),
+        to: new Date('2025-12-31')
       });
 
       const descriptions = [
@@ -329,11 +359,66 @@ async function seedDatabase() {
   const createdBankTransfers = await prisma.bankTransfers.createMany({ data: bankTransfersData });
   console.log(` Criadas ${createdBankTransfers.count} transferências bancárias.`);
 
+  // Recalcular o balance das contas incluindo as transferências bancárias
+  console.log('Recalculando balance das contas incluindo transferências bancárias...');
+  
+  const updatedAccounts = await prisma.accounts.findMany();
+  
+  for (const account of updatedAccounts) {
+    // Buscar todas as transações da conta
+    const accountTransactions = await prisma.transactions.findMany({
+      where: { accountId: account.id }
+    });
+
+    // Buscar transferências de origem (saídas)
+    const outgoingTransfers = await prisma.bankTransfers.findMany({
+      where: { sourceAccountId: account.id }
+    });
+
+    // Buscar transferências de destino (entradas)
+    const incomingTransfers = await prisma.bankTransfers.findMany({
+      where: { destinationAccountId: account.id }
+    });
+
+    // Calcular o balance usando Decimal.js
+    let balance = new Decimal(0);
+    
+    // Somar/subtrair transações normais
+    accountTransactions.forEach(transaction => {
+      const value = new Decimal(transaction.value);
+      if (transaction.type === 'income') {
+        balance = balance.add(value);
+      } else if (transaction.type === 'expense') {
+        balance = balance.sub(value);
+      }
+    });
+
+    // Subtrair transferências de saída
+    outgoingTransfers.forEach(transfer => {
+      const amount = new Decimal(transfer.amount);
+      balance = balance.sub(amount);
+    });
+
+    // Somar transferências de entrada
+    incomingTransfers.forEach(transfer => {
+      const amount = new Decimal(transfer.amount);
+      balance = balance.add(amount);
+    });
+
+    // Atualizar o balance da conta
+    await prisma.accounts.update({
+      where: { id: account.id },
+      data: { balance: balance.toNumber() }
+    });
+  }
+
+  console.log(' Balance final das contas calculado com sucesso!');
+
   const goalsData = [];
 
   allUsers.forEach(user => {
     const numGoals = faker.number.int({ min: 2, max: 4 });
-    
+
     for (let i = 0; i < numGoals; i++) {
       const monthOffset = faker.number.int({ min: -6, max: 6 });
       const currentDate = new Date();
@@ -347,7 +432,7 @@ async function seedDatabase() {
         'Renda de Investimentos',
         'Meta de Salário'
       ];
-      
+
       const expenseGoalNames = [
         'Controle de Gastos',
         'Limite de Entretenimento',
@@ -357,15 +442,15 @@ async function seedDatabase() {
         'Limite Compras',
         'Meta Transporte'
       ];
-      
-      const goalName = transactionType === 'income' 
+
+      const goalName = transactionType === 'income'
         ? faker.helpers.arrayElement(incomeGoalNames)
         : faker.helpers.arrayElement(expenseGoalNames);
 
       const goalValue = transactionType === 'income'
         ? faker.number.float({ min: 2000, max: 8000, precision: 0.01 })
         : faker.number.float({ min: 500, max: 3000, precision: 0.01 });
-      
+
       goalsData.push({
         name: goalName,
         date: goalDate,
