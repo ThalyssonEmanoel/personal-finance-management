@@ -200,7 +200,7 @@ class TransactionRepository {
     });
   }
 
-  static async updateTransaction(id, userId, transactionData) {
+  static async updateTransaction(id, transactionData) {
     const { accountId, paymentMethodId, release_date, ...otherData } = transactionData;
 
     // Verificar se a transação existe

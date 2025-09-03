@@ -13,11 +13,10 @@ class TransactionService {
     const queryType = type === 'all' ? undefined : type;
     return await TransactionRepository.listTransactionsForPDF(parseInt(userId), startDate, endDate, queryType, accountId);
   }
-  
+
   static async listTransactions(filtros, order = 'asc') {
     const validFiltros = TransactionSchemas.listTransaction.parse(filtros);
-    console.log("Data", validFiltros);
-    
+
     const page = validFiltros.page ?? 1;
     const limit = validFiltros.limit ?? 5;
     const { page: _p, limit: _l, ...dbFilters } = validFiltros;
@@ -34,11 +33,11 @@ class TransactionService {
       TransactionRepository.calculateTotals(dbFilters)
     ]);
 
-    const data = { 
-      transactions, 
-      totalIncome: totals.totalIncome, 
-      totalExpense: totals.totalExpense, 
-      netBalance: totals.netBalance 
+    const data = {
+      transactions,
+      totalIncome: totals.totalIncome,
+      totalExpense: totals.totalExpense,
+      netBalance: totals.netBalance
     };
 
     return {
@@ -123,7 +122,6 @@ class TransactionService {
   }
 
   static async updateTransaction(id, userId, transactionData) {
-
     const validId = TransactionSchemas.transactionIdParam.parse({ id });
     const validUserId = AccountSchemas.userIdParam.parse({ userId });
     const validTransactionData = TransactionSchemas.updateTransaction.parse(transactionData);
@@ -137,7 +135,47 @@ class TransactionService {
       }
     });
 
-    const updatedTransaction = await TransactionRepository.updateTransaction(validId.id, validUserId.userId, filteredData);
+    // 1. Buscar a transação antiga
+    const oldTransactionArr = await TransactionRepository.listTransactions(
+      { id: validId.id, userId: validUserId.userId }, 0, 1, 'asc');
+    if (!oldTransactionArr || oldTransactionArr.length === 0) {
+      throw { code: 404, message: "Transação não encontrada" };
+    }
+    const oldTransaction = oldTransactionArr[0];
+
+    // 2. Atualizar saldo da conta se necessário
+    // Só se for income/expense e não mudou de conta
+    if (
+      (oldTransaction.type === 'income' || oldTransaction.type === 'expense') &&
+      oldTransaction.accountId &&
+      (!filteredData.accountId || filteredData.accountId === oldTransaction.accountId)
+    ) {
+      const oldValue = new Decimal(oldTransaction.value_installment || oldTransaction.value || 0);
+      const newValue = new Decimal(filteredData.value_installment ?? filteredData.value ?? oldValue);
+
+      // Se mudou o valor
+      if (!oldValue.equals(newValue)) {
+        // Reverte o valor antigo
+        const reverseOp = oldTransaction.type === 'income' ? 'subtract' : 'add';
+        await this.updateAccountBalance({
+          accountId: oldTransaction.accountId,
+          userId: validUserId.userId,
+          amount: oldValue,
+          operation: reverseOp
+        });
+        // Aplica o novo valor
+        const applyOp = oldTransaction.type === 'income' ? 'add' : 'subtract';
+        await this.updateAccountBalance({
+          accountId: oldTransaction.accountId,
+          userId: validUserId.userId,
+          amount: newValue,
+          operation: applyOp
+        });
+      }
+    }
+
+    // 3. Atualizar a transação no banco
+    const updatedTransaction = await TransactionRepository.updateTransaction(validId.id, filteredData);
     if (!updatedTransaction) {
       throw { code: 404 };
     }
