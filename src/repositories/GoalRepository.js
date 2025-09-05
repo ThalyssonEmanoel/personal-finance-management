@@ -1,20 +1,16 @@
 import { prisma } from "../config/prismaClient.js";
+import Decimal from "decimal.js";
 
 class GoalRepository {
 
   static async listGoals(filters, order = 'desc') {
     let where = { ...filters };
 
-    // Filtro anual a partir do mês especificado na data
     if (filters.date) {
       const inputDate = new Date(filters.date + 'T00:00:00.000Z');
       const year = inputDate.getUTCFullYear();
       const month = inputDate.getUTCMonth();
-      
-      // Data de início: primeiro dia do mês especificado
       const startDate = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
-      
-      // Data de fim: último dia de dezembro do mesmo ano
       const endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
 
       delete where.date;
@@ -113,6 +109,37 @@ class GoalRepository {
     });
 
     return goals;
+  }
+
+  static async calculateTransactionTotalByGoalDate(userId, goalDate, transactionType) {
+    const date = new Date(goalDate);
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth();
+
+    const startDate = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+    const endDate = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
+
+    const transactions = await prisma.transactions.findMany({
+      where: {
+        userId,
+        type: transactionType,
+        release_date: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      select: {
+        value: true,
+        value_installment: true
+      }
+    });
+
+    const total = transactions.reduce((acc, transaction) => {
+      const value = new Decimal(transaction.value_installment || transaction.value || 0);
+      return acc.plus(value);
+    }, new Decimal(0));
+
+    return total.toNumber();
   }
 }
 

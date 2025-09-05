@@ -417,52 +417,52 @@ async function seedDatabase() {
   const goalsData = [];
 
   allUsers.forEach(user => {
-    const numGoals = faker.number.int({ min: 2, max: 4 });
+    const incomeGoalNames = [
+      'Meta de Renda Mensal',
+      'Objetivo de Freelances',
+      'Meta de Vendas',
+      'Receita Extra',
+      'Renda de Investimentos',
+      'Meta de Salário'
+    ];
 
-    for (let i = 0; i < numGoals; i++) {
-      const monthOffset = faker.number.int({ min: -6, max: 6 });
-      const currentDate = new Date();
-      const goalDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + monthOffset, 15);
-      const transactionType = i % 2 === 0 ? 'income' : 'expense';
-      const incomeGoalNames = [
-        'Meta de Renda Mensal',
-        'Objetivo de Freelances',
-        'Meta de Vendas',
-        'Receita Extra',
-        'Renda de Investimentos',
-        'Meta de Salário'
-      ];
+    const expenseGoalNames = [
+      'Controle de Gastos',
+      'Limite de Entretenimento',
+      'Meta de Economia',
+      'Redução de Despesas',
+      'Controle Alimentação',
+      'Limite Compras',
+      'Meta Transporte'
+    ];
 
-      const expenseGoalNames = [
-        'Controle de Gastos',
-        'Limite de Entretenimento',
-        'Meta de Economia',
-        'Redução de Despesas',
-        'Controle Alimentação',
-        'Limite Compras',
-        'Meta Transporte'
-      ];
-
-      const goalName = transactionType === 'income'
-        ? faker.helpers.arrayElement(incomeGoalNames)
-        : faker.helpers.arrayElement(expenseGoalNames);
-
-      const goalValue = transactionType === 'income'
-        ? faker.number.float({ min: 2000, max: 8000, precision: 0.01 })
-        : faker.number.float({ min: 500, max: 3000, precision: 0.01 });
-
+    // 12 metas de receita e 12 de despesa para cada mês de 2025
+    for (let month = 0; month < 12; month++) {
+      const incomeGoalDate = new Date(2025, month, 15);
+      const incomeGoalName = faker.helpers.arrayElement(incomeGoalNames);
+      const incomeGoalValue = faker.number.float({ min: 2000, max: 8000, precision: 0.01 });
       goalsData.push({
-        name: goalName,
-        date: goalDate,
-        transaction_type: transactionType,
-        value: goalValue,
+        name: `${incomeGoalName} - ${incomeGoalDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`,
+        date: incomeGoalDate,
+        transaction_type: 'income',
+        value: incomeGoalValue,
+        userId: user.id
+      });
+      const expenseGoalDate = new Date(2025, month, 15);
+      const expenseGoalName = faker.helpers.arrayElement(expenseGoalNames);
+      const expenseGoalValue = faker.number.float({ min: 500, max: 3000, precision: 0.01 });
+      goalsData.push({
+        name: `${expenseGoalName} - ${expenseGoalDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`,
+        date: expenseGoalDate,
+        transaction_type: 'expense',
+        value: expenseGoalValue,
         userId: user.id
       });
     }
   });
 
   const createdGoals = await prisma.goals.createMany({ data: goalsData });
-  console.log(` Criadas ${createdGoals.count} metas financeiras.`);
+  console.log(` Criadas ${createdGoals.count} metas financeiras (24 metas por usuário: 12 de receita e 12 de despesa para todos os meses de 2025).`);
 
   console.log(' Seed concluído com sucesso!');
 }

@@ -22,9 +22,18 @@ const goalRoutes = {
         - Returns all matching results without pagination limits.
         - Return error if no goals are registered.
         - Include related user data.
+        - Each goal includes the total amount of transactions for the same month and transaction type:
+          * For income goals: includes 'incomeTotal' field with sum of all income transactions in the goal's month
+          * For expense goals: includes 'expenseTotal' field with sum of all expense transactions in the goal's month
+        - Transaction totals are calculated from the first day to the last day of the goal's month.
 
         #### Expected Result
-        Returns a complete list of user's goals with detailed information, filtered by the specified criteria.
+        Returns a complete list of user's goals with detailed information, filtered by the specified criteria. Each goal includes transaction totals for comparison with the goal target.
+
+        #### Response Fields
+        - **incomeTotal**: Present only for income goals. Shows the total amount of income transactions in the same month.
+        - **expenseTotal**: Present only for expense goals. Shows the total amount of expense transactions in the same month.
+        - These totals help users compare their actual performance against their goals.
 
         #### Date Filter Examples
         - date=2025-01-01: Returns goals from January to December 2025
@@ -58,9 +67,12 @@ const goalRoutes = {
         - Only one goal per transaction type per month is allowed.
         - Date, name, transaction type and value are required.
         - Transaction type must be either 'income' or 'expense'.
+        - The response includes transaction totals for the goal's month to allow immediate comparison.
 
         #### Expected Result
-        Returns the created goal with detailed information and related user data.
+        Returns the created goal with detailed information and related user data. Includes transaction totals:
+        - **incomeTotal**: For income goals, shows total income transactions in the goal's month
+        - **expenseTotal**: For expense goals, shows total expense transactions in the goal's month
       `,
       security: [{ bearerAuth: [] }],
       ...requestGoalPost(),
@@ -90,9 +102,12 @@ const goalRoutes = {
         - Goal must exist.
         - If changing date or transaction type, ensure no conflicts with existing goals.
         - All fields are optional for update.
+        - Updated response includes recalculated transaction totals for the new goal parameters.
 
         #### Expected Result
-        Returns the updated goal with detailed information and related user data.
+        Returns the updated goal with detailed information and related user data. Includes updated transaction totals:
+        - **incomeTotal**: For income goals, shows total income transactions in the goal's month
+        - **expenseTotal**: For expense goals, shows total expense transactions in the goal's month
       `,
       security: [{ bearerAuth: [] }],
       ...requestWithIdAndUserId(),
