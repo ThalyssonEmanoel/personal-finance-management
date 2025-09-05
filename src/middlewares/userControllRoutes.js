@@ -88,14 +88,14 @@ class userControllRoutes {
 
       const targetUserId = req.query.userId;
 
-      // Para rotas que não têm ID específico (como GET /users), filtrar apenas o próprio usuário
+      // Para rotas que não têm userId fornecido, exigir que seja fornecido
       if (!targetUserId) {
-        // Adicionar filtro para retornar apenas o próprio usuário
-        req.query.userId = currentUserId.toString();
-        return next();
+        return res.status(400).json({
+          success: false,
+          message: "O parâmetro userId é obrigatório"
+        });
       }
 
-      // Para rotas com ID específico, verificar se é o próprio usuário
       if (parseInt(targetUserId) !== currentUserId) {
         return res.status(403).json({
           success: false,

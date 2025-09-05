@@ -32,21 +32,11 @@ class GoalSchemas {
       message: "O tipo de transação deve ser 'expense' ou 'income'." 
     }).optional(),
     date: z.string({ message: "A data deve ser uma string de data válida." })
-      .refine((val) => !isNaN(Date.parse(val)), { message: "A data deve estar em um formato válido." })
+      .refine((val) => !isNaN(Date.parse(val)), { message: "A data deve estar em um formato válido. Use o formato YYYY-MM-DD para filtrar metas a partir do mês especificado até o final do ano." })
       .optional(),
     userId: z.coerce.number({ message: "O ID do usuário deve ser um número inteiro." })
       .int({ message: "O ID do usuário deve ser um número inteiro." })
       .positive({ message: "O ID do usuário deve ser maior que 0." })
-      .optional(),
-    page: z.coerce.number({ message: "A página deve ser um número inteiro positivo." })
-      .int({ message: "A página deve ser um número inteiro positivo." })
-      .positive({ message: "A página deve ser um número inteiro positivo." })
-      .optional()
-      .default(1),
-    limit: z.coerce.number({ message: "O limite deve ser um número inteiro positivo." })
-      .int({ message: "O limite deve ser um número inteiro." })
-      .positive({ message: "O limite deve ser pelo menos 1." })
-      .default(10),
   });
 
   static updateGoal = z.object({

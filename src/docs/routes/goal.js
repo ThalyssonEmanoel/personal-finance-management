@@ -12,16 +12,24 @@ const goalRoutes = {
         Allows users to list their own registered goals, with the possibility of filtering by specific parameters.
 
         #### Business Rule
-        Provides a paginated listing of user's goals, with detailed information for each goal.
+        Provides a complete listing of user's goals (no pagination), with detailed information for each goal.
 
         #### Business Rules Involved
         - User can only see their own goals.
+        - userId parameter is required for security.
         - Allow filtering by defined parameters.
+        - Date filter works annually: from the specified month until the end of the year.
+        - Returns all matching results without pagination limits.
         - Return error if no goals are registered.
         - Include related user data.
 
         #### Expected Result
-        Returns a paginated list of user's goals with detailed information.
+        Returns a complete list of user's goals with detailed information, filtered by the specified criteria.
+
+        #### Date Filter Examples
+        - date=2025-01-01: Returns goals from January to December 2025
+        - date=2025-06-15: Returns goals from June to December 2025
+        - date=2025-12-01: Returns goals for December 2025 only
       `,
       security: [{ bearerAuth: [] }],
       ...requestGoalGet(),
@@ -29,6 +37,7 @@ const goalRoutes = {
         200: commonResponses[200]("#/components/schemas/responseMold/GoalListResponse"),
         400: commonResponses[400](),
         401: commonResponses[401](),
+        403: commonResponses[403](),
         404: commonResponses[404](),
         498: commonResponses[498](),
         500: commonResponses[500]()

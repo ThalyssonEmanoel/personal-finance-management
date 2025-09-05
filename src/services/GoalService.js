@@ -5,12 +5,9 @@ class GoalService {
 
   static async listGoals(filters, order = 'desc') {
     const validFilters = GoalSchemas.listGoals.parse(filters);
-    const { page, limit, ...otherFilters } = validFilters;
+    const { goals, total } = await GoalRepository.listGoals(validFilters, order);
 
-    const skip = (page - 1) * limit;
-    const { goals, total } = await GoalRepository.listGoals(otherFilters, skip, limit, order);
-
-    return { goals, total, take: limit };
+    return { goals, total };
   }
 
   static async createGoal(goalData) {

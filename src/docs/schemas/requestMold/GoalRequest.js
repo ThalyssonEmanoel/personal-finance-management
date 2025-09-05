@@ -22,45 +22,22 @@ export function requestGoalGet() {
     {
       "name": "date",
       "in": "query",
-      "description": "Filter by goal date (will filter by the entire month)",
+      "description": "Filter by goal date (annual filter: from the specified month until the end of the year). Format: YYYY-MM-DD",
       "required": false,
       "schema": {
         "type": "string",
         "format": "date",
-        "example": "2024-01-15"
+        "example": "2025-02-01"
       }
     },
     {
       "name": "userId",
       "in": "query",
-      "description": "Filter by user ID (for users, this will be automatically set to their own ID)",
-      "required": false,
+      "description": "User ID (required - users can only access their own goals)",
+      "required": true,
       "schema": {
         "type": "integer",
         "minimum": 1
-      }
-    },
-    {
-      "name": "page",
-      "in": "query",
-      "description": "Page number for pagination",
-      "required": false,
-      "schema": {
-        "type": "integer",
-        "minimum": 1,
-        "default": 1
-      }
-    },
-    {
-      "name": "limit",
-      "in": "query",
-      "description": "Number of items per page",
-      "required": false,
-      "schema": {
-        "type": "integer",
-        "minimum": 1,
-        "maximum": 100,
-        "default": 10
       }
     }
   ];
