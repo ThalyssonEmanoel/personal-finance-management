@@ -11,10 +11,9 @@ class AccountRepository {
     if (userId) {
       where.userId = userId;
     }
-    const result = await prisma.accounts.findMany({
+    
+    const queryOptions = {
       where,
-      skip: skip,
-      take: take,
       orderBy: { id: order },
       select: {
         id: true,
@@ -35,7 +34,16 @@ class AccountRepository {
           }
         },
       },
-    });
+    };
+
+    if (skip !== undefined && !isNaN(skip)) {
+      queryOptions.skip = skip;
+    }
+    if (take !== undefined && !isNaN(take)) {
+      queryOptions.take = take;
+    }
+
+    const result = await prisma.accounts.findMany(queryOptions);
     if (result.length === 0) {
       throw { code: 404, message: "Nenhuma conta encontrada" };
     }
@@ -305,13 +313,11 @@ class AccountRepository {
    * Lista contas inativas (soft deleted)
    */
   static async listInactiveAccounts(userId, skip, take, order) {
-    const result = await prisma.accounts.findMany({
+    const queryOptions = {
       where: {
         userId,
         active: false
       },
-      skip: skip,
-      take: take,
       orderBy: { id: order },
       select: {
         id: true,
@@ -322,7 +328,17 @@ class AccountRepository {
         active: true,
         userId: true,
       },
-    });
+    };
+
+    // Só adicionar skip e take se forem valores válidos
+    if (skip !== undefined && !isNaN(skip)) {
+      queryOptions.skip = skip;
+    }
+    if (take !== undefined && !isNaN(take)) {
+      queryOptions.take = take;
+    }
+
+    const result = await prisma.accounts.findMany(queryOptions);
     
     return result;
   }
