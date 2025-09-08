@@ -18,10 +18,11 @@ class AccountController {
 
   static registerAccount = async (req, res, next) => {
     try {
-      // Validar body e query separadamente
+      console.log("Dados do corpo da requisição:",req.query, req.body);
       const bodyData = AccountSchemas.createAccountBody.parse(req.body);
       const queryData = AccountSchemas.createAccountQuery.parse(req.query);
 
+      
       const { name, type, balance, paymentMethodIds } = bodyData;
       const { userId } = queryData;
 
@@ -72,6 +73,8 @@ class AccountController {
 
   static deleteAccount = async (req, res, next) => {
     try {
+      console.log("Dados da requisição para deletar conta:", req.query);
+      
       const { id } = req.query;
       const { userId } = req.query;
       const result = await AccountService.deleteAccount(id, userId);

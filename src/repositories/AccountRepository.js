@@ -6,7 +6,7 @@ class AccountRepository {
     const { userId, ...otherFilters } = filtros;
     let where = { 
       ...otherFilters,
-      active: true // Só listar contas ativas
+      active: true 
     };
     if (userId) {
       where.userId = userId;
@@ -61,7 +61,6 @@ class AccountRepository {
   static async createAccount(accountData) {
     const { name, type, balance, icon, userId, paymentMethodIds } = accountData;
 
-    //o normalize é usado para remover acentos e comparar nomes de forma consistente, apenas para evitar duplicatas
     const normalize = (str) => str.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
     const normalizedNome = normalize(name);
     const normalizedType = normalize(type);

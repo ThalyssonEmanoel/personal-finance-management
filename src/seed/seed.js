@@ -20,6 +20,7 @@ async function clearDatabase() {
     await prisma.bankTransfers.deleteMany();
     await prisma.transactions.deleteMany();
     await prisma.goals.deleteMany();
+    await prisma.accountPaymentMethods.deleteMany(); // Adicionado para limpar a tabela de junção
     await prisma.paymentMethods.deleteMany();
     await prisma.accounts.deleteMany();
     await prisma.users.deleteMany();
@@ -31,35 +32,11 @@ async function clearDatabase() {
     await prisma.$executeRaw`ALTER TABLE PaymentMethods AUTO_INCREMENT = 1`;
     await prisma.$executeRaw`ALTER TABLE Transactions AUTO_INCREMENT = 1`;
     await prisma.$executeRaw`ALTER TABLE Goals AUTO_INCREMENT = 1`;
+    await prisma.$executeRaw`ALTER TABLE BankTransfers AUTO_INCREMENT = 1`; // Adicionado para resetar BankTransfers
 
   } catch (error) {
     console.error('Erro ao limpar o banco de dados:', error);
   }
-}
-
-function getAvailableAvatars() {
-  const avatarPaths = [];
-
-  // Adicionar avatares da pasta images que a pasta de imagns pro seed que eu criei
-  const imagesDir = path.join(process.cwd(), 'src', 'seed', 'images');
-  if (fs.existsSync(imagesDir)) {
-    const imageFiles = fs.readdirSync(imagesDir);
-    imageFiles.forEach(file => {
-      if (file.match(/\.(png|jpg|jpeg|gif)$/i)) {
-        avatarPaths.push(`src/uploads/${file}`);
-      }
-    });
-  }
-
-  return avatarPaths;
-}
-
-/**
-*@getRandomAvatar Função para selecionar avatar aleatório 
-*/
-function getRandomAvatar(avatars) {
-  if (avatars.length === 0) return null;
-  return avatars[Math.floor(Math.random() * avatars.length)];
 }
 
 async function seedDatabase() {
@@ -67,43 +44,60 @@ async function seedDatabase() {
   let salt = await bcrypt.genSalt(SALT || 10);
   const senhaHash = await bcrypt.hash("Senha@12345", salt);
 
-  const availableAvatars = getAvailableAvatars();
-  console.log(`Encontrados ${availableAvatars.length} avatares disponíveis:`, availableAvatars);
-
-  const gerarSenhaSegura = () => {
-    const senhaSimples = faker.internet.password({ length: 8 });
-    return bcrypt.hash(senhaSimples, salt);
-  };
-
   console.log('Preenchendo o banco de dados com dados fakes, NÃO É PRA FICAR BONITO');
 
-  const users = await prisma.users.createMany({
-    data: [
-      { name: "Thalysson", email: "thalysson140105@gmail.com", password: senhaHash, avatar: getRandomAvatar(availableAvatars) },
-      { name: "Random", email: "random123@gmail.com", password: senhaHash, avatar: getRandomAvatar(availableAvatars) },
-    ],
+  // --- 1. Criar o usuário único ---
+  const user = await prisma.users.create({
+    data: {
+      name: "Thalysson",
+      email: "thalysson140105@gmail.com",
+      password: senhaHash,
+      avatar: "src/uploads/avatar1.png"
+    },
   });
 
-  console.log(` Criados ${users.count} usuários`);
+  console.log(` Criado 1 usuário`);
 
-  const allUsers = await prisma.users.findMany();
-
-  const accountTypes = ["corrente", "poupanca", "investimento", "carteira", "digital"];
-
-  const accountsData = allUsers.flatMap(user => {
-    const numAccounts = 3; // Cada usuário terá exatamente 3 contas
-    return Array.from({ length: numAccounts }, () => ({
-      name: faker.finance.accountName(),
-      type: faker.helpers.arrayElement(accountTypes),
+  // --- 2. Criar as 4 contas específicas para esse usuário ---
+  const accountsData = [
+    {
+      name: "Carteira",
+      type: "carteira",
       balance: 0,
-      icon: getRandomAvatar(availableAvatars),
+      icon: "src/uploads/carteira-icon.png",
       userId: user.id,
       active: true
-    }));
-  });
+    },
+    {
+      name: "Caixa Econômica",
+      type: "corrente",
+      balance: 0,
+      icon: "src/uploads/caixa-economica-federal.png",
+      userId: user.id,
+      active: true
+    },
+    {
+      name: "Banco do Brasil",
+      type: "corrente",
+      balance: 0,
+      icon: "src/uploads/banco-do-brasil.png",
+      userId: user.id,
+      active: true
+    },
+    {
+      name: "Nubank",
+      type: "digital",
+      balance: 0,
+      icon: "src/uploads/nubank.png",
+      userId: user.id,
+      active: true
+    }
+  ];
 
   const createdAccounts = await prisma.accounts.createMany({ data: accountsData });
-  console.log(` Criadas ${createdAccounts.count} contas para os usuários.`);
+  console.log(` Criadas ${createdAccounts.count} contas para o usuário.`);
+
+  // --- O restante da lógica permanece o mesmo, adaptando-se aos dados criados ---
 
   const paymentMethods = [
     { name: "Dinheiro" },
@@ -129,7 +123,6 @@ async function seedDatabase() {
 
     switch (account.type.toLowerCase()) {
       case 'carteira':
-        // Carteira só aceita dinheiro
         compatiblePaymentMethods = allPaymentMethods.filter(pm => pm.name === "Dinheiro");
         break;
       case 'corrente':
@@ -154,7 +147,6 @@ async function seedDatabase() {
         );
     }
 
-    // Criar relacionamento para cada método compatível
     compatiblePaymentMethods.forEach(paymentMethod => {
       accountPaymentMethodsData.push({
         accountId: account.id,
@@ -178,25 +170,9 @@ async function seedDatabase() {
     "Reembolso", "Renda Extra", "Outros"
   ];
 
-  const subcategoriesMap = {
-    "Alimentação": ["Supermercado", "Restaurante", "Lanche", "Delivery"],
-    "Transporte": ["Combustível", "Uber", "Ônibus", "Manutenção"],
-    "Moradia": ["Aluguel", "Condomínio", "Energia", "Internet", "Água"],
-    "Saúde": ["Médico", "Farmácia", "Exames", "Plano de Saúde"],
-    "Educação": ["Curso", "Livros", "Material Escolar", "Mensalidade"],
-    "Entretenimento": ["Cinema", "Teatro", "Streaming", "Jogos"],
-    "Roupas": ["Casual", "Formal", "Esportiva", "Calçados"],
-    "Tecnologia": ["Software", "Hardware", "Celular", "Computador"],
-    "Viagem": ["Passagem", "Hotel", "Alimentação", "Turismo"],
-    "Salário": ["CLT", "Freelance", "Comissão"],
-    "Investimentos": ["Dividendos", "Rendimentos", "Venda de Ações"],
-    "Outros": ["Diversos", "Variado"]
-  };
-
   const transactionsData = [];
 
   allAccounts.forEach(account => {
-    // Buscar métodos de pagamento compatíveis com esta conta
     const accountPaymentMethods = accountPaymentMethodsData.filter(
       apm => apm.accountId === account.id
     );
@@ -206,7 +182,7 @@ async function seedDatabase() {
       return;
     }
 
-    const numTransactions = 10; // Cada conta terá exatamente 10 transações
+    const numTransactions = 10;
 
     for (let i = 0; i < numTransactions; i++) {
       const type = faker.helpers.arrayElement(["expense", "income"]);
@@ -236,15 +212,14 @@ async function seedDatabase() {
         to: new Date('2025-12-31')
       });
 
-      const recurring = faker.datatype.boolean(0.4); // 40%
+      const recurring = faker.datatype.boolean(0.4);
       const number_installments = !recurring && faker.datatype.boolean(0.3)
         ? faker.number.int({ min: 2, max: 12 })
         : null;
-      const current_installment = !recurring && faker.datatype.boolean(0.3)
-        ? faker.number.int({ min: 2, max: 12 })
+      const current_installment = number_installments
+        ? faker.number.int({ min: 1, max: number_installments })
         : null;
 
-      // Selecionar um método de pagamento compatível com a conta
       const randomAccountPaymentMethod = faker.helpers.arrayElement(accountPaymentMethods);
 
       transactionsData.push({
@@ -266,18 +241,15 @@ async function seedDatabase() {
   const createdTransactions = await prisma.transactions.createMany({ data: transactionsData });
   console.log(` Criadas ${createdTransactions.count} transações.`);
 
-  // Calcular e atualizar o balance de cada conta com base nas transações
   console.log('Calculando balance das contas com base nas transações...');
-  
+
   for (const account of allAccounts) {
-    // Buscar todas as transações da conta
     const accountTransactions = await prisma.transactions.findMany({
       where: { accountId: account.id }
     });
 
-    // Calcular o balance usando Decimal.js
     let balance = new Decimal(0);
-    
+
     accountTransactions.forEach(transaction => {
       const value = new Decimal(transaction.value);
       if (transaction.type === 'income') {
@@ -287,7 +259,6 @@ async function seedDatabase() {
       }
     });
 
-    // Atualizar o balance da conta
     await prisma.accounts.update({
       where: { id: account.id },
       data: { balance: balance.toNumber() }
@@ -297,16 +268,9 @@ async function seedDatabase() {
   console.log(' Balance das contas calculado e atualizado com sucesso!');
 
   const bankTransfersData = [];
+  const userAccounts = allAccounts.filter(account => account.userId === user.id);
 
-  allUsers.forEach(user => {
-    const userAccounts = allAccounts.filter(account => account.userId === user.id);
-
-    if (userAccounts.length < 2) {
-      console.log(`Usuário ${user.name} tem menos de 2 contas, não pode fazer transferências internas`);
-      return;
-    }
-
-    // Cada usuário terá 2 transferências bancárias
+  if (userAccounts.length >= 2) {
     for (let i = 0; i < 2; i++) {
       const sourceAccount = faker.helpers.arrayElement(userAccounts);
       const availableDestinations = userAccounts.filter(acc => acc.id !== sourceAccount.id);
@@ -336,12 +300,9 @@ async function seedDatabase() {
       });
 
       const descriptions = [
-        "Transferência para conta poupança",
-        "Movimentação entre contas",
-        "Transferência para investimento",
-        "Organização financeira",
-        "Transferência interna",
-        null
+        "Transferência para conta poupança", "Movimentação entre contas",
+        "Transferência para investimento", "Organização financeira",
+        "Transferência interna", null
       ];
 
       bankTransfersData.push({
@@ -354,36 +315,30 @@ async function seedDatabase() {
         userId: user.id
       });
     }
-  });
+  }
 
   const createdBankTransfers = await prisma.bankTransfers.createMany({ data: bankTransfersData });
   console.log(` Criadas ${createdBankTransfers.count} transferências bancárias.`);
 
-  // Recalcular o balance das contas incluindo as transferências bancárias
   console.log('Recalculando balance das contas incluindo transferências bancárias...');
-  
+
   const updatedAccounts = await prisma.accounts.findMany();
-  
+
   for (const account of updatedAccounts) {
-    // Buscar todas as transações da conta
     const accountTransactions = await prisma.transactions.findMany({
       where: { accountId: account.id }
     });
 
-    // Buscar transferências de origem (saídas)
     const outgoingTransfers = await prisma.bankTransfers.findMany({
       where: { sourceAccountId: account.id }
     });
 
-    // Buscar transferências de destino (entradas)
     const incomingTransfers = await prisma.bankTransfers.findMany({
       where: { destinationAccountId: account.id }
     });
 
-    // Calcular o balance usando Decimal.js
     let balance = new Decimal(0);
-    
-    // Somar/subtrair transações normais
+
     accountTransactions.forEach(transaction => {
       const value = new Decimal(transaction.value);
       if (transaction.type === 'income') {
@@ -393,19 +348,16 @@ async function seedDatabase() {
       }
     });
 
-    // Subtrair transferências de saída
     outgoingTransfers.forEach(transfer => {
       const amount = new Decimal(transfer.amount);
       balance = balance.sub(amount);
     });
 
-    // Somar transferências de entrada
     incomingTransfers.forEach(transfer => {
       const amount = new Decimal(transfer.amount);
       balance = balance.add(amount);
     });
 
-    // Atualizar o balance da conta
     await prisma.accounts.update({
       where: { id: account.id },
       data: { balance: balance.toNumber() }
@@ -415,28 +367,19 @@ async function seedDatabase() {
   console.log(' Balance final das contas calculado com sucesso!');
 
   const goalsData = [];
+  const allUsers = [user]; // Use the single user created earlier
 
   allUsers.forEach(user => {
     const incomeGoalNames = [
-      'Meta de Renda Mensal',
-      'Objetivo de Freelances',
-      'Meta de Vendas',
-      'Receita Extra',
-      'Renda de Investimentos',
-      'Meta de Salário'
+      'Meta de Renda Mensal', 'Objetivo de Freelances', 'Meta de Vendas',
+      'Receita Extra', 'Renda de Investimentos', 'Meta de Salário'
     ];
 
     const expenseGoalNames = [
-      'Controle de Gastos',
-      'Limite de Entretenimento',
-      'Meta de Economia',
-      'Redução de Despesas',
-      'Controle Alimentação',
-      'Limite Compras',
-      'Meta Transporte'
+      'Controle de Gastos', 'Limite de Entretenimento', 'Meta de Economia',
+      'Redução de Despesas', 'Controle Alimentação', 'Limite Compras', 'Meta Transporte'
     ];
 
-    // 12 metas de receita e 12 de despesa para cada mês de 2025
     for (let month = 0; month < 12; month++) {
       const incomeGoalDate = new Date(2025, month, 15);
       const incomeGoalName = faker.helpers.arrayElement(incomeGoalNames);
