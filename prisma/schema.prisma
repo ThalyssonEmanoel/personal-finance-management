@@ -28,7 +28,6 @@ model Accounts {
   type    String  @db.VarChar(45)
   balance Decimal @db.Decimal(10, 2)
   icon    String? @db.VarChar(100)
-  active  Boolean @default(true)
 
   userId Int
   user   Users @relation(fields: [userId], references: [id])
@@ -74,7 +73,7 @@ model Transactions {
   recurring           Boolean         @default(false)
 
   accountId Int
-  account   Accounts @relation(fields: [accountId], references: [id])
+  account   Accounts @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   paymentMethodId Int
   paymentMethod   PaymentMethods @relation(fields: [paymentMethodId], references: [id])
@@ -90,10 +89,10 @@ model BankTransfers {
   description         String?  @db.Text
 
   sourceAccountId Int
-  sourceAccount   Accounts @relation("SourceAccount", fields: [sourceAccountId], references: [id])
+  sourceAccount   Accounts @relation("SourceAccount", fields: [sourceAccountId], references: [id], onDelete: Cascade)
 
   destinationAccountId Int
-  destinationAccount   Accounts @relation("DestinationAccount", fields: [destinationAccountId], references: [id])
+  destinationAccount   Accounts @relation("DestinationAccount", fields: [destinationAccountId], references: [id], onDelete: Cascade)
 
   paymentMethodId Int
   paymentMethod   PaymentMethods @relation(fields: [paymentMethodId], references: [id])

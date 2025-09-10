@@ -5,8 +5,7 @@ class AccountRepository {
   static async listAccounts(filtros, skip, take, order) {
     const { userId, ...otherFilters } = filtros;
     let where = { 
-      ...otherFilters,
-      active: true 
+      ...otherFilters
     };
     if (userId) {
       where.userId = userId;
@@ -21,7 +20,6 @@ class AccountRepository {
         type: true,
         balance: true,
         icon: true,
-        active: true,
         userId: true,
         accountPaymentMethods: {
           select: {
@@ -51,11 +49,7 @@ class AccountRepository {
   }
 
   static async contAccounts() {
-    return await prisma.accounts.count({
-      where: {
-        active: true // Só contar contas ativas
-      }
-    });
+    return await prisma.accounts.count();
   }
 
   static async createAccount(accountData) {
@@ -67,8 +61,7 @@ class AccountRepository {
     const existingAccounts = await prisma.accounts.findMany({
       where: {
         type,
-        user: { id: userId },
-        active: true // Só verificar contas ativas
+        user: { id: userId }
       }
     });
     const similar = existingAccounts.find(acc => normalize(acc.name) === normalizedNome && normalize(acc.type) === normalizedType);
@@ -107,7 +100,6 @@ class AccountRepository {
           type: true,
           balance: true,
           icon: true,
-          active: true,
           userId: true
         }
       });
@@ -133,7 +125,6 @@ class AccountRepository {
           type: true,
           balance: true,
           icon: true,
-          active: true,
           userId: true,
           accountPaymentMethods: {
             select: {
@@ -156,8 +147,7 @@ class AccountRepository {
     const existingAccount = await prisma.accounts.findUnique({
       where: { 
         id: parseInt(id), 
-        userId: parseInt(userId),
-        active: true // Só permitir edição de contas ativas
+        userId: parseInt(userId)
       },
     });
     if (!existingAccount) {
@@ -172,7 +162,6 @@ class AccountRepository {
           name: otherData.name,
           type: otherData.type,
           user: { id: userId },
-          active: true, // Só verificar contas ativas
           NOT: { id: parseInt(id) }
         }
       });
@@ -238,7 +227,6 @@ class AccountRepository {
           type: true,
           balance: true,
           icon: true,
-          active: true,
           userId: true,
           accountPaymentMethods: {
             select: {
@@ -259,30 +247,22 @@ class AccountRepository {
     const existingAccount = await prisma.accounts.findUnique({
       where: { 
         id: parseInt(id), 
-        userId: parseInt(userId),
-        active: true 
+        userId: parseInt(userId)
       }
     });
 
     if (!existingAccount) {
-      throw { code: 404, message: "Conta não encontrada ou já está inativa" };
+      throw { code: 404, message: "Conta não encontrada" };
     }
 
     try {
-      await prisma.$transaction(async (prisma) => {
-        await prisma.accountPaymentMethods.deleteMany({
-          where: { accountId: parseInt(id) }
-        });
-
-        await prisma.accounts.update({
-          where: { id: parseInt(id) },
-          data: { active: false }
-        });
+      await prisma.accounts.delete({
+        where: { id: parseInt(id) }
       });
 
-      return { message: "Conta desativada com sucesso. Transações e transferências foram preservadas." };
+      return { message: "Conta e todos os dados relacionados foram apagados permanentemente." };
     } catch (error) {
-      console.error("Erro ao desativar conta:", error);
+      console.error("Erro ao deletar conta:", error);
       throw error;
     }
   }
@@ -293,8 +273,7 @@ class AccountRepository {
   static async calculateTotalBalance(filters) {
     const { userId, ...otherFilters } = filters;
     let where = { 
-      ...otherFilters,
-      active: true // Só considerar contas ativas no cálculo
+      ...otherFilters
     };
     if (userId) {
       where.userId = userId;
@@ -306,71 +285,6 @@ class AccountRepository {
     });
 
     return result._sum.balance || 0;
-  }
-
-  /**
-   * Lista contas inativas (soft deleted)
-   */
-  static async listInactiveAccounts(userId, skip, take, order) {
-    const queryOptions = {
-      where: {
-        userId,
-        active: false
-      },
-      orderBy: { id: order },
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        balance: true,
-        icon: true,
-        active: true,
-        userId: true,
-      },
-    };
-
-    // Só adicionar skip e take se forem valores válidos
-    if (skip !== undefined && !isNaN(skip)) {
-      queryOptions.skip = skip;
-    }
-    if (take !== undefined && !isNaN(take)) {
-      queryOptions.take = take;
-    }
-
-    const result = await prisma.accounts.findMany(queryOptions);
-    
-    return result;
-  }
-
-  /**
-   * Reativa uma conta inativa
-   */
-  static async reactivateAccount(id, userId) {
-    const existingAccount = await prisma.accounts.findUnique({
-      where: { 
-        id: parseInt(id), 
-        userId: parseInt(userId),
-        active: false // Só permitir reativar contas inativas
-      }
-    });
-
-    if (!existingAccount) {
-      throw { code: 404, message: "Conta inativa não encontrada" };
-    }
-
-    return await prisma.accounts.update({
-      where: { id: parseInt(id) },
-      data: { active: true },
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        balance: true,
-        icon: true,
-        active: true,
-        userId: true,
-      }
-    });
   }
 }
 

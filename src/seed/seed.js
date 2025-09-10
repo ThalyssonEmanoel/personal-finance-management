@@ -65,32 +65,28 @@ async function seedDatabase() {
       type: "carteira",
       balance: 0,
       icon: "src/uploads/carteira-icon.png",
-      userId: user.id,
-      active: true
+      userId: user.id
     },
     {
       name: "Caixa Econômica",
       type: "corrente",
       balance: 0,
       icon: "src/uploads/caixa-economica-federal.png",
-      userId: user.id,
-      active: true
+      userId: user.id
     },
     {
       name: "Banco do Brasil",
       type: "corrente",
       balance: 0,
       icon: "src/uploads/banco-do-brasil.png",
-      userId: user.id,
-      active: true
+      userId: user.id
     },
     {
       name: "Nubank",
       type: "digital",
       balance: 0,
       icon: "src/uploads/nubank.png",
-      userId: user.id,
-      active: true
+      userId: user.id
     }
   ];
 

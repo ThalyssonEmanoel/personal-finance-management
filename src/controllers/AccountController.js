@@ -73,8 +73,6 @@ class AccountController {
 
   static deleteAccount = async (req, res, next) => {
     try {
-      console.log("Dados da requisição para deletar conta:", req.query);
-      
       const { id } = req.query;
       const { userId } = req.query;
       const result = await AccountService.deleteAccount(id, userId);
