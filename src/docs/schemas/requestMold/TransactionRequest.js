@@ -56,6 +56,16 @@ export function requestTransactionGet() {
       "schema": { "type": "boolean" }
     },
     {
+      "name": "recurring_type",
+      "in": "query",
+      "description": "Filter by recurring type",
+      "required": false,
+      "schema": { 
+        "type": "string",
+        "enum": ["daily", "weekly", "monthly", "yearly"]
+      }
+    },
+    {
       "name": "accountId",
       "in": "query",
       "description": "Filter by account id",
@@ -226,6 +236,13 @@ const TransactionRequest = {
         description: "Whether the transaction is recurring",
         example: false
       },
+      recurring_type: {
+        type: "string",
+        enum: ["daily", "weekly", "monthly", "yearly"],
+        nullable: true,
+        description: "Type of recurrence (required when recurring is true)",
+        example: "monthly"
+      },
       accountId: {
         type: "integer",
         description: "Account ID",
@@ -237,7 +254,7 @@ const TransactionRequest = {
         example: 1
       }
     },
-    description: "Schema for creating a new transaction. For installment transactions, only provide the total value and number of installments - the system will calculate individual installment values automatically.",
+    description: "Schema for creating a new transaction. For installment transactions, only provide the total value and number of installments - the system will calculate individual installment values automatically. When recurring is true, recurring_type must be specified.",
     example: {
       type: "expense",
       name: "Supermercado",
@@ -246,7 +263,8 @@ const TransactionRequest = {
       release_date: "2025-07-06",
       number_installments: 3,
       description: "Compra parcelada",
-      recurring: false,
+      recurring: true,
+      recurring_type: "monthly",
       accountId: 1,
       paymentMethodId: 1
     }
@@ -305,6 +323,13 @@ const TransactionRequest = {
         description: "Whether the transaction is recurring",
         example: false
       },
+      recurring_type: {
+        type: "string",
+        enum: ["daily", "weekly", "monthly", "yearly"],
+        nullable: true,
+        description: "Type of recurrence (required when recurring is true)",
+        example: "monthly"
+      },
       accountId: {
         type: "integer",
         description: "Account ID",
@@ -316,7 +341,7 @@ const TransactionRequest = {
         example: 1
       }
     },
-    description: "Schema for updating a transaction.",
+    description: "Schema for updating a transaction. When recurring is true, recurring_type must be specified.",
     example: {
       type: "expense",
       name: "Supermercado Atualizado",
@@ -326,7 +351,8 @@ const TransactionRequest = {
       number_installments: 3,
       current_installment: 1,
       description: "Compra parcelada atualizada",
-      recurring: false,
+      recurring: true,
+      recurring_type: "weekly",
       accountId: 4,
       paymentMethodId: 2
     }

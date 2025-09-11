@@ -41,9 +41,9 @@ class TransactionController {
       const bodyData = TransactionSchemas.createTransactionRequest.parse(req.body);
       const queryData = TransactionSchemas.createTransactionQuery.parse(req.query);
 
-      const { name, type, category, value, release_date, number_installments, recurring, description, accountId, paymentMethodId } = bodyData;
+      const { name, type, category, value, release_date, number_installments, recurring, recurring_type, description, accountId, paymentMethodId } = bodyData;
       const { userId } = queryData;
-      const transaction = await TransactionService.createTransaction({ name, type, category, value, release_date, number_installments, recurring, description, accountId, paymentMethodId, userId });
+      const transaction = await TransactionService.createTransaction({ name, type, category, value, release_date, number_installments, recurring, recurring_type, description, accountId, paymentMethodId, userId });
       res.status(201).json(CommonResponse.success(transaction));
     } catch (err) {
       next(err);
