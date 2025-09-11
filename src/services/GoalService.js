@@ -5,12 +5,27 @@ class GoalService {
 
   static async listGoals(filters, order = 'desc') {
     const validFilters = GoalSchemas.listGoals.parse(filters);
-    const { page, limit, ...otherFilters } = validFilters;
+    const { goals, total } = await GoalRepository.listGoals(validFilters, order);
 
-    const skip = (page - 1) * limit;
-    const { goals, total } = await GoalRepository.listGoals(otherFilters, skip, limit, order);
+    
+    const goalsWithTransactionTotals = await Promise.all(
+      goals.map(async (goal) => {
+        const transactionTotal = await GoalRepository.calculateTransactionTotalByGoalDate(
+          goal.userId,
+          goal.date,
+          goal.transaction_type
+        );
 
-    return { goals, total, take: limit };
+        const totalField = goal.transaction_type === 'income' ? 'incomeTotal' : 'expenseTotal';
+        
+        return {
+          ...goal,
+          [totalField]: transactionTotal.toString()
+        };
+      })
+    );
+
+    return { goals: goalsWithTransactionTotals, total };
   }
 
   static async createGoal(goalData) {
@@ -41,7 +56,20 @@ class GoalService {
       userId: goalData.userId
     });
 
-    return goal;
+    // Adicionar total das transações para a nova meta
+    const transactionTotal = await GoalRepository.calculateTransactionTotalByGoalDate(
+      goal.userId,
+      goal.date,
+      goal.transaction_type
+    );
+
+    // Adicionar campo dinâmico baseado no tipo de transação
+    const totalField = goal.transaction_type === 'income' ? 'incomeTotal' : 'expenseTotal';
+    
+    return {
+      ...goal,
+      [totalField]: transactionTotal.toString()
+    };
   }
 
   static async updateGoal(id, userId, goalData) {
@@ -89,7 +117,20 @@ class GoalService {
       throw { code: 400, message: 'Falha ao atualizar a meta.' };
     }
 
-    return updatedGoal;
+    // Adicionar total das transações para a meta atualizada
+    const transactionTotal = await GoalRepository.calculateTransactionTotalByGoalDate(
+      updatedGoal.userId,
+      updatedGoal.date,
+      updatedGoal.transaction_type
+    );
+
+    // Adicionar campo dinâmico baseado no tipo de transação
+    const totalField = updatedGoal.transaction_type === 'income' ? 'incomeTotal' : 'expenseTotal';
+    
+    return {
+      ...updatedGoal,
+      [totalField]: transactionTotal.toString()
+    };
   }
 
   static async deleteGoal(id, userId) {

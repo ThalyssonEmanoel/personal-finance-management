@@ -4,26 +4,13 @@ import CommonResponse from "../utils/commonResponse.js";
 
 class AccountController {
 
-  static listAllAccountsAdmin = async (req, res, next) => {
-    try {
-      const query = req.query;
-      // Garante que page será passado corretamente para o response
-      const page = query.page ? Number(query.page) : 1;
-      const { contas, total, take } = await AccountService.listAccounts(query, 'desc');
-      res.status(200).json(CommonResponse.success(contas, total, page, take));
-    } catch (err) {
-      next(err)
-    }
-  };
-
   static listAllAccountsUser = async (req, res, next) => {
     try {
       const query = req.query;
       const queryFiltrada = AccountSchemas.listAccountUser.parse(query);
-      // Garante que page será passado corretamente para o response
       const page = queryFiltrada.page ? Number(queryFiltrada.page) : 1;
-      const { contas, total, take } = await AccountService.listAccounts(queryFiltrada, 'desc');
-      res.status(200).json(CommonResponse.success(contas, total, page, take));
+      const { data, total, take } = await AccountService.listAccounts(queryFiltrada, 'desc');
+      res.status(200).json(CommonResponse.success(data, total, page, take));
     } catch (err) {
       next(err)
     }
@@ -31,10 +18,11 @@ class AccountController {
 
   static registerAccount = async (req, res, next) => {
     try {
-      // Validar body e query separadamente
+      console.log("Dados do corpo da requisição:",req.query, req.body);
       const bodyData = AccountSchemas.createAccountBody.parse(req.body);
       const queryData = AccountSchemas.createAccountQuery.parse(req.query);
 
+      
       const { name, type, balance, paymentMethodIds } = bodyData;
       const { userId } = queryData;
 

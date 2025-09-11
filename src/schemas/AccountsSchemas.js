@@ -24,8 +24,7 @@ class AccountSchemas {
       .default(1),
     limit: z.coerce.number({ message: "The limit must be a positive integer." })
       .int({ message: "The 'limit' field must be an integer." })
-      .positive({ message: "The 'limit' field must be at least 1." })
-      .default(10),
+      .positive({ message: "The 'limit' field must be at least 1." }).optional(),
   });
 
   static createAccount = z.object({
@@ -125,8 +124,7 @@ class AccountSchemas {
       .default(1),
     limit: z.coerce.number({ message: "The limit must be a positive integer." })
       .int({ message: "The 'limit' field must be an integer." })
-      .positive({ message: "The 'limit' field must be at least 1." })
-      .default(10),
+      .positive({ message: "The 'limit' field must be at least 1." }).optional(),
   });
 }
 

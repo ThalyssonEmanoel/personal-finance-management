@@ -3,16 +3,6 @@ import CommonResponse from "../utils/commonResponse.js";
 
 class UserController {
 
-  static listAllUsers = async (req, res, next) => {
-    try {
-      const { page, limit = 10, ...filtros } = req.query;
-      const { usuarios, total, take } = await UserService.listUsers(filtros, page || 1, limit, 'desc');
-      res.status(200).json(CommonResponse.success(usuarios, total, page || 1, take));
-    } catch (err) {
-      next(err)
-    }
-  };
-
   static getUserById = async (req, res, next) => {
     try {
       const { id } = req.params;
@@ -22,16 +12,7 @@ class UserController {
       next(err);
     }
   };
-  static registerUserAdmin = async (req, res, next) => {
-    try {
-      const { name, email, password, isAdmin } = req.body;
-      const avatar = req.file ? req.file.path : null;
-      const user = await UserService.createUserAdmin({ name, email, password, avatar, isAdmin });
-      res.status(201).json(CommonResponse.success(user));
-    } catch (err) {
-      next(err);
-    }
-  };
+
   static registerUser = async (req, res, next) => {
     try {
       const { name, email, password } = req.body;
@@ -43,31 +24,14 @@ class UserController {
     }
   };
 
-  static updateUserAdmin = async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const { name, email, isAdmin } = req.body;
-      const avatar = req.file ? req.file.path : req.body.avatar;
-
-      const userData = { name, email, avatar, isAdmin };
-      const updatedUser = await UserService.updateUserAdmin(id, userData);
-      res.status(200).json(CommonResponse.success(updatedUser));
-    } catch (err) {
-      next(err);
-    }
-  };
   static updateUser = async (req, res, next) => {
     try {
-      console.log("sdsad", req.body);
-      
       const { id } = req.params;
       const { name, email } = req.body;
-      console.log("sdsad", name, email);
-
       const avatar = req.file ? req.file.path : req.body.avatar;
-
       const userData = { name, email, avatar };
       const updatedUser = await UserService.updateUser(id, userData);
+      
       res.status(200).json(CommonResponse.success(updatedUser));
     } catch (err) {
       next(err);

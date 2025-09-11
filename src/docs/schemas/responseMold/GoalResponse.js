@@ -30,10 +30,19 @@ const GoalSchemas = {
             example: "income"
           },
           value: { 
-            type: "number",
-            format: "decimal",
+            type: "string",
             description: "Target value for the goal",
-            example: 5000.00
+            example: "5000.00"
+          },
+          incomeTotal: {
+            type: "string",
+            description: "Total amount of income transactions in the same month as the goal (only present for income goals)",
+            example: "4500.50"
+          },
+          expenseTotal: {
+            type: "string", 
+            description: "Total amount of expense transactions in the same month as the goal (only present for expense goals)",
+            example: "3200.75"
           },
           userId: { 
             type: "integer",
@@ -86,14 +95,9 @@ const GoalSchemas = {
         description: "Response message",
         example: "Success"
       },
-      page: {
-        type: "integer",
-        description: "Current page number",
-        example: 1
-      },
       data: {
         type: "array",
-        description: "Array of goals",
+        description: "Array of all goals matching the criteria (no pagination)",
         items: {
           type: "object",
           properties: {
@@ -108,7 +112,7 @@ const GoalSchemas = {
             date: { 
               type: "string", 
               format: "date",
-              example: "2024-01-15T00:00:00.000Z"
+              example: "2025-01-15T00:00:00.000Z"
             },
             transaction_type: { 
               type: "string", 
@@ -116,8 +120,18 @@ const GoalSchemas = {
               example: "income"
             },
             value: { 
-              type: "number",
-              example: 5000.00
+              type: "string",
+              example: "5000.00"
+            },
+            incomeTotal: {
+              type: "string",
+              description: "Total amount of income transactions in the same month as the goal (only present for income goals)",
+              example: "4500.50"
+            },
+            expenseTotal: {
+              type: "string", 
+              description: "Total amount of expense transactions in the same month as the goal (only present for expense goals)",
+              example: "3200.75"
             },
             userId: { 
               type: "integer",
@@ -136,13 +150,8 @@ const GoalSchemas = {
       },
       total: {
         type: "integer",
-        description: "Total number of goals",
-        example: 50
-      },
-      limite: {
-        type: "integer",
-        description: "Number of items per page",
-        example: 10
+        description: "Total number of goals returned",
+        example: 12
       }
     }
   },
@@ -189,8 +198,18 @@ const GoalSchemas = {
             example: "income"
           },
           value: { 
-            type: "number",
-            example: 5000.00
+            type: "string",
+            example: "5000.00"
+          },
+          incomeTotal: {
+            type: "string",
+            description: "Total amount of income transactions in the same month as the goal (only present for income goals)",
+            example: "4500.50"
+          },
+          expenseTotal: {
+            type: "string", 
+            description: "Total amount of expense transactions in the same month as the goal (only present for expense goals)",
+            example: "3200.75"
           },
           userId: { 
             type: "integer",

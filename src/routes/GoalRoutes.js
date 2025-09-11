@@ -1,17 +1,14 @@
 import { Router } from 'express';
 import GoalController from '../controllers/GoalController.js';
 import AuthMiddleware from '../middlewares/authMiddleware.js';
-import adminOnlyMiddleware from '../middlewares/adminOnlyMiddleware.js';
 import errorHandler from "../middlewares/errorHandler.js";
-import adminOrOwnerMiddleware from '../middlewares/adminOrOwnerMiddleware.js';
+import userControllRoutes from '../middlewares/userControllRoutes.js';
 
 const router = Router();
 
-router.get('/goals', AuthMiddleware, adminOrOwnerMiddleware.verifyWithUserId, GoalController.listAllGoalsUsers, errorHandler);
-router.post('/goals', AuthMiddleware, adminOrOwnerMiddleware.verifyWithUserId, GoalController.createGoal, errorHandler);
-router.patch('/goals/:id', AuthMiddleware, adminOrOwnerMiddleware.verifyWithUserId, GoalController.updateGoal, errorHandler);
-router.delete('/goals/:id', AuthMiddleware, adminOrOwnerMiddleware.verifyWithUserId, GoalController.deleteGoal, errorHandler);
-
-router.get('/admin/goals', AuthMiddleware, adminOnlyMiddleware, GoalController.listAllGoalsAdmin, errorHandler);
+router.get('/goals', AuthMiddleware, userControllRoutes.verifyWithUserId, GoalController.listAllGoalsUsers, errorHandler);
+router.post('/goals', AuthMiddleware, userControllRoutes.verifyWithUserId, GoalController.createGoal, errorHandler);
+router.patch('/goals/:id', AuthMiddleware, userControllRoutes.verifyWithUserId, GoalController.updateGoal, errorHandler);
+router.delete('/goals/:id', AuthMiddleware, userControllRoutes.verifyWithUserId, GoalController.deleteGoal, errorHandler);
 
 export default router;

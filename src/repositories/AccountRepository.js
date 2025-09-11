@@ -4,14 +4,15 @@ class AccountRepository {
 
   static async listAccounts(filtros, skip, take, order) {
     const { userId, ...otherFilters } = filtros;
-    let where = { ...otherFilters };
+    let where = { 
+      ...otherFilters
+    };
     if (userId) {
       where.userId = userId;
     }
-    const result = await prisma.accounts.findMany({
+    
+    const queryOptions = {
       where,
-      skip: skip,
-      take: take,
       orderBy: { id: order },
       select: {
         id: true,
@@ -31,7 +32,16 @@ class AccountRepository {
           }
         },
       },
-    });
+    };
+
+    if (skip !== undefined && !isNaN(skip)) {
+      queryOptions.skip = skip;
+    }
+    if (take !== undefined && !isNaN(take)) {
+      queryOptions.take = take;
+    }
+
+    const result = await prisma.accounts.findMany(queryOptions);
     if (result.length === 0) {
       throw { code: 404, message: "Nenhuma conta encontrada" };
     }
@@ -45,7 +55,6 @@ class AccountRepository {
   static async createAccount(accountData) {
     const { name, type, balance, icon, userId, paymentMethodIds } = accountData;
 
-    //o normalize é usado para remover acentos e comparar nomes de forma consistente, apenas para evitar duplicatas
     const normalize = (str) => str.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
     const normalizedNome = normalize(name);
     const normalizedType = normalize(type);
@@ -136,7 +145,10 @@ class AccountRepository {
     const { paymentMethodIds, ...otherData } = accountData;
 
     const existingAccount = await prisma.accounts.findUnique({
-      where: { id: parseInt(id), userId: parseInt(userId) },
+      where: { 
+        id: parseInt(id), 
+        userId: parseInt(userId)
+      },
     });
     if (!existingAccount) {
       throw { code: 404, message: "Conta não encontrada" };
@@ -159,8 +171,8 @@ class AccountRepository {
       }
     }
 
-    // Verificar se os métodos de pagamento existem (se foram fornecidos)
-    if (paymentMethodIds && paymentMethodIds.length > 0) {
+    // Verificar se os métodos de pagamento existem (se foram fornecidos no update)
+    if (paymentMethodIds && Array.isArray(paymentMethodIds) && paymentMethodIds.length > 0) {
       const existingPaymentMethods = await prisma.paymentMethods.findMany({
         where: {
           id: { in: paymentMethodIds }
@@ -194,21 +206,18 @@ class AccountRepository {
           data: updateData
         });
       }
-
-      if (paymentMethodIds !== undefined) {
+      if (paymentMethodIds !== undefined && paymentMethodIds !== null && paymentMethodIds.length > 0) {
         await prisma.accountPaymentMethods.deleteMany({
           where: { accountId: parseInt(id) }
         });
-        if (paymentMethodIds.length > 0) {
-          const accountPaymentMethodsData = paymentMethodIds.map(paymentMethodId => ({
-            accountId: parseInt(id),
-            paymentMethodId: paymentMethodId
-          }));
+        const accountPaymentMethodsData = paymentMethodIds.map(paymentMethodId => ({
+          accountId: parseInt(id),
+          paymentMethodId: paymentMethodId
+        }));
 
-          await prisma.accountPaymentMethods.createMany({
-            data: accountPaymentMethodsData
-          });
-        }
+        await prisma.accountPaymentMethods.createMany({
+          data: accountPaymentMethodsData
+        });
       }
       return await prisma.accounts.findUnique({
         where: { id: parseInt(id) },
@@ -236,7 +245,10 @@ class AccountRepository {
 
   static async deleteAccount(id, userId) {
     const existingAccount = await prisma.accounts.findUnique({
-      where: { id: parseInt(id), userId: parseInt(userId) }
+      where: { 
+        id: parseInt(id), 
+        userId: parseInt(userId)
+      }
     });
 
     if (!existingAccount) {
@@ -244,25 +256,35 @@ class AccountRepository {
     }
 
     try {
-      await prisma.$transaction(async (prisma) => {
-        await prisma.transactions.deleteMany({
-          where: { accountId: parseInt(id) }
-        });
-
-        await prisma.accountPaymentMethods.deleteMany({
-          where: { accountId: parseInt(id) }
-        });
-
-        await prisma.accounts.delete({
-          where: { id: parseInt(id) }
-        });
+      await prisma.accounts.delete({
+        where: { id: parseInt(id) }
       });
 
-      return { message: "Conta e todos os dados relacionados foram deletados com sucesso" };
+      return { message: "Conta e todos os dados relacionados foram apagados permanentemente." };
     } catch (error) {
       console.error("Erro ao deletar conta:", error);
       throw error;
     }
+  }
+
+  /**
+   * Calcula o total de saldos baseado nos filtros aplicados
+   */
+  static async calculateTotalBalance(filters) {
+    const { userId, ...otherFilters } = filters;
+    let where = { 
+      ...otherFilters
+    };
+    if (userId) {
+      where.userId = userId;
+    }
+
+    const result = await prisma.accounts.aggregate({
+      where,
+      _sum: { balance: true }
+    });
+
+    return result._sum.balance || 0;
   }
 }
 

@@ -58,7 +58,8 @@ export function requestTransactionGet() {
     {
       "name": "accountId",
       "in": "query",
-      "description": "Filter by account ID",
+      "description": "Filter by account id",
+
       "required": false,
       "schema": { "type": "integer", "minimum": 1 }
     },

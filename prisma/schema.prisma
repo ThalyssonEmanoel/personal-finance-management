@@ -15,7 +15,6 @@ model Users {
   password     String  @db.VarChar(255)
   avatar       String? @db.VarChar(100)
   refreshToken String? @db.Text
-  isAdmin      Boolean @default(false)
 
   accounts      Accounts[]
   transactions  Transactions[]
@@ -74,7 +73,7 @@ model Transactions {
   recurring           Boolean         @default(false)
 
   accountId Int
-  account   Accounts @relation(fields: [accountId], references: [id])
+  account   Accounts @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   paymentMethodId Int
   paymentMethod   PaymentMethods @relation(fields: [paymentMethodId], references: [id])
@@ -90,10 +89,10 @@ model BankTransfers {
   description         String?  @db.Text
 
   sourceAccountId Int
-  sourceAccount   Accounts @relation("SourceAccount", fields: [sourceAccountId], references: [id])
+  sourceAccount   Accounts @relation("SourceAccount", fields: [sourceAccountId], references: [id], onDelete: Cascade)
 
   destinationAccountId Int
-  destinationAccount   Accounts @relation("DestinationAccount", fields: [destinationAccountId], references: [id])
+  destinationAccount   Accounts @relation("DestinationAccount", fields: [destinationAccountId], references: [id], onDelete: Cascade)
 
   paymentMethodId Int
   paymentMethod   PaymentMethods @relation(fields: [paymentMethodId], references: [id])

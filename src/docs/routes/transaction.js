@@ -3,37 +3,6 @@ import { requestGetId, requestUserId, requestWithIdAndUserId } from "../schemas/
 import commonResponses from "../utils/swaggerCommonResponses.js";
 
 const transactionRoutes = {
-  "/transactions/admin": {
-    get: {
-      tags: ["Transactions"],
-      summary: "List all transactions (Admin Only)",
-      description: `
-        #### Use Case
-        Allows the system to list all registered transactions, with the possibility of filtering by specific parameters.
-
-        #### Business Rule
-        Provides a paginated listing of registered transactions, with detailed information for each transaction.
-
-        #### Business Rules Involved
-        - Allow filtering by defined parameters.
-        - Return error if no transactions are registered.
-        - Include related data (account, payment method, user).
-
-        #### Expected Result
-        Returns a paginated list of transactions with detailed information and related data.
-      `,
-      security: [{ bearerAuth: [] }],
-      ...requestTransactionGet(),
-      responses: {
-        200: commonResponses[200]("#/components/schemas/responseMold/TransactionResponse"),
-        400: commonResponses[400](),
-        401: commonResponses[401](),
-        404: commonResponses[404](),
-        498: commonResponses[498](),
-        500: commonResponses[500]()
-      }
-    },
-  },
   "/transactions": {
     get: {
       tags: ["Transactions"],

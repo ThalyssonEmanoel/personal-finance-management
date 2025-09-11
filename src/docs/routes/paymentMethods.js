@@ -5,7 +5,7 @@ const paymentMethodsRoutes = {
   "/payment-methods": {
     get: {
       tags: ["Payment Methods"],
-      summary: "Lists all payment methods (Admin Only)",
+      summary: "Lists all payment methods",
       description: `
         #### Use Case
         Allows listing all registered payment methods in the system.
@@ -29,7 +29,7 @@ const paymentMethodsRoutes = {
     },
     post: {
       tags: ["Payment Methods"],
-      summary: "Creates a new payment method (Admin Only)",
+      summary: "Creates a new payment method ",
       description: `
         #### Use Case
         Allows creating a new payment method in the system.
@@ -64,7 +64,7 @@ const paymentMethodsRoutes = {
   "/payment-methods/{id}": {
     get: {
       tags: ["Payment Methods"],
-      summary: "Fetch a payment method by ID (Admin Only)",
+      summary: "Fetch a payment method by ID ",
       description: `
         #### Use Case
         Allows fetching a specific payment method by its ID.
@@ -96,7 +96,7 @@ const paymentMethodsRoutes = {
     },
     patch: {
       tags: ["Payment Methods"],
-      summary: "Update a payment method (Admin Only)",
+      summary: "Update a payment method ",
       description: `
         #### Use Case
         Allows updating an existing payment method.
@@ -139,7 +139,7 @@ const paymentMethodsRoutes = {
     },
     delete: {
       tags: ["Payment Methods"],
-      summary: "Delete a payment method (Admin Only)",
+      summary: "Delete a payment method ",
       description: `
         #### Use Case
         Allows deleting a payment method from the system.
@@ -174,7 +174,7 @@ const paymentMethodsRoutes = {
   "/account-payment-methods": {
     get: {
       tags: ["Payment Methods"],
-      summary: "List relationships between accounts and payment methods (Admin Only)",
+      summary: "List relationships between accounts and payment methods ",
       description: `
         #### Use Case
         Allows listing all relationships between accounts and payment methods.

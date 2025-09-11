@@ -122,51 +122,6 @@ const authRoutes = {
       }
     }
   },
-  "/revoke-token": {
-    post: {
-      tags: ["Auth"],
-      summary: "Revoke user tokens",
-      description: `
-      #### Use Case
-      Allows authenticated users or administrators to revoke all tokens for a specific user, effectively logging them out from all devices.
-
-      #### Business Function
-      Invalidates all tokens for a user by removing their refresh token from the database, forcing re-authentication.
-
-      #### Business Rules Involved
-      - User must be authenticated (valid access token required).
-      - User ID is required in request body.
-      - Target user must exist in the system.
-      - Removes refresh token from database.
-      - User will need to login again to get new tokens.
-      - Can be used for security purposes (compromised account, etc.).
-
-      #### Expected Result
-      Successfully revokes all user tokens and returns confirmation message.`,
-      security: [
-        {
-          bearerAuth: []
-        }
-      ],
-      requestBody: {
-        required: true,
-        content: {
-          "application/json": {
-            schema: {
-              $ref: "#/components/schemas/requestMold/RevokeTokenRequest"
-            }
-          }
-        }
-      },
-      responses: {
-        200: commonResponses[200]("#/components/schemas/responseMold/RevokeTokenResponse"),
-        400: commonResponses[400](),
-        401: commonResponses[401](),
-        404: commonResponses[404](),
-        500: commonResponses[500]()
-      }
-    }
-  },
   "/forgot-password": {
     post: {
       tags: ["Auth"],
