@@ -1,5 +1,3 @@
-import { date } from "zod/v4";
-
 export function requestGoalGet() {
   const parameters = [
     {
@@ -38,6 +36,29 @@ export function requestGoalGet() {
       "schema": {
         "type": "integer",
         "minimum": 1
+      }
+    },
+    {
+      "name": "page",
+      "in": "query",
+      "description": "Page number for pagination (optional - if not provided, returns all results)",
+      "required": false,
+      "schema": {
+        "type": "integer",
+        "minimum": 1,
+        "example": 1
+      }
+    },
+    {
+      "name": "limit",
+      "in": "query",
+      "description": "Number of items per page (optional - required only when page is provided, max: 100)",
+      "required": false,
+      "schema": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100,
+        "example": 10
       }
     }
   ];

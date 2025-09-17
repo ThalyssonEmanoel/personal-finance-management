@@ -36,7 +36,16 @@ class GoalSchemas {
       .optional(),
     userId: z.coerce.number({ message: "O ID do usuário deve ser um número inteiro." })
       .int({ message: "O ID do usuário deve ser um número inteiro." })
-      .positive({ message: "O ID do usuário deve ser maior que 0." })
+      .positive({ message: "O ID do usuário deve ser maior que 0." }),
+    page: z.coerce.number({ message: "A página deve ser um número inteiro." })
+      .int({ message: "A página deve ser um número inteiro." })
+      .positive({ message: "A página deve ser maior que 0." })
+      .optional(),
+    limit: z.coerce.number({ message: "O limite deve ser um número inteiro." })
+      .int({ message: "O limite deve ser um número inteiro." })
+      .positive({ message: "O limite deve ser maior que 0." })
+      .max(100, { message: "O limite não pode ser maior que 100." })
+      .optional()
   });
 
   static updateGoal = z.object({

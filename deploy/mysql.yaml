@@ -27,13 +27,25 @@ spec:
           image: mysql:8
           env:
             - name: MYSQL_ROOT_PASSWORD
-              value: root123
+              valueFrom:
+                secretKeyRef:
+                  name: personal-finance-db-secrets
+                  key: MYSQL_ROOT_PASSWORD
             - name: MYSQL_DATABASE
-              value: financas-pessoais-db
+              valueFrom:
+                secretKeyRef:
+                  name: personal-finance-db-secrets
+                  key: MYSQL_DATABASE
             - name: MYSQL_USER
-              value: thalysson
+              valueFrom:
+                secretKeyRef:
+                  name: personal-finance-db-secrets
+                  key: MYSQL_USER
             - name: MYSQL_PASSWORD
-              value: thalysson123
+              valueFrom:
+                secretKeyRef:
+                  name: personal-finance-db-secrets
+                  key: MYSQL_PASSWORD
           ports:
             - containerPort: 3396
           volumeMounts:

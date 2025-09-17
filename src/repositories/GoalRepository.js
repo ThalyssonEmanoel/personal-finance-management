@@ -5,6 +5,9 @@ class GoalRepository {
 
   static async listGoals(filters, order = 'desc') {
     let where = { ...filters };
+    
+    const { page, limit, ...whereFilters } = where;
+    where = whereFilters;
 
     if (filters.date) {
       const inputDate = new Date(filters.date + 'T00:00:00.000Z');
@@ -20,14 +23,21 @@ class GoalRepository {
       };
     }
 
-    const result = await prisma.goals.findMany({
+    const queryOptions = {
       where,
       orderBy: {
         createdAt: order
       }
-    });
+    };
 
-    const total = result.length;
+    if (page && limit) {
+      queryOptions.skip = (page - 1) * limit;
+      queryOptions.take = limit;
+    }
+
+    const result = await prisma.goals.findMany(queryOptions);
+
+    const total = await prisma.goals.count({ where });
 
     return { goals: result, total };
   }
