@@ -209,6 +209,9 @@ async function seedDatabase() {
       });
 
       const recurring = faker.datatype.boolean(0.4);
+      const recurring_type = recurring 
+        ? faker.helpers.arrayElement(["daily", "weekly", "monthly", "yearly"])
+        : null;
       const number_installments = !recurring && faker.datatype.boolean(0.3)
         ? faker.number.int({ min: 2, max: 12 })
         : null;
@@ -227,6 +230,7 @@ async function seedDatabase() {
         number_installments,
         current_installment,
         recurring,
+        recurring_type,
         accountId: account.id,
         paymentMethodId: randomAccountPaymentMethod.paymentMethodId,
         userId: account.userId

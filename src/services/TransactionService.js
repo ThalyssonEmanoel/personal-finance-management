@@ -216,7 +216,7 @@ class TransactionService {
 
   /**
    * Processa transações recorrentes e cria novas transações automaticamente.
-   * Só cria nova transação se a existente for do mês anterior e mesmo ano.
+   * Suporta diferentes tipos de recorrência: diária, semanal, mensal e anual.
    * Atualiza automaticamente o saldo da conta vinculada.
    */
   static async processRecurringTransactions() {
@@ -228,64 +228,44 @@ class TransactionService {
 
     const today = new Date();
     const rondonia = new Date(today.getTime() - (4 * 60 * 60 * 1000)); // UTC-4, se eu não deixar dessa forma buga horário de rondônia
-    const currentDay = rondonia.getUTCDate();
-    const currentMonth = rondonia.getUTCMonth() + 1;
-    const currentYear = rondonia.getUTCFullYear();
-
-    // Calcular mês anterior
-    const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
-    const previousYear = currentMonth === 1 ? currentYear - 1 : currentYear;
 
     console.log("----------------------------------------------------------------------------------------------------------------------------");
-    console.log(`[RECORRENTE] Processando ${recurringTransactions.length} transações recorrentes para ${currentDay}/${currentMonth}/${currentYear}`);
-    console.log(`[RECORRENTE] Buscando transações do mês anterior: ${previousMonth}/${previousYear}`);
+    console.log(`[RECORRENTE] Processando ${recurringTransactions.length} transações recorrentes para ${rondonia.toISOString().split('T')[0]}`);
 
     for (const transaction of recurringTransactions) {
-      const releaseDate = new Date(transaction.release_date);
-      const transactionDay = releaseDate.getUTCDate();// Usar UTC para evitar problemas de fuso horário
-      const transactionMonth = releaseDate.getUTCMonth() + 1;
-      const transactionYear = releaseDate.getUTCFullYear();
+      const recurringType = transaction.recurring_type || 'monthly'; // Default para monthly para compatibilidade
+      
+      try {
+        let shouldCreateTransaction = false;
+        let newReleaseDate = null;
 
-      // Verificar se hoje é o dia da recorrência E se a transação é do mês anterior do mesmo ano
-      if (transactionDay === currentDay &&
-        transactionMonth === previousMonth &&
-        transactionYear === previousYear) {
+        switch (recurringType) {
+          case 'daily':
+            shouldCreateTransaction = await this._checkDailyRecurrence(transaction, rondonia);
+            newReleaseDate = this._calculateDailyNextDate(transaction, rondonia);
+            break;
+          case 'weekly':
+            shouldCreateTransaction = await this._checkWeeklyRecurrence(transaction, rondonia);
+            newReleaseDate = this._calculateWeeklyNextDate(transaction, rondonia);
+            break;
+          case 'monthly':
+            shouldCreateTransaction = await this._checkMonthlyRecurrence(transaction, rondonia);
+            newReleaseDate = this._calculateMonthlyNextDate(transaction, rondonia);
+            break;
+          case 'yearly':
+            shouldCreateTransaction = await this._checkYearlyRecurrence(transaction, rondonia);
+            newReleaseDate = this._calculateYearlyNextDate(transaction, rondonia);
+            break;
+          default:
+            console.log(`[RECORRENTE] Tipo de recorrência desconhecido: ${recurringType} para transação ${transaction.name}`);
+            continue;
+        }
 
-        // Verificar se já existe uma transação IGUAL para o mês atual
-        const existsInCurrentMonth = await TransactionRepository.checkTransactionExistsInMonth(
-          transaction.userId,
-          transaction.name,
-          transaction.category,
-          transaction.value,
-          transaction.type,
-          transaction.accountId,
-          transaction.paymentMethodId,
-          currentMonth,
-          currentYear
-        );
-
-        if (!existsInCurrentMonth) {
-          const newTransactionData = {
-            type: transaction.type,
-            name: transaction.name,
-            category: transaction.category,
-            value: transaction.value,
-            release_date: `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`, //Esse padStart é para garantir que o mês e o dia tenham dois dígitos
-            recurring: true,
-            accountId: transaction.accountId,
-            paymentMethodId: transaction.paymentMethodId,
-            userId: transaction.userId
-          };
-          if (transaction.number_installments !== null && transaction.number_installments !== undefined) {
-            newTransactionData.number_installments = transaction.number_installments;
-          }
-          if (transaction.current_installment !== null && transaction.current_installment !== undefined) {
-            newTransactionData.current_installment = transaction.current_installment;
-          }
-          const newTransaction = await this.createTransaction(newTransactionData);
-          if (!newTransaction) { throw { code: 500, message: "Erro ao criar transação recorrente" } }
-          console.log(`[RECORRENTE] Nova transação recorrente criada: ${transaction.name} - R$ ${transaction.value} (do mês ${previousMonth}/${previousYear} para ${currentMonth}/${currentYear})`);
-        } else { console.log(`[RECORRENTE] Transação já existe para o mês atual: ${transaction.name}`); }
+        if (shouldCreateTransaction && newReleaseDate) {
+          await this._createRecurringTransaction(transaction, newReleaseDate, recurringType);
+        }
+      } catch (error) {
+        console.error(`[RECORRENTE] Erro ao processar transação ${transaction.name}:`, error);
       }
     }
     console.log('[RECORRENTE] Processamento de transações recorrentes concluído');
@@ -415,6 +395,179 @@ class TransactionService {
       }
     }
     console.log('[PARCELA] Processamento de transações parceladas concluído');
+  }
+
+  /**
+   * Métodos auxiliares para diferentes tipos de recorrência
+   */
+  
+  // Recorrência Diária
+  static async _checkDailyRecurrence(transaction, currentDate) {
+    const transactionDate = new Date(transaction.release_date);
+    const yesterday = new Date(currentDate);
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+    
+    // Verifica se a transação é de ontem
+    return (
+      transactionDate.getUTCDate() === yesterday.getUTCDate() &&
+      transactionDate.getUTCMonth() === yesterday.getUTCMonth() &&
+      transactionDate.getUTCFullYear() === yesterday.getUTCFullYear()
+    );
+  }
+
+  static _calculateDailyNextDate(transaction, currentDate) {
+    return `${currentDate.getUTCFullYear()}-${(currentDate.getUTCMonth() + 1).toString().padStart(2, '0')}-${currentDate.getUTCDate().toString().padStart(2, '0')}`;
+  }
+
+  // Recorrência Semanal
+  static async _checkWeeklyRecurrence(transaction, currentDate) {
+    const transactionDate = new Date(transaction.release_date);
+    const lastWeek = new Date(currentDate);
+    lastWeek.setUTCDate(lastWeek.getUTCDate() - 7);
+    
+    // Verifica se a transação é exatamente de uma semana atrás (mesmo dia da semana)
+    return (
+      transactionDate.getUTCDate() === lastWeek.getUTCDate() &&
+      transactionDate.getUTCMonth() === lastWeek.getUTCMonth() &&
+      transactionDate.getUTCFullYear() === lastWeek.getUTCFullYear()
+    );
+  }
+
+  static _calculateWeeklyNextDate(transaction, currentDate) {
+    return `${currentDate.getUTCFullYear()}-${(currentDate.getUTCMonth() + 1).toString().padStart(2, '0')}-${currentDate.getUTCDate().toString().padStart(2, '0')}`;
+  }
+
+  // Recorrência Mensal (método existente, refatorado)
+  static async _checkMonthlyRecurrence(transaction, currentDate) {
+    const transactionDate = new Date(transaction.release_date);
+    const currentDay = currentDate.getUTCDate();
+    const currentMonth = currentDate.getUTCMonth() + 1;
+    const currentYear = currentDate.getUTCFullYear();
+    
+    const transactionDay = transactionDate.getUTCDate();
+    const transactionMonth = transactionDate.getUTCMonth() + 1;
+    const transactionYear = transactionDate.getUTCFullYear();
+    
+    // Calcular mês anterior
+    const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+    const previousYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+    
+    // Verificar se hoje é o dia da recorrência E se a transação é do mês anterior do mesmo ano
+    return (
+      transactionDay === currentDay &&
+      transactionMonth === previousMonth &&
+      transactionYear === previousYear
+    );
+  }
+
+  static _calculateMonthlyNextDate(transaction, currentDate) {
+    const currentDay = currentDate.getUTCDate();
+    const currentMonth = currentDate.getUTCMonth() + 1;
+    const currentYear = currentDate.getUTCFullYear();
+    
+    return `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
+  }
+
+  // Recorrência Anual
+  static async _checkYearlyRecurrence(transaction, currentDate) {
+    const transactionDate = new Date(transaction.release_date);
+    const currentDay = currentDate.getUTCDate();
+    const currentMonth = currentDate.getUTCMonth() + 1;
+    const currentYear = currentDate.getUTCFullYear();
+    
+    const transactionDay = transactionDate.getUTCDate();
+    const transactionMonth = transactionDate.getUTCMonth() + 1;
+    const transactionYear = transactionDate.getUTCFullYear();
+    
+    // Verifica se hoje é o mesmo dia e mês, mas a transação é do ano anterior
+    return (
+      transactionDay === currentDay &&
+      transactionMonth === currentMonth &&
+      transactionYear === (currentYear - 1)
+    );
+  }
+
+  static _calculateYearlyNextDate(transaction, currentDate) {
+    const transactionDate = new Date(transaction.release_date);
+    const currentYear = currentDate.getUTCFullYear();
+    const transactionMonth = transactionDate.getUTCMonth() + 1;
+    const transactionDay = transactionDate.getUTCDate();
+    
+    return `${currentYear}-${transactionMonth.toString().padStart(2, '0')}-${transactionDay.toString().padStart(2, '0')}`;
+  }
+
+  // Método para criar transação recorrente
+  static async _createRecurringTransaction(originalTransaction, newReleaseDate, recurringType) {
+    // Calcular o período de verificação baseado no tipo de recorrência
+    const newDate = new Date(newReleaseDate);
+    let startDate, endDate;
+
+    switch (recurringType) {
+      case 'daily':
+        startDate = new Date(newDate);
+        endDate = new Date(newDate);
+        endDate.setUTCHours(23, 59, 59, 999);
+        break;
+      case 'weekly':
+        startDate = new Date(newDate);
+        endDate = new Date(newDate);
+        endDate.setUTCHours(23, 59, 59, 999);
+        break;
+      case 'monthly':
+        startDate = new Date(Date.UTC(newDate.getUTCFullYear(), newDate.getUTCMonth(), 1, 0, 0, 0, 0));
+        endDate = new Date(Date.UTC(newDate.getUTCFullYear(), newDate.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+        break;
+      case 'yearly':
+        startDate = new Date(Date.UTC(newDate.getUTCFullYear(), 0, 1, 0, 0, 0, 0));
+        endDate = new Date(Date.UTC(newDate.getUTCFullYear(), 11, 31, 23, 59, 59, 999));
+        break;
+      default:
+        throw new Error(`Tipo de recorrência não suportado: ${recurringType}`);
+    }
+
+    // Verificar se já existe uma transação igual no período
+    const existsInPeriod = await TransactionRepository.checkTransactionExistsInPeriod(
+      originalTransaction.userId,
+      originalTransaction.name,
+      originalTransaction.category,
+      originalTransaction.value,
+      originalTransaction.type,
+      originalTransaction.accountId,
+      originalTransaction.paymentMethodId,
+      startDate,
+      endDate
+    );
+
+    if (!existsInPeriod) {
+      const newTransactionData = {
+        type: originalTransaction.type,
+        name: originalTransaction.name,
+        category: originalTransaction.category,
+        value: originalTransaction.value,
+        release_date: newReleaseDate,
+        recurring: true,
+        recurring_type: recurringType,
+        accountId: originalTransaction.accountId,
+        paymentMethodId: originalTransaction.paymentMethodId,
+        userId: originalTransaction.userId
+      };
+
+      if (originalTransaction.number_installments !== null && originalTransaction.number_installments !== undefined) {
+        newTransactionData.number_installments = originalTransaction.number_installments;
+      }
+      if (originalTransaction.current_installment !== null && originalTransaction.current_installment !== undefined) {
+        newTransactionData.current_installment = originalTransaction.current_installment;
+      }
+
+      const newTransaction = await this.createTransaction(newTransactionData);
+      if (!newTransaction) {
+        throw { code: 500, message: "Erro ao criar transação recorrente" };
+      }
+
+      console.log(`[RECORRENTE-${recurringType.toUpperCase()}] Nova transação criada: ${originalTransaction.name} - R$ ${originalTransaction.value} para ${newReleaseDate}`);
+    } else {
+      console.log(`[RECORRENTE-${recurringType.toUpperCase()}] Transação já existe para o período: ${originalTransaction.name}`);
+    }
   }
 }
 

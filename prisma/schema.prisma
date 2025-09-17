@@ -71,6 +71,7 @@ model Transactions {
   current_installment Int?
   description         String?         @db.Text
   recurring           Boolean         @default(false)
+  recurring_type      RecurringType?
 
   accountId Int
   account   Accounts @relation(fields: [accountId], references: [id], onDelete: Cascade)
@@ -127,4 +128,11 @@ model ResetCodes {
 enum TransactionType {
   expense
   income
+}
+
+enum RecurringType {
+  daily
+  weekly
+  monthly
+  yearly
 }

@@ -77,6 +77,7 @@ class TransactionRepository {
         current_installment: true,
         description: true,
         recurring: true,
+        recurring_type: true,
         accountId: true,
         paymentMethodId: true,
         userId: true,
@@ -180,6 +181,7 @@ class TransactionRepository {
         number_installments: true,
         current_installment: true,
         recurring: true,
+        recurring_type: true,
         accountId: true,
         paymentMethodId: true,
         userId: true,
@@ -250,6 +252,7 @@ class TransactionRepository {
         number_installments: true,
         current_installment: true,
         recurring: true,
+        recurring_type: true,
         accountId: true,
         paymentMethodId: true,
         userId: true,
@@ -300,11 +303,60 @@ class TransactionRepository {
         value: true,
         release_date: true,
         recurring: true,
+        recurring_type: true,
         accountId: true,
         paymentMethodId: true,
         userId: true
       }
     });
+  }
+
+  /**
+   * Busca transações recorrentes por tipo específico
+   */
+  static async getRecurringTransactionsByType(recurringType) {
+    return await prisma.transactions.findMany({
+      where: {
+        recurring: true,
+        recurring_type: recurringType
+      },
+      select: {
+        id: true,
+        type: true,
+        name: true,
+        category: true,
+        value: true,
+        release_date: true,
+        recurring: true,
+        recurring_type: true,
+        accountId: true,
+        paymentMethodId: true,
+        userId: true
+      }
+    });
+  }
+
+  /**
+   * Verifica se já existe uma transação com os mesmos dados para o período especificado
+   */
+  static async checkTransactionExistsInPeriod(userId, name, category, value, type, accountId, paymentMethodId, startDate, endDate) {
+    const existingTransaction = await prisma.transactions.findFirst({
+      where: {
+        userId: userId,
+        name: name,
+        category: category,
+        value: value,
+        type: type,
+        accountId: accountId,
+        paymentMethodId: paymentMethodId,
+        release_date: {
+          gte: startDate,
+          lte: endDate
+        }
+      }
+    });
+
+    return existingTransaction !== null;
   }
 
   /**
@@ -358,6 +410,7 @@ class TransactionRepository {
         number_installments: true,
         current_installment: true,
         recurring: true,
+        recurring_type: true,
         description: true,
         accountId: true,
         paymentMethodId: true,

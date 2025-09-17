@@ -13,6 +13,9 @@ class TransactionSchemas {
       .refine((val) => !isNaN(Date.parse(val)), { message: "Payment date must be in a valid format." })
       .optional(),
     recurring: z.coerce.boolean({ message: "Recurring must be a boolean value." }).optional(),
+    recurring_type: z.enum(["daily", "weekly", "monthly", "yearly"], { 
+      message: "Recurring type must be 'daily', 'weekly', 'monthly', or 'yearly'." 
+    }).optional(),
     accountId: z.coerce.number({ message: "The accountId must be a number." })
       .int({ message: "The accountId must be an integer." })
       .positive({ message: "The accountId must be greater than 0." })
@@ -69,6 +72,9 @@ class TransactionSchemas {
       .optional(), 
     description: z.string({ message: "The description must be a text." }).optional(),
     recurring: z.coerce.boolean({ message: "Recurring must be a boolean value." }).default(false),
+    recurring_type: z.enum(["daily", "weekly", "monthly", "yearly"], { 
+      message: "Recurring type must be 'daily', 'weekly', 'monthly', or 'yearly'." 
+    }).optional(),
     accountId: z.coerce.number({ message: "The account ID is required and must be an integer." })
       .int({ message: "The account ID must be an integer." })
       .positive({ message: "The account ID must be greater than 0." }),
@@ -78,6 +84,15 @@ class TransactionSchemas {
     userId: z.coerce.number({ message: "The user ID is required and must be an integer." })
       .int({ message: "The user ID must be an integer." })
       .positive({ message: "The user ID must be greater than 0." })
+  }).refine((data) => {
+    // Se recurring é true, recurring_type deve ser fornecido
+    if (data.recurring && !data.recurring_type) {
+      return false;
+    }
+    return true;
+  }, {
+    message: "When recurring is true, recurring_type must be specified.",
+    path: ["recurring_type"]
   });
 
   static createTransactionRequest = z.object({
@@ -95,12 +110,24 @@ class TransactionSchemas {
       .optional(),
     description: z.string({ message: "The description must be a text." }).optional(),
     recurring: z.coerce.boolean({ message: "Recurring must be a boolean value." }).default(false),
+    recurring_type: z.enum(["daily", "weekly", "monthly", "yearly"], { 
+      message: "Recurring type must be 'daily', 'weekly', 'monthly', or 'yearly'." 
+    }).optional(),
     accountId: z.coerce.number({ message: "The account ID is required and must be an integer." })
       .int({ message: "The account ID must be an integer." })
       .positive({ message: "The account ID must be greater than 0." }),
     paymentMethodId: z.coerce.number({ message: "The payment method ID is required and must be an integer." })
       .int({ message: "The payment method ID must be an integer." })
       .positive({ message: "The payment method ID must be greater than 0." }),
+  }).refine((data) => {
+    // Se recurring é true, recurring_type deve ser fornecido
+    if (data.recurring && !data.recurring_type) {
+      return false;
+    }
+    return true;
+  }, {
+    message: "When recurring is true, recurring_type must be specified.",
+    path: ["recurring_type"]
   });
 
   static createTransactionQuery = z.object({
@@ -131,6 +158,9 @@ class TransactionSchemas {
       .optional(),
     description: z.string({ message: "The description must be a text." }).optional(),
     recurring: z.coerce.boolean({ message: "Recurring must be a boolean value." }).optional(),
+    recurring_type: z.enum(["daily", "weekly", "monthly", "yearly"], { 
+      message: "Recurring type must be 'daily', 'weekly', 'monthly', or 'yearly'." 
+    }).optional(),
     accountId: z.coerce.number({ message: "The account ID must be an integer." })
       .int({ message: "The account ID must be an integer." })
       .positive({ message: "The account ID must be greater than 0." })
