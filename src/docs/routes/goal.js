@@ -9,17 +9,20 @@ const goalRoutes = {
       summary: "List user goals",
       description: `
         #### Use Case
-        Allows users to list their own registered goals, with the possibility of filtering by specific parameters.
+        Allows users to list their own registered goals, with the possibility of filtering by specific parameters and optional pagination.
 
         #### Business Rule
-        Provides a complete listing of user's goals (no pagination), with detailed information for each goal.
+        Provides a complete listing of user's goals with optional pagination support. When pagination parameters are not provided, returns all results.
 
         #### Business Rules Involved
         - User can only see their own goals.
         - userId parameter is required for security.
         - Allow filtering by defined parameters.
         - Date filter works annually: from the specified month until the end of the year.
-        - Returns all matching results without pagination limits.
+        - **Pagination is optional:**
+          * If both page and limit are provided: returns paginated results
+          * If neither page nor limit are provided: returns all matching results
+          * Page starts from 1, limit maximum is 100
         - Return error if no goals are registered.
         - Include related user data.
         - Each goal includes the total amount of transactions for the same month and transaction type:
@@ -28,17 +31,23 @@ const goalRoutes = {
         - Transaction totals are calculated from the first day to the last day of the goal's month.
 
         #### Expected Result
-        Returns a complete list of user's goals with detailed information, filtered by the specified criteria. Each goal includes transaction totals for comparison with the goal target.
+        Returns a list of user's goals with detailed information, filtered by the specified criteria. Each goal includes transaction totals for comparison with the goal target. Response includes total count of matching records regardless of pagination.
 
         #### Response Fields
         - **incomeTotal**: Present only for income goals. Shows the total amount of income transactions in the same month.
         - **expenseTotal**: Present only for expense goals. Shows the total amount of expense transactions in the same month.
+        - **total**: Total number of goals matching the filters (not affected by pagination)
         - These totals help users compare their actual performance against their goals.
 
         #### Date Filter Examples
         - date=2025-01-01: Returns goals from January to December 2025
         - date=2025-06-15: Returns goals from June to December 2025
         - date=2025-12-01: Returns goals for December 2025 only
+
+        #### Pagination Examples
+        - Without pagination: /goals?userId=1 (returns all goals)
+        - With pagination: /goals?userId=1&page=2&limit=10 (returns 10 goals from page 2)
+        - Mixed: /goals?userId=1&transaction_type=income&page=1&limit=5 (filtered and paginated)
       `,
       security: [{ bearerAuth: [] }],
       ...requestGoalGet(),
