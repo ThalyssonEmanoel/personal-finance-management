@@ -15,12 +15,11 @@ const prisma = new PrismaClient();
 async function clearDatabase() {
   try {
     console.log('Apagando dados existentes...');
-
-    // Limpar dados existentes (optional)
+    await prisma.balanceHistory.deleteMany();
     await prisma.bankTransfers.deleteMany();
     await prisma.transactions.deleteMany();
     await prisma.goals.deleteMany();
-    await prisma.accountPaymentMethods.deleteMany(); // Adicionado para limpar a tabela de junção
+    await prisma.accountPaymentMethods.deleteMany(); 
     await prisma.paymentMethods.deleteMany();
     await prisma.accounts.deleteMany();
     await prisma.users.deleteMany();
@@ -32,7 +31,8 @@ async function clearDatabase() {
     await prisma.$executeRaw`ALTER TABLE PaymentMethods AUTO_INCREMENT = 1`;
     await prisma.$executeRaw`ALTER TABLE Transactions AUTO_INCREMENT = 1`;
     await prisma.$executeRaw`ALTER TABLE Goals AUTO_INCREMENT = 1`;
-    await prisma.$executeRaw`ALTER TABLE BankTransfers AUTO_INCREMENT = 1`; // Adicionado para resetar BankTransfers
+    await prisma.$executeRaw`ALTER TABLE BankTransfers AUTO_INCREMENT = 1`; 
+    await prisma.$executeRaw`ALTER TABLE BalanceHistory AUTO_INCREMENT = 1`; 
 
   } catch (error) {
     console.error('Erro ao limpar o banco de dados:', error);
@@ -58,7 +58,7 @@ async function seedDatabase() {
 
   console.log(` Criado 1 usuário`);
 
-  // --- 2. Criar as 4 contas específicas para esse usuário ---
+  // --- 2. Criar as 4 contas específicas  ---
   const accountsData = [
     {
       name: "Carteira",
@@ -367,7 +367,7 @@ async function seedDatabase() {
   console.log(' Balance final das contas calculado com sucesso!');
 
   const goalsData = [];
-  const allUsers = [user]; // Use the single user created earlier
+  const allUsers = [user];
 
   allUsers.forEach(user => {
     const incomeGoalNames = [
@@ -410,9 +410,151 @@ async function seedDatabase() {
   console.log(' Seed concluído com sucesso!');
 }
 
+async function generateBalanceHistory() {
+  console.log('Gerando histórico de saldo diário para todas as contas...');
+
+  const allAccounts = await prisma.accounts.findMany();
+  
+  const startDate = new Date('2025-01-01');
+  const endDate = new Date('2025-12-18'); 
+  
+  const balanceHistoryData = [];
+
+  for (const account of allAccounts) {
+    console.log(` Processando histórico para conta: ${account.name}`);
+    
+    // Obter todas as transações e transferências da conta ordenadas por data
+    const allTransactions = await prisma.transactions.findMany({
+      where: { accountId: account.id },
+      orderBy: { release_date: 'asc' }
+    });
+
+    const outgoingTransfers = await prisma.bankTransfers.findMany({
+      where: { sourceAccountId: account.id },
+      orderBy: { transfer_date: 'asc' }
+    });
+
+    const incomingTransfers = await prisma.bankTransfers.findMany({
+      where: { destinationAccountId: account.id },
+      orderBy: { transfer_date: 'asc' }
+    });
+
+    const allMovements = [];
+    
+    allTransactions.forEach(transaction => {
+      allMovements.push({
+        date: transaction.release_date,
+        type: 'transaction',
+        amount: transaction.type === 'income' ? transaction.value : -transaction.value
+      });
+    });
+
+    outgoingTransfers.forEach(transfer => {
+      allMovements.push({
+        date: transfer.transfer_date,
+        type: 'outgoing_transfer',
+        amount: -transfer.amount
+      });
+    });
+
+    incomingTransfers.forEach(transfer => {
+      allMovements.push({
+        date: transfer.transfer_date,
+        type: 'incoming_transfer',
+        amount: transfer.amount
+      });
+    });
+
+    allMovements.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    let currentBalance = new Decimal(0);
+    let lastRecordedBalance = new Decimal(0);
+    const currentDate = new Date(startDate);
+
+    balanceHistoryData.push({
+      accountId: account.id,
+      date: new Date(startDate),
+      balance: 0,
+      createdAt: new Date()
+    });
+
+    while (currentDate <= endDate) {
+      const dayMovements = allMovements.filter(movement => {
+        const movementDate = new Date(movement.date);
+        return movementDate.toDateString() === currentDate.toDateString();
+      });
+      dayMovements.forEach(movement => {
+        currentBalance = currentBalance.add(new Decimal(movement.amount));
+      });
+
+      // Condições para criar um registro:
+      // 1. Houve movimentação no dia
+      // 2. É o último dia do mês
+      // 3. É um domingo (final de semana)
+      // 4. A diferença do saldo anterior é significativa (> 10% ou > R$ 100)
+      const isLastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate() === currentDate.getDate();
+      const isSunday = currentDate.getDay() === 0;
+      const balanceDifference = currentBalance.sub(lastRecordedBalance).abs();
+      const isSignificantChange = balanceDifference.gte(100) || 
+        (lastRecordedBalance.gt(0) && balanceDifference.div(lastRecordedBalance.abs()).gte(0.1));
+
+      if (dayMovements.length > 0 || isLastDayOfMonth || isSunday || isSignificantChange) {
+        // Evitar registros duplicados para o mesmo dia
+        const hasRecordForDay = balanceHistoryData.some(record => 
+          record.accountId === account.id && 
+          record.date.toDateString() === currentDate.toDateString()
+        );
+
+        if (!hasRecordForDay) {
+          balanceHistoryData.push({
+            accountId: account.id,
+            date: new Date(currentDate),
+            balance: currentBalance.toNumber(),
+            createdAt: new Date()
+          });
+          lastRecordedBalance = new Decimal(currentBalance);
+        }
+      }
+
+      // Avançar para o próximo dia
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Sempre adicionar registro para o dia atual (data de hoje)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const hasCurrentDayRecord = balanceHistoryData.some(record => 
+      record.accountId === account.id && 
+      record.date.toDateString() === today.toDateString()
+    );
+
+    if (!hasCurrentDayRecord) {
+      balanceHistoryData.push({
+        accountId: account.id,
+        date: today,
+        balance: currentBalance.toNumber(),
+        createdAt: new Date()
+      });
+    }
+  }
+
+  if (balanceHistoryData.length > 0) {
+    const createdBalanceHistory = await prisma.balanceHistory.createMany({ 
+      data: balanceHistoryData 
+    });
+    console.log(` Criados ${createdBalanceHistory.count} registros de histórico de saldo.`);
+  } else {
+    console.log(' Nenhum registro de histórico de saldo foi criado.');
+  }
+
+  console.log(' Geração do histórico de saldo concluída!');
+}
+
 async function main() {
   await clearDatabase();
   await seedDatabase();
+  await generateBalanceHistory();
 }
 
 main().catch((e) => {

@@ -5,6 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { CronJob } from "cron";
 import TransactionService from "./services/TransactionService.js";
+import BalanceHistoryService from "./services/BalanceHistoryService.js";
 
 
 //Tudo que está comentado abaixo é para servir arquivos estáticos, como imagens, do diretório 'uploads'.
@@ -18,13 +19,24 @@ const app = express();
  * Formato: "segundo minuto hora dia mês dia-da-semana"
  * "0 1 * * *" = Todo dia às 01:00
  * "" * /25 * * * * *" = A cada 25 segundos (para testes)
+ * ("0 1 * * *", async () => {
+ * Cron job para registrar saldos diários das contas
+ * Executa todos os dias às 23:59 (final do dia)
+ * Formato: "segundo minuto hora dia mês dia-da-semana"
+ * "0 59 23 * * *" = Todo dia às 23:59
  */
-// const job = new CronJob("0 1 * * *", async () => {
-const job = new CronJob("*/25 * * * * *", async () => {
-  await TransactionService.processRecurringTransactions();
-  await TransactionService.processInstallmentsTransactions();
+const balanceJob = new CronJob("0 59 23 * * *", async () => {
+  try {
+    console.log('CRON-JOB...');
+    await TransactionService.processRecurringTransactions();
+    await TransactionService.processInstallmentsTransactions();
+    await BalanceHistoryService.recordAllAccountsDailyBalance();
+    console.log('Cron-job finalizado.');
+  } catch (error) {
+    console.error('Erro no cron-job:', error);
+  }
 });
-job.start();
+balanceJob.start();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

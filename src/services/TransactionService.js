@@ -9,9 +9,9 @@ class TransactionService {
     if (!userId || !startDate || !endDate || !type) {
       throw { code: 400, message: 'Parâmetros obrigatórios: userId, startDate, endDate, type' };
     }
-    // type pode ser 'all', 'income', 'expense'
     const queryType = type === 'all' ? undefined : type;
-    return await TransactionRepository.listTransactionsForPDF(parseInt(userId), startDate, endDate, queryType, accountId);
+    const response = await TransactionRepository.listTransactionsForPDF(parseInt(userId), startDate, endDate, queryType, accountId);
+    return response;
   }
 
   static async listTransactions(filtros, order = 'asc') {
@@ -91,21 +91,15 @@ class TransactionService {
 
 
   /**
-   * 
-   * @createTransaction 
-   * Implementei os métodos _calculateInstallmentValues, _updateAccountBalanceForTransaction e _shouldUpdateAccountBalance
+   * @createTransaction Implementado os métodos PRIVADOS _calculateInstallmentValues, _updateAccountBalanceForTransaction e _shouldUpdateAccountBalance
    * para seguir o conceito de Single Responsibility Principle (SRP) e manter o código mais modular e testável. PORQUE TESTAR ISSO ESTÁ SENDO UMA CHATICE.
    */
   static async createTransaction(transaction) {
     const validTransaction = TransactionSchemas.createTransaction.parse(transaction);
 
-    // Calcular valores das parcelas se necessário
     this._calculateInstallmentValues(validTransaction);
-
-    // Atualizar saldo da conta se necessário
     await this._updateAccountBalanceForTransaction(validTransaction);
 
-    // Criar a transação no banco de dados
     const newTransaction = await TransactionRepository.createTransaction(validTransaction);
     if (!newTransaction) {
       throw { code: 404 };
@@ -125,8 +119,6 @@ class TransactionService {
     const validId = TransactionSchemas.transactionIdParam.parse({ id });
     const validUserId = AccountSchemas.userIdParam.parse({ userId });
     const validTransactionData = TransactionSchemas.updateTransaction.parse(transactionData);
-
-    // Filtrar campos vazios/nulos para não serem processados
     const filteredData = {};
     Object.keys(validTransactionData).forEach(key => {
       const value = validTransactionData[key];
@@ -135,7 +127,6 @@ class TransactionService {
       }
     });
 
-    // 1. Buscar a transação antiga
     const oldTransactionArr = await TransactionRepository.listTransactions(
       { id: validId.id, userId: validUserId.userId }, 0, 1, 'asc');
     if (!oldTransactionArr || oldTransactionArr.length === 0) {
@@ -143,8 +134,6 @@ class TransactionService {
     }
     const oldTransaction = oldTransactionArr[0];
 
-    // 2. Atualizar saldo da conta se necessário
-    // Só se for income/expense e não mudou de conta
     if (
       (oldTransaction.type === 'income' || oldTransaction.type === 'expense') &&
       oldTransaction.accountId &&
@@ -153,9 +142,7 @@ class TransactionService {
       const oldValue = new Decimal(oldTransaction.value_installment || oldTransaction.value || 0);
       const newValue = new Decimal(filteredData.value_installment ?? filteredData.value ?? oldValue);
 
-      // Se mudou o valor
       if (!oldValue.equals(newValue)) {
-        // Reverte o valor antigo
         const reverseOp = oldTransaction.type === 'income' ? 'subtract' : 'add';
         await this.updateAccountBalance({
           accountId: oldTransaction.accountId,
@@ -163,7 +150,6 @@ class TransactionService {
           amount: oldValue,
           operation: reverseOp
         });
-        // Aplica o novo valor
         const applyOp = oldTransaction.type === 'income' ? 'add' : 'subtract';
         await this.updateAccountBalance({
           accountId: oldTransaction.accountId,
@@ -174,7 +160,6 @@ class TransactionService {
       }
     }
 
-    // 3. Atualizar a transação no banco
     const updatedTransaction = await TransactionRepository.updateTransaction(validId.id, filteredData);
     if (!updatedTransaction) {
       throw { code: 404 };
@@ -185,7 +170,6 @@ class TransactionService {
   static async deleteTransaction(id, userId) {
     const validId = AccountSchemas.accountIdParam.parse({ id });
     const validUserId = AccountSchemas.userIdParam.parse({ userId });
-    // Primeiro, buscar a transação para obter os dados antes de deletá-la
     const transactionToDelete = await TransactionRepository.listTransactions(
       { id: validId.id, userId: validUserId.userId }, 0, 1, 'asc');
 
@@ -286,7 +270,7 @@ class TransactionService {
 
     // Usar fuso horário de Rondônia (UTC-4)
     const today = new Date();
-    const rondonia = new Date(today.getTime() - (4 * 60 * 60 * 1000)); // UTC-4
+    const rondonia = new Date(today.getTime() - (4 * 60 * 60 * 1000));
     const currentDay = rondonia.getUTCDate();
     const currentMonth = rondonia.getUTCMonth() + 1;
     const currentYear = rondonia.getUTCFullYear();
@@ -345,16 +329,11 @@ class TransactionService {
           if (!existsInCurrentMonth) {
             let installmentValue = transaction.value_installment;
 
-            // Sempre recalcular se é a última parcela para garantir que o total seja exato
             if (nextInstallment === transaction.number_installments && transaction.value) {
               const totalValue = new Decimal(transaction.value);
               const currentInstallmentValue = new Decimal(transaction.value_installment);
-
-              // Calcular quanto já foi pago nas parcelas anteriores
               const previousInstallments = new Decimal(nextInstallment - 1);
               const paidSoFar = currentInstallmentValue.mul(previousInstallments);
-
-              // A última parcela é o que resta
               const lastInstallmentValue = totalValue.minus(paidSoFar);
               installmentValue = lastInstallmentValue.toNumber();
 

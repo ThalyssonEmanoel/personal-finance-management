@@ -2,6 +2,7 @@ import TransactionService from '../services/TransactionService.js';
 import CommonResponse from "../utils/commonResponse.js";
 import TransactionSchemas from '../schemas/TransactionSchemas.js';
 import { generateTransactionPDF } from '../utils/pdfGenerator.js';
+import BalanceHistoryService from '../services/BalanceHistoryService.js';
 
 class TransactionController {
 
@@ -11,11 +12,42 @@ class TransactionController {
       if (!userId || !startDate || !endDate || !type) {
         return res.status(400).json({ error: 'Parâmetros obrigatórios: userId, startDate, endDate, type' });
       }
+      
       const transactions = await TransactionService.getTransactionsForPDF({ userId, startDate, endDate, type, accountId });
       if (!transactions || transactions.length === 0) {
         return res.status(404).json({ error: 'Nenhuma transação encontrada para o período informado.' });
       }
-      const pdfDoc = generateTransactionPDF(transactions, startDate, endDate, type);
+
+      // Buscar informações de saldo do histórico
+      let balanceInfo = null;
+      try {
+        if (accountId) {
+          // Para conta específica - buscar saldo inicial e final
+          const saldoInicial = await BalanceHistoryService.getBalanceForDate(parseInt(accountId), startDate);
+          const saldoFinal = await BalanceHistoryService.getBalanceForDate(parseInt(accountId), endDate);
+
+          balanceInfo = {
+            isSpecificAccount: true,
+            saldoInicial: saldoInicial,
+            saldoFinal: saldoFinal
+          };
+        } else {
+          // Para todas as contas do usuário - buscar saldo total inicial e final
+          const saldoInicial = await BalanceHistoryService.getTotalBalanceForUserOnDate(parseInt(userId), startDate);
+          const saldoFinal = await BalanceHistoryService.getTotalBalanceForUserOnDate(parseInt(userId), endDate);
+
+          balanceInfo = {
+            isSpecificAccount: false,
+            saldoInicial: saldoInicial,
+            saldoFinal: saldoFinal
+          };
+        }
+      } catch (balanceError) {
+        console.warn('Erro ao buscar histórico de saldos, usando cálculo padrão:', balanceError);
+        balanceInfo = null;
+      }
+
+      const pdfDoc = generateTransactionPDF(transactions, startDate, endDate, type, balanceInfo);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="Lista_de_transações${startDate}_a_${endDate}.pdf"`);
       pdfDoc.pipe(res);

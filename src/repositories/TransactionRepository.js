@@ -23,7 +23,6 @@ class TransactionRepository {
       where,
       orderBy: { release_date: 'asc' },
       select: {
-        id: true,
         type: true,
         name: true,
         category: true,
@@ -32,7 +31,6 @@ class TransactionRepository {
         release_date: true,
         account: { select: { name: true } },
         paymentMethod: { select: { name: true } },
-        user: { select: { name: true } }
       }
     });
   }
@@ -55,7 +53,7 @@ class TransactionRepository {
       where.release_date = {
         gte: startDate,
         lte: endDate
-      };
+      };0
     }
 
     const takeSafe = (typeof take === 'number' && !isNaN(take)) ? take : 5;

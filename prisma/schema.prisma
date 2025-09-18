@@ -36,6 +36,7 @@ model Accounts {
   accountPaymentMethods      AccountPaymentMethods[]
   sourceTransfers            BankTransfers[] @relation("SourceAccount")
   destinationTransfers       BankTransfers[] @relation("DestinationAccount")
+  balanceHistory             BalanceHistory[]
 }
 
 model PaymentMethods {
@@ -123,6 +124,19 @@ model ResetCodes {
   used      Boolean  @default(false)
 
   @@unique([email, code])
+}
+
+model BalanceHistory {
+  id        Int      @id @default(autoincrement())
+  date      DateTime @db.Date
+  balance   Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+
+  accountId Int
+  account   Accounts @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, date])
+  @@index([accountId, date])
 }
 
 enum TransactionType {
