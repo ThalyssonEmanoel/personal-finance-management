@@ -17,7 +17,7 @@ function generateTransactionPDF(transactions, startDate, endDate, type, balanceI
     { text: 'Tipo', style: 'tableHeader' },
     { text: 'Nome', style: 'tableHeader' },
     { text: 'Categoria', style: 'tableHeader' },
-    { text: 'Valor', style: 'tableHeader' },
+    { text: 'Valor(R$)', style: 'tableHeader' },
     { text: 'Data', style: 'tableHeader' },
     { text: 'Conta', style: 'tableHeader' },
     { text: 'Forma de Pagamento', style: 'tableHeader' },
@@ -29,15 +29,14 @@ function generateTransactionPDF(transactions, startDate, endDate, type, balanceI
 
   sortedTransactions.forEach((transaction) => {
     body.push([
-      { text: transaction.type === 'income' ? 'Receita' : 'Despesa', style: 'tableRow' },
+      { text: transaction.type === 'income' ? 'Receita' : 'Despesa', style: 'tableRow', alignment: 'center' },
       // Alinhamento à esquerda para melhor legibilidade de textos longos
-      { text: transaction.name, style: 'tableRow', alignment: 'left' },
-      { text: transaction.category, style: 'tableRow', alignment: 'left' },
-      { text: `R$ ${Number(transaction.value).toFixed(2).replace('.', ',')}`, style: 'tableRow', alignment: 'right' },
-      { text: new Date(transaction.release_date).toLocaleDateString('pt-BR'), style: 'tableRow' },
-      { text: transaction.account.name, style: 'tableRow' },
-      { text: transaction.paymentMethod.name, style: 'tableRow' },
-    ]);
+      { text: transaction.name.length > 12 ? transaction.name.slice(0, 12) + '...' : transaction.name, style: 'tableRow', alignment: 'center' },
+      { text: transaction.category.length > 8 ? transaction.category.slice(0, 8) + '...' : transaction.category, style: 'tableRow', alignment: 'left' },
+      { text: `R$ ${Number(transaction.value).toFixed(2).replace('.', ',')}`, style: 'tableRow', alignment: 'center' },
+      { text: new Date(transaction.release_date).toLocaleDateString('pt-BR'), style: 'tableRow', alignment: 'center' },
+      { text: transaction.account.name.length > 12 ? transaction.account.name.slice(0, 12) + '...' : transaction.account.name, style: 'tableRow', alignment: 'center' },
+      { text: transaction.paymentMethod.name, style: 'tableRow' },]);
   });
 
   const totalReceitas = transactions
@@ -57,12 +56,6 @@ function generateTransactionPDF(transactions, startDate, endDate, type, balanceI
     const balanceSummary = [
       {
         columns: [
-          { width: '*', text: 'Saldo Inicial', style: 'summaryLabel' },
-          { width: '*', text: `R$ ${balanceInfo.saldoInicial.toFixed(2).replace('.', ',')}`, style: 'summaryValue', alignment: 'right' },
-        ]
-      },
-      {
-        columns: [
           { width: '*', text: 'Receitas', style: 'summaryLabel' },
           { width: '*', text: `R$ ${totalReceitas.toFixed(2).replace('.', ',')}`, style: 'summaryTotalReceitas', alignment: 'right' },
         ]
@@ -79,23 +72,29 @@ function generateTransactionPDF(transactions, startDate, endDate, type, balanceI
       },
       {
         columns: [
-          { width: '*', text: 'Saldo Final', style: 'summaryLabel' },
-          { width: '*', text: `R$ ${balanceInfo.saldoFinal.toFixed(2).replace('.', ',')}`, style: ['summaryBalance', { color: saldo >= 0 ? '#28a745' : '#dc3545' }], alignment: 'right' },
-        ],
+          { width: '*', text: 'Variação de Saldo', style: 'summaryLabel', bold: true },
+          { width: '*', text: `R$ ${saldo.toFixed(2).replace('.', ',')}`, style: ['summaryBalance', { color: saldo >= 0 ? '#28a745' : '#dc3545' }], alignment: 'right' },
+        ]
       },
     ];
 
-    // if (balanceInfo.isSpecificAccount) {
-    //   balanceSummary.unshift(
-    //     {
-    //       columns: [
-    //         { width: '*', text: 'Saldo Inicial', style: 'summaryLabel' },
-    //         { width: '*', text: `R$ ${balanceInfo.saldoInicial.toFixed(2).replace('.', ',')}`, style: 'summaryValue', alignment: 'right' },
-    //       ]
-    //     },
-    //     { text: ' ', margin: [0, 0, 0, 5] }
-    //   );
-    // }
+    if (balanceInfo.isSpecificAccount) {
+      balanceSummary.unshift(
+        {
+          columns: [
+            { width: '*', text: 'Saldo Final', style: 'summaryLabel' },
+            { width: '*', text: `R$ ${balanceInfo.saldoFinal.toFixed(2).replace('.', ',')}`, style: 'summaryValue', alignment: 'right' },
+          ]
+        },
+        {
+          columns: [
+            { width: '*', text: 'Saldo Inicial', style: 'summaryLabel' },
+            { width: '*', text: `R$ ${balanceInfo.saldoInicial.toFixed(2).replace('.', ',')}`, style: 'summaryValue', alignment: 'right' },
+          ]
+        },
+        { text: ' ', margin: [0, 0, 0, 5] } // Espaçador
+      );
+    }
 
     summaryContent = [
       { text: 'Resumo Financeiro', style: 'summaryTitle' },
@@ -130,7 +129,7 @@ function generateTransactionPDF(transactions, startDate, endDate, type, balanceI
           },
           {
             columns: [
-              { width: '*', text: 'Saldo do Período', style: 'summaryLabel', bold: true },
+              { width: '*', text: 'Total ao final do Período', style: 'summaryLabel', bold: true },
               { width: '*', text: `R$ ${saldo.toFixed(2).replace('.', ',')}`, style: ['summaryBalance', { color: saldo >= 0 ? '#28a745' : '#dc3545' }], alignment: 'right' },
             ]
           }
@@ -144,7 +143,7 @@ function generateTransactionPDF(transactions, startDate, endDate, type, balanceI
       { text: 'Extrato de Transações', style: 'header' },
       { text: `Período: ${new Date(startDate).toLocaleDateString('pt-BR')} a ${new Date(endDate).toLocaleDateString('pt-BR')}`, style: 'subheader' },
       { text: `Tipo de Transação: ${type === 'all' ? 'Todas' : type === 'income' ? 'Receitas' : 'Despesas'}`, style: 'subheader' },
-      { text: ' ', margin: [0, 0, 0, 10] },
+      { text: ' ', margin: [0, 0, 0, 10] }, // Espaçador
       {
         style: 'tableExample',
         table: {
@@ -161,15 +160,17 @@ function generateTransactionPDF(transactions, startDate, endDate, type, balanceI
       { text: ' ', margin: [0, 15, 0, 0] },
       ...summaryContent
     ],
+    // Adicionando um rodapé profissional
     footer: function (currentPage, pageCount) {
       return {
         columns: [
           { text: `Gerado em: ${new Date().toLocaleString('pt-BR')}`, alignment: 'left', style: 'footer' },
           { text: `Página ${currentPage.toString()} de ${pageCount}`, alignment: 'right', style: 'footer' }
         ],
-        margin: [40, 0, 40, 0]
+        margin: [40, 0, 40, 0] // Margens do rodapé
       };
     },
+    // Objeto de estilos aprimorado
     styles: {
       header: {
         fontSize: 22,
@@ -190,10 +191,10 @@ function generateTransactionPDF(transactions, startDate, endDate, type, balanceI
       tableHeader: {
         bold: true,
         fontSize: 10,
-        color: '#FFFFFF',
-        fillColor: '#4A5568',
+        color: '#FFFFFF', // Texto branco para contraste
+        fillColor: '#4A5568', // Fundo cinza-azulado escuro
         alignment: 'center',
-        margin: [0, 6, 0, 6]
+        margin: [0, 6, 0, 6] // Aumenta o espaçamento vertical
       },
       tableRow: {
         fontSize: 9,
@@ -208,7 +209,7 @@ function generateTransactionPDF(transactions, startDate, endDate, type, balanceI
       summaryTitle: {
         fontSize: 16,
         bold: true,
-        alignment: 'left',
+        alignment: 'left', // Alinhado à esquerda para um look mais moderno
         margin: [0, 0, 0, 5],
         color: '#333333'
       },

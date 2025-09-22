@@ -1,8 +1,6 @@
 import { PrismaClient } from '../generated/prisma/index.js';
-import { faker } from '@faker-js/faker';
+import { fa, faker } from '@faker-js/faker';
 import bcrypt from 'bcryptjs';
-import fs from 'fs';
-import path from 'path';
 import { Decimal } from 'decimal.js';
 
 const prisma = new PrismaClient();
@@ -15,11 +13,10 @@ const prisma = new PrismaClient();
 async function clearDatabase() {
   try {
     console.log('Apagando dados existentes...');
-    await prisma.balanceHistory.deleteMany();
     await prisma.bankTransfers.deleteMany();
     await prisma.transactions.deleteMany();
     await prisma.goals.deleteMany();
-    await prisma.accountPaymentMethods.deleteMany(); 
+    await prisma.accountPaymentMethods.deleteMany();
     await prisma.paymentMethods.deleteMany();
     await prisma.accounts.deleteMany();
     await prisma.users.deleteMany();
@@ -31,8 +28,7 @@ async function clearDatabase() {
     await prisma.$executeRaw`ALTER TABLE PaymentMethods AUTO_INCREMENT = 1`;
     await prisma.$executeRaw`ALTER TABLE Transactions AUTO_INCREMENT = 1`;
     await prisma.$executeRaw`ALTER TABLE Goals AUTO_INCREMENT = 1`;
-    await prisma.$executeRaw`ALTER TABLE BankTransfers AUTO_INCREMENT = 1`; 
-    await prisma.$executeRaw`ALTER TABLE BalanceHistory AUTO_INCREMENT = 1`; 
+    await prisma.$executeRaw`ALTER TABLE BankTransfers AUTO_INCREMENT = 1`;
 
   } catch (error) {
     console.error('Erro ao limpar o banco de dados:', error);
@@ -46,285 +42,158 @@ async function seedDatabase() {
 
   console.log('Preenchendo o banco de dados com dados fakes, NÃO É PRA FICAR BONITO');
 
-  // --- 1. Criar o usuário único ---
-  const user = await prisma.users.create({
-    data: {
-      name: "Thalysson",
-      email: "thalysson140105@gmail.com",
-      password: senhaHash,
-      avatar: "src/uploads/avatar1.png"
-    },
-  });
+  // --- 1. Criar os usuários ---
+  const usersData = [
+    { name: "Thalysson", email: "thalysson140105@gmail.com", password: senhaHash, avatar: "src/uploads/avatar1.png" },
+    { name: "Gilberto", email: "gilberto.silva@ifro.edu.br", password: senhaHash, avatar: "src/uploads/avatar1.png" }
+  ]
+  await prisma.users.createMany({ data: usersData });
+  const allUsers = await prisma.users.findMany();
+  console.log(` Criado ${allUsers.length} usuários`);
 
-  console.log(` Criado 1 usuário`);
 
   // --- 2. Criar as 4 contas específicas  ---
   const accountsData = [
-    {
-      name: "Carteira",
-      type: "carteira",
-      balance: 0,
-      icon: "src/uploads/carteira-icon.png",
-      userId: user.id
-    },
-    {
-      name: "Caixa Econômica",
-      type: "corrente",
-      balance: 0,
-      icon: "src/uploads/caixa-economica-federal.png",
-      userId: user.id
-    },
-    {
-      name: "Banco do Brasil",
-      type: "corrente",
-      balance: 0,
-      icon: "src/uploads/banco-do-brasil.png",
-      userId: user.id
-    },
-    {
-      name: "Nubank",
-      type: "digital",
-      balance: 0,
-      icon: "src/uploads/nubank.png",
-      userId: user.id
-    }
+    { name: "Carteira", type: "carteira", balance: 0, icon: "src/uploads/carteira-icon.png", userId: 1 },
+    { name: "Carteira", type: "carteira", balance: 0, icon: "src/uploads/carteira-icon.png", userId: 2 },
+    { name: "Caixa Econômica", type: "corrente", balance: 0, icon: "src/uploads/caixa-economica-federal.png", userId: 1 },
+    { name: "Caixa Econômica", type: "corrente", balance: 0, icon: "src/uploads/caixa-economica-federal.png", userId: 2 },
+    { name: "Banco do Brasil", type: "corrente", balance: 0, icon: "src/uploads/banco-do-brasil.png", userId: 1 },
+    { name: "Banco do Brasil", type: "corrente", balance: 0, icon: "src/uploads/banco-do-brasil.png", userId: 2 },
+    { name: "Nubank", type: "digital", balance: 0, icon: "src/uploads/nubank.png", userId: 1 },
+    { name: "Nubank", type: "digital", balance: 0, icon: "src/uploads/nubank.png", userId: 2 }
   ];
 
   const createdAccounts = await prisma.accounts.createMany({ data: accountsData });
-  console.log(` Criadas ${createdAccounts.count} contas para o usuário.`);
+  console.log(` Criadas ${createdAccounts.count} contas para os usuários.`);
 
-  // --- O restante da lógica permanece o mesmo, adaptando-se aos dados criados ---
+  // --- 3 Criar métodos de pagamento---
 
   const paymentMethods = [
     { name: "Dinheiro" },
     { name: "Cartão de Débito" },
     { name: "Cartão de Crédito" },
     { name: "PIX" },
-    { name: "Transferência Bancária" },
-    { name: "Boleto" },
-    { name: "Vale Alimentação" },
-    { name: "Vale Refeição" }
+    { name: "Transferência Bancária" }
   ];
 
   const createdPaymentMethods = await prisma.paymentMethods.createMany({ data: paymentMethods });
   console.log(` Criadas ${createdPaymentMethods.count} formas de pagamento.`);
 
-  const allAccounts = await prisma.accounts.findMany();
-  const allPaymentMethods = await prisma.paymentMethods.findMany();
+  const accountPaymentMethodsData = [
+    { accountId: 1, paymentMethodId: 1 },
+    { accountId: 2, paymentMethodId: 1 },
+    { accountId: 1, paymentMethodId: 2 },
+    { accountId: 2, paymentMethodId: 2 },
+    { accountId: 1, paymentMethodId: 3 },
+    { accountId: 2, paymentMethodId: 3 },
+    { accountId: 1, paymentMethodId: 4 },
+    { accountId: 2, paymentMethodId: 4 },
+    { accountId: 1, paymentMethodId: 5 },
+    { accountId: 2, paymentMethodId: 5 },
+    { accountId: 3, paymentMethodId: 1 },
+    { accountId: 4, paymentMethodId: 1 },
+    { accountId: 3, paymentMethodId: 2 },
+    { accountId: 4, paymentMethodId: 2 },
+    { accountId: 3, paymentMethodId: 3 },
+    { accountId: 4, paymentMethodId: 3 },
+    { accountId: 3, paymentMethodId: 4 },
+    { accountId: 4, paymentMethodId: 4 },
+    { accountId: 3, paymentMethodId: 5 },
+    { accountId: 4, paymentMethodId: 5 },
+  ]
 
-  const accountPaymentMethodsData = [];
-
-  allAccounts.forEach(account => {
-    let compatiblePaymentMethods = [];
-
-    switch (account.type.toLowerCase()) {
-      case 'carteira':
-        compatiblePaymentMethods = allPaymentMethods.filter(pm => pm.name === "Dinheiro");
-        break;
-      case 'corrente':
-      case 'poupanca':
-        compatiblePaymentMethods = allPaymentMethods.filter(pm =>
-          !pm.name.includes("Vale")
-        );
-        break;
-      case 'digital':
-        compatiblePaymentMethods = allPaymentMethods.filter(pm =>
-          ["PIX", "Cartão de Débito", "Cartão de Crédito", "Transferência Bancária"].includes(pm.name)
-        );
-        break;
-      case 'investimento':
-        compatiblePaymentMethods = allPaymentMethods.filter(pm =>
-          ["PIX", "Transferência Bancária", "Cartão de Débito"].includes(pm.name)
-        );
-        break;
-      default:
-        compatiblePaymentMethods = allPaymentMethods.filter(pm =>
-          ["Dinheiro", "PIX", "Cartão de Débito", "Cartão de Crédito"].includes(pm.name)
-        );
-    }
-
-    compatiblePaymentMethods.forEach(paymentMethod => {
-      accountPaymentMethodsData.push({
-        accountId: account.id,
-        paymentMethodId: paymentMethod.id
-      });
-    });
-  });
-
-  const createdAccountPaymentMethods = await prisma.accountPaymentMethods.createMany({
-    data: accountPaymentMethodsData
-  });
+  const createdAccountPaymentMethods = await prisma.accountPaymentMethods.createMany({ data: accountPaymentMethodsData });
   console.log(` Criados ${createdAccountPaymentMethods.count} relacionamentos entre contas e métodos de pagamento.`);
 
-  const expenseCategories = [
-    "Alimentação", "Transporte", "Moradia", "Saúde", "Educação",
-    "Entretenimento", "Roupas", "Tecnologia", "Viagem", "Outros"
+  // --- 4. Criar transações ---
+
+  const getRandomDate = (start, end) => {
+    return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+  };
+  const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const expenseTemplates = [
+    { category: 'Alimentação', description: 'Restaurante' },
+    { category: 'Transporte', description: 'App de mobilidade' },
+    { category: 'Moradia', description: 'Conta de luz' },
+    { category: 'Lazer', description: 'Ingresso de cinema' },
+    { category: 'Saúde', description: 'Farmácia' },
+    { category: 'Compras', description: 'Loja de roupas' },
   ];
 
-  const incomeCategories = [
-    "Salário", "Freelance", "Investimentos", "Vendas", "Presente",
-    "Reembolso", "Renda Extra", "Outros"
+  const incomeTemplates = [
+    { category: 'Salário', description: 'Adiantamento quinzenal' },
+    { category: 'Freelance', description: 'Projeto de Design' },
+    { category: 'Vendas', description: 'Venda de produto online' },
+    { category: 'Investimentos', description: 'Recebimento de dividendos' },
   ];
 
-  const transactionsData = [];
+  const transactionsToCreate = [];
+  const allAccountsCreated = await prisma.accounts.findMany();
+  const transactionsPerType = 10;
+  const startDate = new Date('2024-09-31');
+  const endDate = new Date('2025-01-19');
 
-  allAccounts.forEach(account => {
-    const accountPaymentMethods = accountPaymentMethodsData.filter(
-      apm => apm.accountId === account.id
-    );
+  for (const user of allUsers) {
+    const userAccounts = allAccountsCreated.filter(acc => acc.userId === user.id);
+    if (userAccounts.length === 0) continue;
 
-    if (accountPaymentMethods.length === 0) {
-      console.warn(`Conta ${account.name} (ID: ${account.id}) não tem métodos de pagamento compatíveis!`);
-      return;
-    }
+    const userAccountIds = userAccounts.map(acc => acc.id);
 
-    const numTransactions = 10;
-
-    for (let i = 0; i < numTransactions; i++) {
-      const type = faker.helpers.arrayElement(["expense", "income"]);
-      const isExpense = type === "expense";
-
-      const categories = isExpense ? expenseCategories : incomeCategories;
-      const category = faker.helpers.arrayElement(categories);
-
-      let name;
-      switch (category) {
-        case "Alimentação":
-          name = faker.helpers.arrayElement(["Supermercado Extra", "McDonald's", "Padaria", "iFood", "Açaí"]);
-          break;
-        case "Transporte":
-          name = faker.helpers.arrayElement(["Uber", "Posto Shell", "99", "Manutenção carro", "Ônibus"]);
-          break;
-        case "Salário":
-          name = faker.helpers.arrayElement(["Salário", "Freelance Design", "Consultoria", "Projeto Extra"]);
-          break;
-        default:
-          name = `${category} - ${faker.commerce.productName()}`;
-      }
-
-      const value = parseFloat(faker.finance.amount(10, isExpense ? 500 : 3000, 2));
-      const release_date = faker.date.between({
-        from: new Date('2025-01-01'),
-        to: new Date('2025-12-31')
-      });
-
-      const recurring = faker.datatype.boolean(0.4);
-      const recurring_type = recurring 
-        ? faker.helpers.arrayElement(["daily", "weekly", "monthly", "yearly"])
-        : null;
-      const number_installments = !recurring && faker.datatype.boolean(0.3)
-        ? faker.number.int({ min: 2, max: 12 })
-        : null;
-      const current_installment = number_installments
-        ? faker.number.int({ min: 1, max: number_installments })
-        : null;
-
-      const randomAccountPaymentMethod = faker.helpers.arrayElement(accountPaymentMethods);
-
-      transactionsData.push({
-        type,
-        name,
-        category,
-        value,
-        release_date,
-        number_installments,
-        current_installment,
-        recurring,
-        recurring_type,
-        accountId: account.id,
-        paymentMethodId: randomAccountPaymentMethod.paymentMethodId,
-        userId: account.userId
+    // Criar 10 despesas (expense)
+    for (let i = 0; i < transactionsPerType; i++) {
+      const template = getRandomItem(expenseTemplates);
+      transactionsToCreate.push({
+        name: faker.finance.transactionType(),
+        value: new Decimal(Math.random() * (500 - 20) + 20).toDecimalPlaces(2),
+        type: 'expense',
+        category: template.category,
+        description: template.description,
+        release_date: getRandomDate(startDate, endDate),
+        accountId: getRandomItem(userAccountIds),
+        paymentMethodId: getRandomItem([1, 2, 3, 4, 5]),
+        userId: user.id,
       });
     }
-  });
 
-  const createdTransactions = await prisma.transactions.createMany({ data: transactionsData });
-  console.log(` Criadas ${createdTransactions.count} transações.`);
-
-  console.log('Calculando balance das contas com base nas transações...');
-
-  for (const account of allAccounts) {
-    const accountTransactions = await prisma.transactions.findMany({
-      where: { accountId: account.id }
-    });
-
-    let balance = new Decimal(0);
-
-    accountTransactions.forEach(transaction => {
-      const value = new Decimal(transaction.value);
-      if (transaction.type === 'income') {
-        balance = balance.add(value);
-      } else if (transaction.type === 'expense') {
-        balance = balance.sub(value);
-      }
-    });
-
-    await prisma.accounts.update({
-      where: { id: account.id },
-      data: { balance: balance.toNumber() }
-    });
-  }
-
-  console.log(' Balance das contas calculado e atualizado com sucesso!');
-
-  const bankTransfersData = [];
-  const userAccounts = allAccounts.filter(account => account.userId === user.id);
-
-  if (userAccounts.length >= 2) {
-    for (let i = 0; i < 2; i++) {
-      const sourceAccount = faker.helpers.arrayElement(userAccounts);
-      const availableDestinations = userAccounts.filter(acc => acc.id !== sourceAccount.id);
-      const destinationAccount = faker.helpers.arrayElement(availableDestinations);
-      const sourceAccountPaymentMethods = accountPaymentMethodsData.filter(
-        apm => apm.accountId === sourceAccount.id
-      );
-
-      if (sourceAccountPaymentMethods.length === 0) {
-        console.warn(`Conta de origem ${sourceAccount.name} não tem métodos de pagamento compatíveis!`);
-        continue;
-      }
-
-      const preferredMethods = sourceAccountPaymentMethods.filter(apm => {
-        const method = allPaymentMethods.find(pm => pm.id === apm.paymentMethodId);
-        return ["PIX", "Transferência Bancária", "Cartão de Débito"].includes(method.name);
-      });
-
-      const selectedMethod = preferredMethods.length > 0
-        ? faker.helpers.arrayElement(preferredMethods)
-        : faker.helpers.arrayElement(sourceAccountPaymentMethods);
-
-      const amount = parseFloat(faker.finance.amount(50, 1000, 2));
-      const transfer_date = faker.date.between({
-        from: new Date('2025-01-01'),
-        to: new Date('2025-12-31')
-      });
-
-      const descriptions = [
-        "Transferência para conta poupança", "Movimentação entre contas",
-        "Transferência para investimento", "Organização financeira",
-        "Transferência interna", null
-      ];
-
-      bankTransfersData.push({
-        amount,
-        transfer_date,
-        description: faker.helpers.arrayElement(descriptions),
-        sourceAccountId: sourceAccount.id,
-        destinationAccountId: destinationAccount.id,
-        paymentMethodId: selectedMethod.paymentMethodId,
-        userId: user.id
+    // Criar 10 receitas (income)
+    for (let i = 0; i < transactionsPerType; i++) {
+      const template = getRandomItem(incomeTemplates);
+      transactionsToCreate.push({
+        name: faker.finance.transactionType(),
+        value: new Decimal(Math.random() * (2500 - 500) + 500).toDecimalPlaces(2),
+        type: 'income',
+        category: template.category,
+        description: template.description,
+        release_date: getRandomDate(startDate, endDate),
+        accountId: getRandomItem(userAccountIds),
+        paymentMethodId: getRandomItem([1, 2, 3, 4, 5]),
+        userId: user.id,
       });
     }
   }
+
+  const createdResult = await prisma.transactions.createMany({ data: transactionsToCreate });
+
+  console.log(`Criadas ${createdResult.count} transações com sucesso.`);
+
+  // --- 6. Criar transferências bancárias ---
+  const bankTransfersData = [
+    { amount: 100, transfer_date: new Date('2025-01-01'), description: "Transferência do dia 01 de janeiro de 2025", sourceAccountId: 1, destinationAccountId: 3, paymentMethodId: 5, userId: 1 },
+    { amount: 100, transfer_date: new Date('2025-01-01'), description: "Transferência do dia 01 de janeiro de 2025", sourceAccountId: 2, destinationAccountId: 4, paymentMethodId: 5, userId: 2 },
+    { amount: 50.53, transfer_date: new Date('2025-01-02'), description: "Transferência do dia 02 de janeiro de 2025", sourceAccountId: 3, destinationAccountId: 1, paymentMethodId: 5, userId: 1 },
+    { amount: 50.53, transfer_date: new Date('2025-01-02'), description: "Transferência do dia 02 de janeiro de 2025", sourceAccountId: 4, destinationAccountId: 2, paymentMethodId: 5, userId: 2 },
+    { amount: 10, transfer_date: new Date('2025-01-03'), description: "Transferência do dia 03 de janeiro de 2025", sourceAccountId: 1, destinationAccountId: 3, paymentMethodId: 5, userId: 1 },
+    { amount: 10, transfer_date: new Date('2025-01-03'), description: "Transferência do dia 03 de janeiro de 2025", sourceAccountId: 2, destinationAccountId: 4, paymentMethodId: 5, userId: 2 },
+  ]
 
   const createdBankTransfers = await prisma.bankTransfers.createMany({ data: bankTransfersData });
   console.log(` Criadas ${createdBankTransfers.count} transferências bancárias.`);
 
-  console.log('Recalculando balance das contas incluindo transferências bancárias...');
+  console.log('Calculando balance final das contas (transações e transferências)...');
+  const allAccountsForBalance = await prisma.accounts.findMany();
 
-  const updatedAccounts = await prisma.accounts.findMany();
-
-  for (const account of updatedAccounts) {
+  for (const account of allAccountsForBalance) {
     const accountTransactions = await prisma.transactions.findMany({
       where: { accountId: account.id }
     });
@@ -363,11 +232,10 @@ async function seedDatabase() {
       data: { balance: balance.toNumber() }
     });
   }
-
   console.log(' Balance final das contas calculado com sucesso!');
 
+  // --- 7. Criar metas financeiras ---
   const goalsData = [];
-  const allUsers = [user];
 
   allUsers.forEach(user => {
     const incomeGoalNames = [
@@ -406,155 +274,12 @@ async function seedDatabase() {
 
   const createdGoals = await prisma.goals.createMany({ data: goalsData });
   console.log(` Criadas ${createdGoals.count} metas financeiras (24 metas por usuário: 12 de receita e 12 de despesa para todos os meses de 2025).`);
-
   console.log(' Seed concluído com sucesso!');
-}
-
-async function generateBalanceHistory() {
-  console.log('Gerando histórico de saldo diário para todas as contas...');
-
-  const allAccounts = await prisma.accounts.findMany();
-  
-  const startDate = new Date('2025-01-01');
-  const endDate = new Date('2025-12-18'); 
-  
-  const balanceHistoryData = [];
-
-  for (const account of allAccounts) {
-    console.log(` Processando histórico para conta: ${account.name}`);
-    
-    // Obter todas as transações e transferências da conta ordenadas por data
-    const allTransactions = await prisma.transactions.findMany({
-      where: { accountId: account.id },
-      orderBy: { release_date: 'asc' }
-    });
-
-    const outgoingTransfers = await prisma.bankTransfers.findMany({
-      where: { sourceAccountId: account.id },
-      orderBy: { transfer_date: 'asc' }
-    });
-
-    const incomingTransfers = await prisma.bankTransfers.findMany({
-      where: { destinationAccountId: account.id },
-      orderBy: { transfer_date: 'asc' }
-    });
-
-    const allMovements = [];
-    
-    allTransactions.forEach(transaction => {
-      allMovements.push({
-        date: transaction.release_date,
-        type: 'transaction',
-        amount: transaction.type === 'income' ? transaction.value : -transaction.value
-      });
-    });
-
-    outgoingTransfers.forEach(transfer => {
-      allMovements.push({
-        date: transfer.transfer_date,
-        type: 'outgoing_transfer',
-        amount: -transfer.amount
-      });
-    });
-
-    incomingTransfers.forEach(transfer => {
-      allMovements.push({
-        date: transfer.transfer_date,
-        type: 'incoming_transfer',
-        amount: transfer.amount
-      });
-    });
-
-    allMovements.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    let currentBalance = new Decimal(0);
-    let lastRecordedBalance = new Decimal(0);
-    const currentDate = new Date(startDate);
-
-    balanceHistoryData.push({
-      accountId: account.id,
-      date: new Date(startDate),
-      balance: 0,
-      createdAt: new Date()
-    });
-
-    while (currentDate <= endDate) {
-      const dayMovements = allMovements.filter(movement => {
-        const movementDate = new Date(movement.date);
-        return movementDate.toDateString() === currentDate.toDateString();
-      });
-      dayMovements.forEach(movement => {
-        currentBalance = currentBalance.add(new Decimal(movement.amount));
-      });
-
-      // Condições para criar um registro:
-      // 1. Houve movimentação no dia
-      // 2. É o último dia do mês
-      // 3. É um domingo (final de semana)
-      // 4. A diferença do saldo anterior é significativa (> 10% ou > R$ 100)
-      const isLastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate() === currentDate.getDate();
-      const isSunday = currentDate.getDay() === 0;
-      const balanceDifference = currentBalance.sub(lastRecordedBalance).abs();
-      const isSignificantChange = balanceDifference.gte(100) || 
-        (lastRecordedBalance.gt(0) && balanceDifference.div(lastRecordedBalance.abs()).gte(0.1));
-
-      if (dayMovements.length > 0 || isLastDayOfMonth || isSunday || isSignificantChange) {
-        // Evitar registros duplicados para o mesmo dia
-        const hasRecordForDay = balanceHistoryData.some(record => 
-          record.accountId === account.id && 
-          record.date.toDateString() === currentDate.toDateString()
-        );
-
-        if (!hasRecordForDay) {
-          balanceHistoryData.push({
-            accountId: account.id,
-            date: new Date(currentDate),
-            balance: currentBalance.toNumber(),
-            createdAt: new Date()
-          });
-          lastRecordedBalance = new Decimal(currentBalance);
-        }
-      }
-
-      // Avançar para o próximo dia
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    // Sempre adicionar registro para o dia atual (data de hoje)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const hasCurrentDayRecord = balanceHistoryData.some(record => 
-      record.accountId === account.id && 
-      record.date.toDateString() === today.toDateString()
-    );
-
-    if (!hasCurrentDayRecord) {
-      balanceHistoryData.push({
-        accountId: account.id,
-        date: today,
-        balance: currentBalance.toNumber(),
-        createdAt: new Date()
-      });
-    }
-  }
-
-  if (balanceHistoryData.length > 0) {
-    const createdBalanceHistory = await prisma.balanceHistory.createMany({ 
-      data: balanceHistoryData 
-    });
-    console.log(` Criados ${createdBalanceHistory.count} registros de histórico de saldo.`);
-  } else {
-    console.log(' Nenhum registro de histórico de saldo foi criado.');
-  }
-
-  console.log(' Geração do histórico de saldo concluída!');
 }
 
 async function main() {
   await clearDatabase();
   await seedDatabase();
-  await generateBalanceHistory();
 }
 
 main().catch((e) => {

@@ -9,7 +9,6 @@ import Transaction from "./TransactionRoutes.js";
 import PaymentMethods from "./PaymentMethodsRoutes.js";
 import BankTransfer from "./BankTransferRoutes.js";
 import Goals from "./GoalRoutes.js";
-import BalanceHistory from "./BalanceHistoryRoutes.js";
 
 const routes = (app) => {
     // Configurando a documentação da Swagger UI para ser servida diretamente em '/'
@@ -28,8 +27,7 @@ const routes = (app) => {
         Transaction,
         PaymentMethods,
         BankTransfer,
-        Goals,
-        BalanceHistory
+        Goals
     );
 
     // Se não é nenhuma rota válida, produz 404

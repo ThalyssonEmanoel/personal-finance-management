@@ -112,55 +112,5 @@ class userControllRoutes {
       });
     }
   };
-
-  /**
-   * Verificar se o usuário tem acesso à conta específica
-   * Usado nas rotas de histórico de saldo: GET /balance-history/:accountId
-   */
-  static verifyAccountAccess = async (req, res, next) => {
-    try {
-      const currentUserId = req.user?.id;
-
-      if (!currentUserId) {
-        return res.status(401).json({
-          success: false,
-          message: "Token de autenticação inválido"
-        });
-      }
-
-      const accountId = req.params.accountId || req.query.accountId;
-
-      if (!accountId) {
-        return res.status(400).json({
-          success: false,
-          message: "O parâmetro accountId é obrigatório"
-        });
-      }
-
-      // Verificar se a conta existe e pertence ao usuário
-      const account = await prisma.accounts.findUnique({
-        where: { 
-          id: parseInt(accountId),
-          userId: currentUserId
-        },
-        select: { id: true, userId: true }
-      });
-
-      if (!account) {
-        return res.status(404).json({
-          success: false,
-          message: "Conta não encontrada ou você não tem acesso a ela"
-        });
-      }
-
-      next();
-    } catch (error) {
-      console.error('Erro no middleware verifyAccountAccess:', error);
-      return res.status(500).json({
-        success: false,
-        message: "Erro interno do servidor"
-      });
-    }
-  };
 }
 export default userControllRoutes;
