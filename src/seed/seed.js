@@ -131,8 +131,8 @@ async function seedDatabase() {
   const transactionsToCreate = [];
   const allAccountsCreated = await prisma.accounts.findMany();
   const transactionsPerType = 10;
-  const startDate = new Date('2024-09-31');
-  const endDate = new Date('2025-01-19');
+  const startDate = new Date('2025-01-01');
+  const endDate = new Date('2025-12-30');
 
   for (const user of allUsers) {
     const userAccounts = allAccountsCreated.filter(acc => acc.userId === user.id);
