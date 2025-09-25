@@ -130,7 +130,7 @@ async function seedDatabase() {
 
   const transactionsToCreate = [];
   const allAccountsCreated = await prisma.accounts.findMany();
-  const transactionsPerType = 10;
+  const transactionsPerType = 48;
   const startDate = new Date('2025-01-01');
   const endDate = new Date('2025-12-30');
 
@@ -248,6 +248,28 @@ async function seedDatabase() {
       'Redução de Despesas', 'Controle Alimentação', 'Limite Compras', 'Meta Transporte'
     ];
 
+    for (let month = 0; month < 12; month++) {
+      const incomeGoalDate = new Date(2024, month, 15);
+      const incomeGoalName = faker.helpers.arrayElement(incomeGoalNames);
+      const incomeGoalValue = faker.number.float({ min: 2000, max: 8000, precision: 0.01 });
+      goalsData.push({
+        name: `${incomeGoalName} - ${incomeGoalDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`,
+        date: incomeGoalDate,
+        transaction_type: 'income',
+        value: incomeGoalValue,
+        userId: user.id
+      });
+      const expenseGoalDate = new Date(2025, month, 15);
+      const expenseGoalName = faker.helpers.arrayElement(expenseGoalNames);
+      const expenseGoalValue = faker.number.float({ min: 500, max: 3000, precision: 0.01 });
+      goalsData.push({
+        name: `${expenseGoalName} - ${expenseGoalDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`,
+        date: expenseGoalDate,
+        transaction_type: 'expense',
+        value: expenseGoalValue,
+        userId: user.id
+      });
+    }
     for (let month = 0; month < 12; month++) {
       const incomeGoalDate = new Date(2025, month, 15);
       const incomeGoalName = faker.helpers.arrayElement(incomeGoalNames);
