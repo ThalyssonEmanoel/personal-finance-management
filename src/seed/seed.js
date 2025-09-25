@@ -259,6 +259,17 @@ async function seedDatabase() {
         value: incomeGoalValue,
         userId: user.id
       });
+      const expenseGoalDate = new Date(2024, month, 15);
+      const expenseGoalName = faker.helpers.arrayElement(expenseGoalNames);
+      const expenseGoalValue = faker.number.float({ min: 500, max: 3000, precision: 0.01 });
+      goalsData.push({
+        name: `${expenseGoalName} - ${expenseGoalDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`,
+        date: expenseGoalDate,
+        transaction_type: 'expense',
+        value: expenseGoalValue,
+        userId: user.id
+      });
+    }
       const expenseGoalDate = new Date(2025, month, 15);
       const expenseGoalName = faker.helpers.arrayElement(expenseGoalNames);
       const expenseGoalValue = faker.number.float({ min: 500, max: 3000, precision: 0.01 });
