@@ -5,7 +5,7 @@ class GoalRepository {
 
   static async listGoals(filters, order = 'desc') {
     let where = { ...filters };
-    
+
     const { page, limit, ...whereFilters } = where;
     where = whereFilters;
 
@@ -58,7 +58,7 @@ class GoalRepository {
 
   static async getGoalById(id, userId = null) {
     const where = { id };
-    
+
     if (userId) {
       where.userId = userId;
     }
@@ -150,6 +150,26 @@ class GoalRepository {
     }, new Decimal(0));
 
     return total.toNumber();
+  }
+
+  static async getYearsWithGoalsByUser(userId) {
+    const result = await prisma.goals.findMany({
+      where: {
+        userId: parseInt(userId)
+      },
+      select: {
+        date: true
+      },
+      distinct: ['date']
+    });
+    const years = [...new Set(
+      result.map(goal => {
+        const year = new Date(goal.date).getFullYear();
+        return parseInt(year.toString().slice(-2));
+      })
+    )];
+
+    return years.sort((a, b) => b - a);
   }
 }
 

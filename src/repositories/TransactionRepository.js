@@ -455,6 +455,52 @@ class TransactionRepository {
   }
 
   /**
+   * Retorna a release_date da transação recorrente mensal mais antiga da mesma série
+   * Retorna null se não encontrar
+   */
+  static async getOldestRecurringReleaseDate({ userId, name, category, type, accountId, paymentMethodId }) {
+    const oldest = await prisma.transactions.findFirst({
+      where: {
+        userId: userId,
+        name: name,
+        category: category,
+        type: type,
+        accountId: accountId,
+        paymentMethodId: paymentMethodId,
+        recurring: true,
+        recurring_type: 'monthly'
+      },
+      orderBy: { release_date: 'asc' },
+      select: { release_date: true }
+    });
+
+    return oldest ? oldest.release_date : null;
+  }
+
+  /**
+   * Retorna a release_date da primeira parcela (current_installment = 1) da mesma série
+   * Retorna null se não encontrar
+   */
+  static async getFirstInstallmentReleaseDate({ userId, name, category, type, accountId, paymentMethodId, number_installments }) {
+    const first = await prisma.transactions.findFirst({
+      where: {
+        userId: userId,
+        name: name,
+        category: category,
+        type: type,
+        accountId: accountId,
+        paymentMethodId: paymentMethodId,
+        number_installments: number_installments,
+        current_installment: 1
+      },
+      orderBy: { release_date: 'asc' },
+      select: { release_date: true }
+    });
+
+    return first ? first.release_date : null;
+  }
+
+  /**
    * @calculateTotals Calcula os totais de receitas e despesas baseado nos filtros aplicados
    */
   static async calculateTotals(filters) {
