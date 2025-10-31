@@ -23,7 +23,6 @@ class TransactionRepository {
       where,
       orderBy: { release_date: 'asc' },
       select: {
-        id: true,
         type: true,
         name: true,
         category: true,
@@ -32,7 +31,6 @@ class TransactionRepository {
         release_date: true,
         account: { select: { name: true } },
         paymentMethod: { select: { name: true } },
-        user: { select: { name: true } }
       }
     });
   }
@@ -55,7 +53,7 @@ class TransactionRepository {
       where.release_date = {
         gte: startDate,
         lte: endDate
-      };
+      };0
     }
 
     const takeSafe = (typeof take === 'number' && !isNaN(take)) ? take : 5;
@@ -454,6 +452,52 @@ class TransactionRepository {
     });
 
     return existingInstallment !== null;
+  }
+
+  /**
+   * Retorna a release_date da transação recorrente mensal mais antiga da mesma série
+   * Retorna null se não encontrar
+   */
+  static async getOldestRecurringReleaseDate({ userId, name, category, type, accountId, paymentMethodId }) {
+    const oldest = await prisma.transactions.findFirst({
+      where: {
+        userId: userId,
+        name: name,
+        category: category,
+        type: type,
+        accountId: accountId,
+        paymentMethodId: paymentMethodId,
+        recurring: true,
+        recurring_type: 'monthly'
+      },
+      orderBy: { release_date: 'asc' },
+      select: { release_date: true }
+    });
+
+    return oldest ? oldest.release_date : null;
+  }
+
+  /**
+   * Retorna a release_date da primeira parcela (current_installment = 1) da mesma série
+   * Retorna null se não encontrar
+   */
+  static async getFirstInstallmentReleaseDate({ userId, name, category, type, accountId, paymentMethodId, number_installments }) {
+    const first = await prisma.transactions.findFirst({
+      where: {
+        userId: userId,
+        name: name,
+        category: category,
+        type: type,
+        accountId: accountId,
+        paymentMethodId: paymentMethodId,
+        number_installments: number_installments,
+        current_installment: 1
+      },
+      orderBy: { release_date: 'asc' },
+      select: { release_date: true }
+    });
+
+    return first ? first.release_date : null;
   }
 
   /**

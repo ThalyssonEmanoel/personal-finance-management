@@ -18,7 +18,6 @@ class AccountController {
 
   static registerAccount = async (req, res, next) => {
     try {
-      console.log("Dados do corpo da requisição:",req.query, req.body);
       const bodyData = AccountSchemas.createAccountBody.parse(req.body);
       const queryData = AccountSchemas.createAccountQuery.parse(req.query);
 

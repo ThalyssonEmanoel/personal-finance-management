@@ -8,8 +8,8 @@ class GoalController {
     try {
       const query = req.query;
       const validQuery = GoalSchemas.listGoals.parse(query);
-      const { goals, total } = await GoalService.listGoals(validQuery, 'desc');
-      res.status(200).json(CommonResponse.success(goals, total));
+      const { goals, metaData } = await GoalService.listGoals(validQuery, 'desc');
+      res.status(200).json(CommonResponse.success(goals, metaData));
     } catch (err) {
       next(err);
     }

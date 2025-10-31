@@ -9,9 +9,9 @@ class TransactionService {
     if (!userId || !startDate || !endDate || !type) {
       throw { code: 400, message: 'Parâmetros obrigatórios: userId, startDate, endDate, type' };
     }
-    // type pode ser 'all', 'income', 'expense'
     const queryType = type === 'all' ? undefined : type;
-    return await TransactionRepository.listTransactionsForPDF(parseInt(userId), startDate, endDate, queryType, accountId);
+    const response = await TransactionRepository.listTransactionsForPDF(parseInt(userId), startDate, endDate, queryType, accountId);
+    return response;
   }
 
   static async listTransactions(filtros, order = 'asc') {
@@ -91,21 +91,15 @@ class TransactionService {
 
 
   /**
-   * 
-   * @createTransaction 
-   * Implementei os métodos _calculateInstallmentValues, _updateAccountBalanceForTransaction e _shouldUpdateAccountBalance
+   * @createTransaction Implementado os métodos PRIVADOS _calculateInstallmentValues, _updateAccountBalanceForTransaction e _shouldUpdateAccountBalance
    * para seguir o conceito de Single Responsibility Principle (SRP) e manter o código mais modular e testável. PORQUE TESTAR ISSO ESTÁ SENDO UMA CHATICE.
    */
   static async createTransaction(transaction) {
     const validTransaction = TransactionSchemas.createTransaction.parse(transaction);
 
-    // Calcular valores das parcelas se necessário
     this._calculateInstallmentValues(validTransaction);
-
-    // Atualizar saldo da conta se necessário
     await this._updateAccountBalanceForTransaction(validTransaction);
 
-    // Criar a transação no banco de dados
     const newTransaction = await TransactionRepository.createTransaction(validTransaction);
     if (!newTransaction) {
       throw { code: 404 };
@@ -125,8 +119,6 @@ class TransactionService {
     const validId = TransactionSchemas.transactionIdParam.parse({ id });
     const validUserId = AccountSchemas.userIdParam.parse({ userId });
     const validTransactionData = TransactionSchemas.updateTransaction.parse(transactionData);
-
-    // Filtrar campos vazios/nulos para não serem processados
     const filteredData = {};
     Object.keys(validTransactionData).forEach(key => {
       const value = validTransactionData[key];
@@ -135,7 +127,6 @@ class TransactionService {
       }
     });
 
-    // 1. Buscar a transação antiga
     const oldTransactionArr = await TransactionRepository.listTransactions(
       { id: validId.id, userId: validUserId.userId }, 0, 1, 'asc');
     if (!oldTransactionArr || oldTransactionArr.length === 0) {
@@ -143,8 +134,6 @@ class TransactionService {
     }
     const oldTransaction = oldTransactionArr[0];
 
-    // 2. Atualizar saldo da conta se necessário
-    // Só se for income/expense e não mudou de conta
     if (
       (oldTransaction.type === 'income' || oldTransaction.type === 'expense') &&
       oldTransaction.accountId &&
@@ -153,9 +142,7 @@ class TransactionService {
       const oldValue = new Decimal(oldTransaction.value_installment || oldTransaction.value || 0);
       const newValue = new Decimal(filteredData.value_installment ?? filteredData.value ?? oldValue);
 
-      // Se mudou o valor
       if (!oldValue.equals(newValue)) {
-        // Reverte o valor antigo
         const reverseOp = oldTransaction.type === 'income' ? 'subtract' : 'add';
         await this.updateAccountBalance({
           accountId: oldTransaction.accountId,
@@ -163,7 +150,6 @@ class TransactionService {
           amount: oldValue,
           operation: reverseOp
         });
-        // Aplica o novo valor
         const applyOp = oldTransaction.type === 'income' ? 'add' : 'subtract';
         await this.updateAccountBalance({
           accountId: oldTransaction.accountId,
@@ -174,7 +160,6 @@ class TransactionService {
       }
     }
 
-    // 3. Atualizar a transação no banco
     const updatedTransaction = await TransactionRepository.updateTransaction(validId.id, filteredData);
     if (!updatedTransaction) {
       throw { code: 404 };
@@ -185,7 +170,6 @@ class TransactionService {
   static async deleteTransaction(id, userId) {
     const validId = AccountSchemas.accountIdParam.parse({ id });
     const validUserId = AccountSchemas.userIdParam.parse({ userId });
-    // Primeiro, buscar a transação para obter os dados antes de deletá-la
     const transactionToDelete = await TransactionRepository.listTransactions(
       { id: validId.id, userId: validUserId.userId }, 0, 1, 'asc');
 
@@ -250,7 +234,7 @@ class TransactionService {
             break;
           case 'monthly':
             shouldCreateTransaction = await this._checkMonthlyRecurrence(transaction, rondonia);
-            newReleaseDate = this._calculateMonthlyNextDate(transaction, rondonia);
+            newReleaseDate = await this._calculateMonthlyNextDate(transaction, rondonia);
             break;
           case 'yearly':
             shouldCreateTransaction = await this._checkYearlyRecurrence(transaction, rondonia);
@@ -286,17 +270,12 @@ class TransactionService {
 
     // Usar fuso horário de Rondônia (UTC-4)
     const today = new Date();
-    const rondonia = new Date(today.getTime() - (4 * 60 * 60 * 1000)); // UTC-4
-    const currentDay = rondonia.getUTCDate();
+    const rondonia = new Date(today.getTime() - (4 * 60 * 60 * 1000));
     const currentMonth = rondonia.getUTCMonth() + 1;
     const currentYear = rondonia.getUTCFullYear();
 
-    const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
-    const previousYear = currentMonth === 1 ? currentYear - 1 : currentYear;
-
     console.log("----------------------------------------------------------------------------------------------------------------------------");
-    console.log(`[PARCELA] Processando ${installmentTransactions.length} transações parceladas para ${currentDay}/${currentMonth}/${currentYear}`);
-    console.log(`[PARCELA] Buscando transações parceladas do mês anterior: ${previousMonth}/${previousYear}`);
+    console.log(`[PARCELA] Processando ${installmentTransactions.length} transações parceladas para ${rondonia.toISOString().split('T')[0]}`);
 
     // Filtrar apenas transações que ainda têm parcelas pendentes
     const pendingInstallments = installmentTransactions.filter(
@@ -308,21 +287,13 @@ class TransactionService {
         continue;
       }
 
-      const releaseDate = new Date(transaction.release_date);
-      const transactionDay = releaseDate.getUTCDate();
-      const transactionMonth = releaseDate.getUTCMonth() + 1;
-      const transactionYear = releaseDate.getUTCFullYear();
-
-      // Verificar se hoje é o dia da próxima parcela e se a transação é do mês anterior do mesmo ano
-      if (transactionDay === currentDay &&
-        transactionMonth === previousMonth &&
-        transactionYear === previousYear) {
-
-        // Dupla verificação: garantir que ainda há parcelas a serem processadas
-        if (transaction.current_installment < transaction.number_installments) {
+      try {
+        // Usar a nova lógica inteligente
+        const shouldCreate = await this._shouldCreateNextInstallment(transaction, rondonia);
+        
+        if (shouldCreate) {
           const nextInstallment = transaction.current_installment + 1;
 
-          // Tripla verificação: garantir que a próxima parcela não excede o máximo
           if (nextInstallment > transaction.number_installments) {
             console.log(`[PARCELA] Ignorando transação ${transaction.name}: próxima parcela (${nextInstallment}) excederia o máximo (${transaction.number_installments})`);
             continue;
@@ -343,22 +314,20 @@ class TransactionService {
           );
 
           if (!existsInCurrentMonth) {
+            // Calcular a data correta da próxima parcela
+            const nextInstallmentDate = await this._calculateNextInstallmentDate(transaction, rondonia);
+            
             let installmentValue = transaction.value_installment;
 
-            // Sempre recalcular se é a última parcela para garantir que o total seja exato
             if (nextInstallment === transaction.number_installments && transaction.value) {
               const totalValue = new Decimal(transaction.value);
               const currentInstallmentValue = new Decimal(transaction.value_installment);
-
-              // Calcular quanto já foi pago nas parcelas anteriores
               const previousInstallments = new Decimal(nextInstallment - 1);
               const paidSoFar = currentInstallmentValue.mul(previousInstallments);
-
-              // A última parcela é o que resta
               const lastInstallmentValue = totalValue.minus(paidSoFar);
               installmentValue = lastInstallmentValue.toNumber();
 
-              console.log(`[PARCELA] Última parcela ${nextInstallment}/${transaction.number_installments}: ajustando valor para R$ ${installmentValue} (resto: R$ ${lastInstallmentValue.minus(currentInstallmentValue).toNumber()})`);
+              console.log(`[PARCELA] Última parcela ${nextInstallment}/${transaction.number_installments}: ajustando valor para R$ ${installmentValue}`);
             } else {
               console.log(`[PARCELA] Parcela ${nextInstallment}/${transaction.number_installments}: valor padrão R$ ${installmentValue}`);
             }
@@ -369,7 +338,7 @@ class TransactionService {
               category: transaction.category,
               value: transaction.value,
               value_installment: installmentValue,
-              release_date: `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`,
+              release_date: nextInstallmentDate, // Usar a data calculada corretamente
               number_installments: transaction.number_installments,
               current_installment: nextInstallment,
               recurring: false,
@@ -387,19 +356,134 @@ class TransactionService {
               throw { code: 500, message: "Erro ao criar próxima parcela" };
             }
 
-            console.log(`[PARCELA] Nova parcela criada: ${transaction.name} - Parcela ${nextInstallment}/${transaction.number_installments} - R$ ${installmentValue} (do mês ${previousMonth}/${previousYear} para ${currentMonth}/${currentYear})`);
+            console.log(`[PARCELA] Nova parcela criada: ${transaction.name} - Parcela ${nextInstallment}/${transaction.number_installments} - R$ ${installmentValue} para ${nextInstallmentDate}`);
           } else {
             console.log(`[PARCELA] Parcela já existe para o mês atual: ${transaction.name} - Parcela ${nextInstallment}/${transaction.number_installments}`);
           }
         }
+      } catch (error) {
+        console.error(`[PARCELA] Erro ao processar parcela ${transaction.name}:`, error);
       }
     }
     console.log('[PARCELA] Processamento de transações parceladas concluído');
   }
 
+
   /**
-   * Métodos auxiliares para diferentes tipos de recorrência
+   * Busca o dia original de uma transação recorrente mensal
+   * Procura pela transação mais antiga da mesma série recorrente
    */
+  static async _findOriginalDayForMonthlyRecurring(transaction) {
+    const oldestTransaction = await prisma.transactions.findFirst({
+      where: {
+        userId: transaction.userId,
+        name: transaction.name,
+        category: transaction.category,
+        type: transaction.type,
+        accountId: transaction.accountId,
+        paymentMethodId: transaction.paymentMethodId,
+        recurring: true,
+        recurring_type: 'monthly'
+      },
+      orderBy: {
+        release_date: 'asc'
+      },
+      select: {
+        release_date: true
+      }
+    });
+    
+    if (oldestTransaction) {
+      return new Date(oldestTransaction.release_date).getUTCDate();
+    }
+    
+    return new Date(transaction.release_date).getUTCDate();
+  }
+
+  /**
+   * Busca o dia original de uma transação parcelada
+   * Procura pela primeira parcela da mesma série
+   */
+  static async _findOriginalDayForInstallment(transaction) {
+    const firstInstallment = await prisma.transactions.findFirst({
+      where: {
+        userId: transaction.userId,
+        name: transaction.name,
+        category: transaction.category,
+        type: transaction.type,
+        accountId: transaction.accountId,
+        paymentMethodId: transaction.paymentMethodId,
+        number_installments: transaction.number_installments,
+        current_installment: 1 // Primeira parcela
+      },
+      select: {
+        release_date: true
+      }
+    });
+    
+    if (firstInstallment) {
+      return new Date(firstInstallment.release_date).getUTCDate();
+    }
+    
+    return new Date(transaction.release_date).getUTCDate();
+  }
+
+  /**
+   * Verifica se hoje é o dia correto para criar a próxima parcela
+   * Considera dias que não existem em todos os meses (ex: 31)
+   */
+  static async _shouldCreateNextInstallment(transaction, currentDate) {
+    const transactionDate = new Date(transaction.release_date);
+    const currentDay = currentDate.getUTCDate();
+    const currentMonth = currentDate.getUTCMonth() + 1;
+    const currentYear = currentDate.getUTCFullYear();
+    
+    const transactionMonth = transactionDate.getUTCMonth() + 1;
+    const transactionYear = transactionDate.getUTCFullYear();
+    
+    const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+    const previousYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+    
+    // Verificar se a transação é do mês anterior
+    if (transactionMonth !== previousMonth || transactionYear !== previousYear) {
+      return false;
+    }
+    
+    // Buscar o dia original da primeira parcela
+    const originalDay = await this._findOriginalDayForInstallment(transaction);
+    
+    // Obter o último dia do mês atual
+    const lastDayOfCurrentMonth = new Date(Date.UTC(currentYear, currentMonth, 0)).getUTCDate();
+    
+    // Se o dia original existe no mês atual, verifica se hoje é esse dia
+    if (originalDay <= lastDayOfCurrentMonth) {
+      return originalDay === currentDay;
+    } else {
+      // Se o dia original não existe no mês atual (ex: 31 em fevereiro),
+      // verifica se hoje é o último dia do mês atual
+      return currentDay === lastDayOfCurrentMonth;
+    }
+  }
+
+  /**
+   * Calcula a data da próxima parcela considerando dias que não existem em todos os meses
+   */
+  static async _calculateNextInstallmentDate(transaction, currentDate) {
+    const currentMonth = currentDate.getUTCMonth() + 1;
+    const currentYear = currentDate.getUTCFullYear();
+    
+    // Buscar o dia original da primeira parcela
+    const originalDay = await this._findOriginalDayForInstallment(transaction);
+    
+    // Obter o último dia do mês atual
+    const lastDayOfCurrentMonth = new Date(Date.UTC(currentYear, currentMonth, 0)).getUTCDate();
+    
+    // Se o dia original existe no mês atual, usa esse dia
+    // Senão, usa o último dia do mês atual
+    const dayToUse = originalDay <= lastDayOfCurrentMonth ? originalDay : lastDayOfCurrentMonth;
+    
+    return `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${dayToUse.toString().padStart(2, '0')}`;
+  }
   
   // Recorrência Diária
   static async _checkDailyRecurrence(transaction, currentDate) {
@@ -437,14 +521,12 @@ class TransactionService {
     return `${currentDate.getUTCFullYear()}-${(currentDate.getUTCMonth() + 1).toString().padStart(2, '0')}-${currentDate.getUTCDate().toString().padStart(2, '0')}`;
   }
 
-  // Recorrência Mensal (método existente, refatorado)
   static async _checkMonthlyRecurrence(transaction, currentDate) {
     const transactionDate = new Date(transaction.release_date);
     const currentDay = currentDate.getUTCDate();
     const currentMonth = currentDate.getUTCMonth() + 1;
     const currentYear = currentDate.getUTCFullYear();
     
-    const transactionDay = transactionDate.getUTCDate();
     const transactionMonth = transactionDate.getUTCMonth() + 1;
     const transactionYear = transactionDate.getUTCFullYear();
     
@@ -452,20 +534,41 @@ class TransactionService {
     const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
     const previousYear = currentMonth === 1 ? currentYear - 1 : currentYear;
     
-    // Verificar se hoje é o dia da recorrência E se a transação é do mês anterior do mesmo ano
-    return (
-      transactionDay === currentDay &&
-      transactionMonth === previousMonth &&
-      transactionYear === previousYear
-    );
+    // Verificar se a transação é do mês anterior
+    if (transactionMonth !== previousMonth || transactionYear !== previousYear) {
+      return false;
+    }
+    // Buscar o dia original da primeira transação desta série
+    const originalDay = await this._findOriginalDayForMonthlyRecurring(transaction);
+    
+    // Obter o último dia do mês atual
+    const lastDayOfCurrentMonth = new Date(Date.UTC(currentYear, currentMonth, 0)).getUTCDate();
+    
+    // Se o dia original existe no mês atual, verifica se hoje é esse dia
+    if (originalDay <= lastDayOfCurrentMonth) {
+      return originalDay === currentDay;
+    } else {
+      // Se o dia original não existe no mês atual (ex: 31 em fevereiro),
+      // verifica se hoje é o último dia do mês atual
+      return currentDay === lastDayOfCurrentMonth;
+    }
   }
 
-  static _calculateMonthlyNextDate(transaction, currentDate) {
-    const currentDay = currentDate.getUTCDate();
+  static async _calculateMonthlyNextDate(transaction, currentDate) {
     const currentMonth = currentDate.getUTCMonth() + 1;
     const currentYear = currentDate.getUTCFullYear();
     
-    return `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
+    // Buscar o dia original da primeira transação desta série
+    const originalDay = await this._findOriginalDayForMonthlyRecurring(transaction);
+    
+    // Obter o último dia do mês atual
+    const lastDayOfCurrentMonth = new Date(Date.UTC(currentYear, currentMonth, 0)).getUTCDate();
+    
+    // Se o dia original existe no mês atual, usa esse dia
+    // Senão, usa o último dia do mês atual
+    const dayToUse = originalDay <= lastDayOfCurrentMonth ? originalDay : lastDayOfCurrentMonth;
+    
+    return `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${dayToUse.toString().padStart(2, '0')}`;
   }
 
   // Recorrência Anual
@@ -499,7 +602,14 @@ class TransactionService {
   // Método para criar transação recorrente
   static async _createRecurringTransaction(originalTransaction, newReleaseDate, recurringType) {
     // Calcular o período de verificação baseado no tipo de recorrência
-    const newDate = new Date(newReleaseDate);
+    const newDate = new Date(newReleaseDate + 'T00:00:00.000Z'); // Garantir formato UTC
+    
+    // Verificar se a data é válida
+    if (isNaN(newDate.getTime())) {
+      console.error(`[RECORRENTE] Data inválida: ${newReleaseDate}`);
+      return;
+    }
+    
     let startDate, endDate;
 
     switch (recurringType) {
@@ -544,7 +654,7 @@ class TransactionService {
         name: originalTransaction.name,
         category: originalTransaction.category,
         value: originalTransaction.value,
-        release_date: newReleaseDate,
+        release_date: newReleaseDate, // String no formato YYYY-MM-DD
         recurring: true,
         recurring_type: recurringType,
         accountId: originalTransaction.accountId,
