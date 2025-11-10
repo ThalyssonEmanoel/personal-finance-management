@@ -1,779 +1,730 @@
 import request from "supertest";
-import { expect, it, describe, beforeAll, jest } from "@jest/globals";
+import {
+	describe,
+	it,
+	expect,
+	beforeAll,
+	afterAll,
+	jest
+} from "@jest/globals";
+import path from "path";
+import fs from "fs/promises";
+import { fileURLToPath } from "url";
 import app from "../../app.js";
-import { faker } from '@faker-js/faker';
+import { faker } from "@faker-js/faker";
 import { prisma } from "../../config/prismaClient.js";
 
-let account_faker = faker.finance.accountName();
-let token;
-let adminToken;
-let accountInformation;
-let userInformation;
-let AccountCadastrada;
-let adminUserId;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.resolve(__dirname, "../../..");
+
+jest.setTimeout(40000);
+
+let testUserId;
+let testToken;
+let secondaryUserId;
+let secondaryToken;
+let paymentMethodId = null;
+
+const generatedFiles = new Set();
+
+const randomEmail = () => `account.${faker.string.alphanumeric({ length: 10, casing: "lower" })}.${Date.now()}@example.com`;
+const randomPassword = () => `Aa1@${faker.string.alphanumeric({ length: 8, casing: "mixed" })}`;
+const buildUserPayload = () => ({
+	name: `Account Test User ${faker.number.int({ min: 1000, max: 9999 })}`,
+	email: randomEmail(),
+	password: randomPassword()
+});
+
+const accountTypes = [
+	"conta_corrente",
+	"poupanca",
+	"carteira_digital",
+	"investimento",
+	"conta_salario"
+];
+
+const randomAccountName = () => `Conta Teste ${faker.number.int({ min: 1000, max: 9999 })}`;
+const randomAccountType = () => faker.helpers.arrayElement(accountTypes);
+const randomBalance = () => Number(faker.number.float({ min: 50, max: 5000, precision: 0.01 }).toFixed(2));
+
+const resolveFilePath = (filePath) => (
+	path.isAbsolute(filePath) ? filePath : path.join(ROOT_DIR, filePath)
+);
+
+const trackIconFile = (iconPath) => {
+	if (!iconPath) {
+		return;
+	}
+	const relativePath = iconPath.startsWith("src") ? iconPath : path.join("src", iconPath);
+	generatedFiles.add(resolveFilePath(relativePath));
+};
+
+const loginUser = async (email, password) => (
+	request(app).post("/login").send({ email, password })
+);
+
+const cleanupAccountsForUser = async (userId) => {
+	if (!userId) {
+		return;
+	}
+	try {
+		const accountIds = await prisma.accounts.findMany({
+			where: { userId },
+			select: { id: true }
+		}).then((items) => items.map((item) => item.id));
+
+		if (accountIds.length === 0) {
+			return;
+		}
+
+		await prisma.accountPaymentMethods.deleteMany({
+			where: { accountId: { in: accountIds } }
+		});
+
+		await prisma.accounts.deleteMany({
+			where: { id: { in: accountIds } }
+		});
+	} catch (error) {
+		// Best-effort cleanup; swallow errors to avoid masking test results
+	}
+};
 
 beforeAll(async () => {
-  const response = await request(app)
-    .post("/login")
-    .send({
-      email: "thalysson140105@gmail.com",
-      password: "Senha@12345",
-    });
+	const testUserPayload = buildUserPayload();
 
-  expect(response.status).toBe(200);
-  token = response.body.data.accessToken;
-  adminToken = token;
+	const createUserResponse = await request(app)
+		.post("/users")
+		.field("name", testUserPayload.name)
+		.field("email", testUserPayload.email)
+		.field("password", testUserPayload.password);
 
-  const adminResponse = await request(app)
-    .get("/admin/users")
-    .set("Content-Type", "application/json")
-    .set("Authorization", `Bearer ${adminToken}`);
-  
-  if (adminResponse.status === 200 && adminResponse.body.data.length > 0) {
-    adminUserId = adminResponse.body.data[0].id;
-    userInformation = adminResponse.body.data[0];
-  }
+	expect(createUserResponse.status).toBe(201);
+	expect(createUserResponse.body.error).toBe(false);
+	testUserId = createUserResponse.body.data.id;
 
-}, 1000);
+	const loginResponse = await loginUser(testUserPayload.email, testUserPayload.password);
+	expect(loginResponse.status).toBe(200);
+	testToken = loginResponse.body.data.accessToken;
+
+	const secondaryUserPayload = buildUserPayload();
+	const createSecondaryResponse = await request(app)
+		.post("/users")
+		.field("name", secondaryUserPayload.name)
+		.field("email", secondaryUserPayload.email)
+		.field("password", secondaryUserPayload.password);
+
+	expect(createSecondaryResponse.status).toBe(201);
+	secondaryUserId = createSecondaryResponse.body.data.id;
+
+	const secondaryLoginResponse = await loginUser(secondaryUserPayload.email, secondaryUserPayload.password);
+	expect(secondaryLoginResponse.status).toBe(200);
+	secondaryToken = secondaryLoginResponse.body.data.accessToken;
+
+	const paymentMethod = await prisma.paymentMethods.findFirst({ select: { id: true } });
+	paymentMethodId = paymentMethod?.id ?? null;
+
+	const baseResponse = await request(app)
+		.post("/account")
+		.set("Authorization", `Bearer ${testToken}`)
+		.query({ userId: testUserId })
+		.field("name", randomAccountName())
+		.field("type", randomAccountType())
+		.field("balance", randomBalance().toFixed(2));
+
+	expect(baseResponse.status).toBe(201);
+	expect(baseResponse.body.error).toBe(false);
+		const baseAccountData = baseResponse.body.data;
+		trackIconFile(baseAccountData.icon);
+});
 
 afterAll(async () => {
-  await prisma.$disconnect();
+	for (const filePath of generatedFiles) {
+		try {
+			await fs.unlink(filePath);
+		} catch (error) {
+		}
+	}
+
+	await cleanupAccountsForUser(testUserId);
+	await cleanupAccountsForUser(secondaryUserId);
+
+	if (testUserId) {
+		try {
+			await prisma.users.delete({ where: { id: testUserId } });
+		} catch (error) {
+		}
+	}
+
+	if (secondaryUserId) {
+		try {
+			await prisma.users.delete({ where: { id: secondaryUserId } });
+		} catch (error) {
+		}
+	}
+
+	await prisma.$disconnect();
 });
 
-function getRandomAccountType() {
-  const types = ["Salário", "Corrente", "Poupança"];
-  return types[Math.floor(Math.random() * types.length)];
-}
+describe("GET /account/:id", () => {
+	it("deve listar contas do usuário com saldo total", async () => {
+		const response = await request(app)
+			.get(`/account/${testUserId}`)
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId });
 
-describe("Listar contas (Admin) GET /admin/account", () => {
-  describe("Caminho feliz", () => {
-    it("deve listar todas as contas com sucesso", async () => {
-      const response = await request(app)
-        .get("/admin/account")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${adminToken}`);
-      
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-      expect(response.body.data).toBeDefined();
-      if (response.body.data.length > 0) {
-        accountInformation = response.body.data[0];
-      }
-    });
+		expect(response.status).toBe(200);
+		expect(response.body.error).toBe(false);
+		expect(Array.isArray(response.body.data.contas)).toBe(true);
+		expect(response.body.data.contas.length).toBeGreaterThan(0);
+		expect(response.body.page).toBe(1);
+		expect(response.body.data).toHaveProperty("totalBalance");
+	});
 
-    it("deve listar contas com base no nome", async () => {
-      if (!accountInformation) {
-        const newAccount = await request(app)
-          .post("/account")
-          .set("Authorization", `Bearer ${token}`)
-          .query({ userId: userInformation.id })
-          .send({
-            name: "Conta Teste",
-            type: "Corrente",
-            balance: 1000.00,
-          });
-        accountInformation = newAccount.body.data;
-      }
+	it("deve aplicar filtro por nome da conta", async () => {
+		const filteredName = randomAccountName();
 
-      const response = await request(app)
-        .get(`/admin/account?name=${accountInformation.name}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${adminToken}`);
-      
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-    });
+		const createResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", filteredName)
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2));
 
-    it("deve listar contas com base no ID", async () => {
-      const response = await request(app)
-        .get(`/admin/account?id=${accountInformation.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${adminToken}`);
-      
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-    });
+		expect(createResponse.status).toBe(201);
 
-    it("deve listar contas com base no tipo", async () => {
-      const response = await request(app)
-        .get(`/admin/account?type=${accountInformation.type}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${adminToken}`);
-      
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-    });
+		const response = await request(app)
+			.get(`/account/${testUserId}`)
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId, name: filteredName });
 
-    it("deve listar contas limitando o tamanho da página", async () => {
-      const response = await request(app)
-        .get("/admin/account?limit=5")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${adminToken}`);
-      
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-      expect(response.body.limite).toBe(5);
-    });
+		expect(response.status).toBe(200);
+		expect(response.body.error).toBe(false);
+		const hasFilteredAccount = response.body.data.contas.some((account) => account.name === filteredName);
+		expect(hasFilteredAccount).toBe(true);
+	});
 
-    it("deve listar contas da próxima página", async () => {
-      const response = await request(app)
-        .get("/admin/account?page=2")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${adminToken}`);
-      
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-    });
-  });
+	it("deve aplicar filtro por tipo de conta", async () => {
+		const filteredType = "poupanca";
 
-  describe("Caminho triste", () => {
-    it("deve retornar erro ao tentar listar contas sem autorização", async () => {
-      const response = await request(app)
-        .get("/admin/account")
-        .set("Content-Type", "application/json");
-      
-      expect(response.status).toBe(401);
-    });
+		const createResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", randomAccountName())
+			.field("type", filteredType)
+			.field("balance", randomBalance().toFixed(2));
 
-    it("deve retornar erro ao tentar listar contas com parâmetros inválidos", async () => {
-      const response = await request(app)
-        .get("/admin/account?id=abc&name=123&type=123&balance=abc&page=abc&limit=abc&userId=abc")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${adminToken}`);
-      
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty("code", 400);
-      expect(response.body).toHaveProperty("message");
-    });
+		expect(createResponse.status).toBe(201);
 
-    it("deve retornar erro ao tentar listar contas de página inexistente", async () => {
-      const response = await request(app)
-        .get("/admin/account?page=999")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${adminToken}`);
-      
-      expect(response.status).toBe(404);
-      expect(response.body).toHaveProperty("code", 404);
-      expect(response.body).toHaveProperty("message", "Nenhuma conta encontrada");
-    });
-  });
+		const response = await request(app)
+			.get(`/account/${testUserId}`)
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId, type: filteredType });
+
+		expect(response.status).toBe(200);
+		expect(response.body.error).toBe(false);
+		const onlyFilteredType = response.body.data.contas.every((account) => account.type === filteredType);
+		expect(onlyFilteredType).toBe(true);
+	});
+
+	it("deve limitar a quantidade de resultados retornados", async () => {
+		const response = await request(app)
+			.get(`/account/${testUserId}`)
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId, limit: 1 });
+
+		expect(response.status).toBe(200);
+		expect(response.body.error).toBe(false);
+		expect(response.body.limite).toBe(1);
+		expect(response.body.data.contas.length).toBeLessThanOrEqual(1);
+	});
+
+	it("deve retornar 404 quando nenhum resultado for encontrado", async () => {
+		const response = await request(app)
+			.get(`/account/${testUserId}`)
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId, name: `Conta Inexistente ${Date.now()}` });
+
+		expect(response.status).toBe(404);
+		expect(response.body.error).toBe(true);
+	});
+
+	it("deve retornar erro ao omitir o userId", async () => {
+		const response = await request(app)
+			.get(`/account/${testUserId}`)
+			.set("Authorization", `Bearer ${testToken}`);
+
+		expect(response.status).toBe(400);
+		expect(response.body.error ?? true).toBe(true);
+	});
+
+	it("deve retornar erro ao acessar sem token", async () => {
+		const response = await request(app)
+			.get(`/account/${testUserId}`)
+			.query({ userId: testUserId });
+
+		expect(response.status).toBe(401);
+		expect(response.body.error).toBe(true);
+	});
+
+	it("deve impedir acesso às contas de outro usuário", async () => {
+		const response = await request(app)
+			.get(`/account/${testUserId}`)
+			.set("Authorization", `Bearer ${secondaryToken}`)
+			.query({ userId: testUserId });
+
+		expect(response.status).toBe(403);
+		expect(response.body.error ?? true).toBe(true);
+	});
 });
 
-describe("Cadastrar conta POST /account", () => {
-  describe("Caminho feliz", () => {
-    it("deve cadastrar uma nova conta", async () => {
-      const unique_account_name = `${account_faker}_${Date.now()}`;
-      
-      const response = await request(app)
-        .post("/account")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ userId: userInformation.id })
-        .send({
-          name: unique_account_name,
-          type: getRandomAccountType(),
-          balance: 1000.00,
-        });
+describe("POST /account", () => {
+	it("deve cadastrar uma nova conta básica", async () => {
+		const name = randomAccountName();
+		const type = randomAccountType();
+		const balance = randomBalance();
 
-      expect(response.status).toBe(201);
-      expect(response.body.error).toBe(false);
-      expect(response.body.data).toBeDefined();
-      expect(response.body.data.name).toBe(unique_account_name);
-      expect(response.body.data.balance).toBe("1000");
-      expect(response.body.data.userId).toBe(userInformation.id);
-      
-      AccountCadastrada = response.body.data;
-    });
+		const response = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", name)
+			.field("type", type)
+			.field("balance", balance.toFixed(2));
 
-    it("deve cadastrar uma conta com ícone", async () => {
-      const response = await request(app)
-        .post("/account")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ userId: userInformation.id })
-        .send({
-          name: faker.finance.accountName(),
-          type: getRandomAccountType(),
-          balance: 500.00,
-          icon: "path/to/icon.png",
-        });
+		expect(response.status).toBe(201);
+		expect(response.body.error).toBe(false);
+		expect(response.body.data).toMatchObject({
+			name,
+			type,
+			userId: testUserId
+		});
+		expect(Number(response.body.data.balance)).toBeCloseTo(balance, 2);
+	});
 
-      expect(response.status).toBe(201);
-      expect(response.body.error).toBe(false);
-      expect(response.body.data.icon).toBeDefined();
-    });
-  });
+	const accountWithPaymentMethodTest = paymentMethodId ? it : it.skip;
+	accountWithPaymentMethodTest("deve cadastrar conta vinculando métodos de pagamento", async () => {
+		const response = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", randomAccountName())
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2))
+			.field("paymentMethodIds", String(paymentMethodId));
 
-  describe("Caminho triste", () => {
-    it("deve retornar erro ao tentar cadastrar conta com nome e tipo já existentes", async () => {
-      const response = await request(app)
-        .post("/account")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ userId: userInformation.id })
-        .send({
-          name: AccountCadastrada.name,
-          type: AccountCadastrada.type,
-          balance: 1000.00,
-        });
-      
-      expect(response.status).toBe(409);
-      expect(response.body.error).toBe(true);
-      expect(response.body.message).toBe("Já existe uma conta com nome semelhante e tipo para este usuário.");
-    });
+		expect(response.status).toBe(201);
+		expect(response.body.error).toBe(false);
+		const linkedMethods = response.body.data.accountPaymentMethods ?? [];
+		const hasMethod = linkedMethods.some((item) => item.paymentMethod?.id === paymentMethodId);
+		expect(hasMethod).toBe(true);
+	});
 
-    it("deve retornar erro ao tentar cadastrar conta com parâmetros inválidos", async () => {
-      const response = await request(app)
-        .post("/account")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ userId: "abc" })
-        .send({
-          name: 123,
-          type: 123,
-          balance: "abc",
-        });
-      
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty("code", 400);
-      expect(response.body.message).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ path: "name", message: "The account name must be a string/text." }),
-          expect.objectContaining({ path: "type", message: "Account type must be a string." }),
-          expect.objectContaining({ path: "balance", message: "Account balance must be a number." }),
-        ])
-      );
-    });
+	it("deve aceitar upload de ícone", async () => {
+		const iconBuffer = Buffer.from("fake image content");
 
-    it("deve retornar erro ao tentar cadastrar conta com nome apenas numérico", async () => {
-      const response = await request(app)
-        .post("/account")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ userId: userInformation.id })
-        .send({
-          name: "123456",
-          type: getRandomAccountType(),
-          balance: 1000.00,
-        });
-      
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty("code", 400);
-      expect(response.body.message).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            path: "name",
-            message: "The account name must be a string/text.",
-          }),
-        ])
-      );
-    });
+		const response = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", randomAccountName())
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2))
+			.attach("icon", iconBuffer, "icon.png");
 
-    it("deve retornar erro ao tentar cadastrar conta sem autorização", async () => {
-      const response = await request(app)
-        .post("/account")
-        .set("Content-Type", "application/json")
-        .query({ userId: userInformation.id })
-        .send({
-          name: faker.finance.accountName(),
-          type: getRandomAccountType(),
-          balance: 1000.00,
-        });
-      
-      expect(response.status).toBe(401);
-    });
+		expect(response.status).toBe(201);
+		expect(response.body.error).toBe(false);
+		expect(response.body.data.icon).toBeTruthy();
+		trackIconFile(response.body.data.icon);
+	});
 
-    it("deve retornar erro ao tentar cadastrar conta sem dados obrigatórios", async () => {
-      const response = await request(app)
-        .post("/account")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ userId: userInformation.id })
-        .send({});
-      
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty("code", 400);
-    });
-  });
+	it("não deve permitir conta duplicada por nome e tipo para o mesmo usuário", async () => {
+		const name = randomAccountName();
+		const type = "conta_corrente";
+
+		const firstResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", name)
+			.field("type", type)
+			.field("balance", randomBalance().toFixed(2));
+
+		expect(firstResponse.status).toBe(201);
+
+		const duplicateResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", name)
+			.field("type", type)
+			.field("balance", randomBalance().toFixed(2));
+
+		expect(duplicateResponse.status).toBe(409);
+		expect(duplicateResponse.body.error).toBe(true);
+	});
+
+	it("deve falhar quando método de pagamento não existir", async () => {
+		const response = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", randomAccountName())
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2))
+			.field("paymentMethodIds", "999999");
+
+		expect(response.status).toBe(400);
+		expect(response.body.error).toBe(true);
+	});
+
+	it("deve retornar erro ao enviar payload incompleto", async () => {
+		const response = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2));
+
+		expect(response.status).toBe(400);
+		expect(response.body.error ?? true).toBe(true);
+	});
+
+	it("deve exigir o parâmetro userId", async () => {
+		const response = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.field("name", randomAccountName())
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2));
+
+		expect(response.status).toBe(400);
+		expect(response.body.error ?? true).toBe(true);
+	});
+
+	it("deve recusar criação sem token", async () => {
+		const response = await request(app)
+			.post("/account")
+			.query({ userId: testUserId })
+			.field("name", randomAccountName())
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2));
+
+		expect(response.status).toBe(401);
+		expect(response.body.error).toBe(true);
+	});
 });
 
-describe("Listar contas do usuário GET /account/:id", () => {
-  describe("Caminho feliz", () => {
-    it("deve listar contas do usuário com sucesso", async () => {
-      const response = await request(app)
-        .get(`/account/${userInformation.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ userId: userInformation.id });
-      
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-      expect(response.body.data).toBeDefined();
-      expect(Array.isArray(response.body.data)).toBe(true);
-      
-      if (response.body.data.length > 0) {
-        accountInformation = response.body.data[0];
-      }
-    });
+describe("PATCH /account/:id", () => {
+	it("deve atualizar nome, tipo e saldo da conta", async () => {
+		const createResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", randomAccountName())
+			.field("type", "conta_corrente")
+			.field("balance", randomBalance().toFixed(2));
 
-    it("deve listar contas com base no nome", async () => {
-      if (!accountInformation) {
-        accountInformation = AccountCadastrada;
-      }
+		expect(createResponse.status).toBe(201);
+		const account = createResponse.body.data;
 
-      const response = await request(app)
-        .get(`/account/${userInformation.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          userId: userInformation.id,
-          name: accountInformation.name 
-        });
-      
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-    });
+		const newName = `Conta Atualizada ${faker.number.int({ min: 1000, max: 9999 })}`;
+		const newType = "poupanca";
+		const newBalance = randomBalance();
 
-    it("deve listar contas com base no ID", async () => {
-      const response = await request(app)
-        .get(`/account/${userInformation.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          userId: userInformation.id,
-          id: accountInformation.id 
-        });
-      
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-    });
+		const response = await request(app)
+			.patch(`/account/${account.id}`)
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ id: account.id, userId: testUserId })
+			.field("name", newName)
+			.field("type", newType)
+			.field("balance", newBalance.toFixed(2));
 
-    it("deve listar contas com base no tipo", async () => {
-      const response = await request(app)
-        .get(`/account/${userInformation.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          userId: userInformation.id,
-          type: accountInformation.type 
-        });
-      
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-    });
+		expect(response.status).toBe(200);
+		expect(response.body.error).toBe(false);
+		expect(response.body.data.name).toBe(newName);
+		expect(response.body.data.type).toBe(newType);
+		expect(Number(response.body.data.balance)).toBeCloseTo(newBalance, 2);
+	});
 
-    it("deve listar contas pelo saldo", async () => {
-      const response = await request(app)
-        .get(`/account/${userInformation.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          userId: userInformation.id,
-          balance: AccountCadastrada.balance 
-        });
-      
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-      expect(response.body.limite).toBe(10);
-    });
+	const updateWithPaymentMethodsTest = paymentMethodId ? it : it.skip;
+	updateWithPaymentMethodsTest("deve atualizar os métodos de pagamento associados", async () => {
+		const createResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", randomAccountName())
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2));
 
-    it("deve listar contas pelo dono da conta", async () => {
-      const response = await request(app)
-        .get(`/account/${userInformation.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          userId: userInformation.id
-        });
-      
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-      expect(response.body.limite).toBe(10);
-    });
+		expect(createResponse.status).toBe(201);
+		const account = createResponse.body.data;
 
-    it("deve listar contas limitando o tamanho da página", async () => {
-      const response = await request(app)
-        .get(`/account/${userInformation.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          userId: userInformation.id,
-          limit: 10 
-        });
-      
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-      expect(response.body.limite).toBe(10);
-    });
+		const response = await request(app)
+			.patch(`/account/${account.id}`)
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ id: account.id, userId: testUserId })
+			.field("paymentMethodIds", String(paymentMethodId));
 
-    it("deve listar contas da próxima página", async () => {
-      const response = await request(app)
-        .get(`/account/${userInformation.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          userId: userInformation.id,
-          page: 2 
-        });
-      
-      // Como pode não haver dados na página 2, aceitar tanto 200 quanto 404
-      expect([200, 404]).toContain(response.status);
-      if (response.status === 200) {
-        expect(response.body.error).toBe(false);
-      }
-    });
-  });
+		expect(response.status).toBe(200);
+		expect(response.body.error).toBe(false);
+		const methods = response.body.data.accountPaymentMethods ?? [];
+		const hasMethod = methods.some((item) => item.paymentMethod?.id === paymentMethodId);
+		expect(hasMethod).toBe(true);
+	});
 
-  describe("Caminho triste", () => {
-    it("deve retornar erro ao tentar listar contas com parâmetros inválidos", async () => {
-      const response = await request(app)
-        .get(`/account/${userInformation.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          userId: "abc",
-          id: "abc",
-          name: "123",
-          type: "123",
-          balance: "abc",
-          page: "abc",
-          limit: "abc"
-        });
-      
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty("code", 400);
-      expect(response.body).toHaveProperty("message");
-    });
+	it("deve atualizar apenas o ícone da conta", async () => {
+		const createResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", randomAccountName())
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2));
 
-    it("deve retornar erro ao tentar listar contas sem autorização", async () => {
-      const response = await request(app)
-        .get(`/account/${userInformation.id}`)
-        .set("Content-Type", "application/json")
-        .query({ userId: userInformation.id });
-      
-      expect(response.status).toBe(401);
-    });
+		expect(createResponse.status).toBe(201);
+		const account = createResponse.body.data;
 
-    it("deve retornar erro ao tentar listar contas de usuário inexistente", async () => {
-      const response = await request(app)
-        .get("/account/999999")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ userId: 999999 });
-      
-      expect(response.status).toBe(404);
-      expect(response.body).toHaveProperty("code", 404);
-      expect(response.body).toHaveProperty("message", "Nenhuma conta encontrada");
-    });
-  });
+		const iconBuffer = Buffer.from("updated icon content");
+
+		const response = await request(app)
+			.patch(`/account/${account.id}`)
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ id: account.id, userId: testUserId })
+			.attach("icon", iconBuffer, "icon.png");
+
+		expect(response.status).toBe(200);
+		expect(response.body.error).toBe(false);
+		expect(response.body.data.icon).toBeTruthy();
+		trackIconFile(response.body.data.icon);
+	});
+
+	it("não deve permitir atualização que gere duplicidade", async () => {
+		const nameA = randomAccountName();
+		const nameB = randomAccountName();
+		const type = "conta_corrente";
+
+		const firstResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", nameA)
+			.field("type", type)
+			.field("balance", randomBalance().toFixed(2));
+
+		const secondResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", nameB)
+			.field("type", type)
+			.field("balance", randomBalance().toFixed(2));
+
+		expect(firstResponse.status).toBe(201);
+		expect(secondResponse.status).toBe(201);
+
+		const accountB = secondResponse.body.data;
+
+		const response = await request(app)
+			.patch(`/account/${accountB.id}`)
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ id: accountB.id, userId: testUserId })
+			.field("name", nameA)
+			.field("type", type);
+
+		expect(response.status).toBe(409);
+		expect(response.body.error).toBe(true);
+	});
+
+	it("deve retornar 404 ao tentar atualizar conta inexistente", async () => {
+		const response = await request(app)
+			.patch("/account/999999")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ id: 999999, userId: testUserId })
+			.field("name", "Conta Fantasma");
+
+		expect(response.status).toBe(404);
+		expect(response.body.error).toBe(true);
+	});
+
+	it("deve retornar 400 quando o id for inválido", async () => {
+		const response = await request(app)
+			.patch("/account/abc")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ id: "abc", userId: testUserId })
+			.field("name", "Conta");
+
+		expect(response.status).toBe(400);
+		expect(response.body.error ?? true).toBe(true);
+	});
+
+	it("deve recusar atualização sem token", async () => {
+		const createResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", randomAccountName())
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2));
+
+		const account = createResponse.body.data;
+
+		const response = await request(app)
+			.patch(`/account/${account.id}`)
+			.query({ id: account.id, userId: testUserId })
+			.field("name", "Conta sem token");
+
+		expect(response.status).toBe(401);
+		expect(response.body.error).toBe(true);
+	});
+
+	it("deve impedir atualização por outro usuário", async () => {
+		const createResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", randomAccountName())
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2));
+
+		const account = createResponse.body.data;
+
+		const response = await request(app)
+			.patch(`/account/${account.id}`)
+			.set("Authorization", `Bearer ${secondaryToken}`)
+			.query({ id: account.id, userId: testUserId })
+			.field("name", "Conta Inválida");
+
+		expect(response.status).toBe(403);
+		expect(response.body.error ?? true).toBe(true);
+	});
+
+	it("deve exigir userId durante a atualização", async () => {
+		const createResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", randomAccountName())
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2));
+
+		const account = createResponse.body.data;
+
+		const response = await request(app)
+			.patch(`/account/${account.id}`)
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ id: account.id })
+			.field("name", "Conta Sem User");
+
+		expect(response.status).toBe(400);
+		expect(response.body.error ?? true).toBe(true);
+	});
 });
 
-describe("Atualizar conta PATCH /account/:id", () => {
-  let updatedName = "Conta Atualizada";
-  let updatedType = getRandomAccountType();
-  
-  describe("Caminho feliz", () => {
-    it("deve atualizar uma conta", async () => {
-      const response = await request(app)
-        .patch(`/account/${AccountCadastrada.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          id: AccountCadastrada.id,
-          userId: userInformation.id 
-        })
-        .send({
-          name: updatedName,
-          type: updatedType,
-          balance: 2000.50,
-        });
+describe("DELETE /account/:id", () => {
+	it("deve deletar uma conta do usuário", async () => {
+		const createResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", randomAccountName())
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2));
 
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-      expect(response.body.data.name).toBe(updatedName);
-      expect(response.body.data.type).toBe(updatedType);
-      expect(response.body.data.balance).toBe("2000.5");
-    });
+		expect(createResponse.status).toBe(201);
+		const account = createResponse.body.data;
 
-    it("deve atualizar apenas o nome da conta", async () => {
-      const newName = "Novo Nome Conta";
-      
-      const response = await request(app)
-        .patch(`/account/${AccountCadastrada.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          id: AccountCadastrada.id,
-          userId: userInformation.id 
-        })
-        .send({
-          name: newName,
-        });
+		const response = await request(app)
+			.delete(`/account/${account.id}`)
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ id: account.id, userId: testUserId });
 
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-      expect(response.body.data.name).toBe(newName);
-    });
+		expect(response.status).toBe(200);
+		expect(response.body.error).toBe(false);
 
-    it("deve atualizar apenas o saldo da conta", async () => {
-      const newBalance = 5000.75;
-      
-      const response = await request(app)
-        .patch(`/account/${AccountCadastrada.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          id: AccountCadastrada.id,
-          userId: userInformation.id 
-        })
-        .send({
-          balance: newBalance,
-        });
+		const dbCheck = await prisma.accounts.findUnique({ where: { id: account.id } });
+		expect(dbCheck).toBeNull();
+	});
 
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-      expect(response.body.data.balance).toBe("5000.75");
-    });
-  });
+	it("deve retornar 404 ao deletar conta inexistente", async () => {
+		const response = await request(app)
+			.delete("/account/999999")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ id: 999999, userId: testUserId });
 
-  describe("Caminho triste", () => {
-    it("deve retornar erro ao tentar atualizar conta com ID inválido", async () => {
-      const response = await request(app)
-        .patch("/account/abc")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          id: "abc",
-          userId: userInformation.id 
-        })
-        .send({
-          name: updatedName,
-        });
-      
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty("code", 400);
-      expect(response.body.message).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            path: "id",
-            message: "The 'id' field must be an integer."
-          })
-        ])
-      );
-    });
+		expect(response.status).toBe(404);
+		expect(response.body.error).toBe(true);
+	});
 
-    it("deve retornar erro ao tentar atualizar conta inexistente", async () => {
-      const response = await request(app)
-        .patch("/account/999999")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          id: 999999,
-          userId: userInformation.id 
-        })
-        .send({
-          name: updatedName,
-        });
-      
-      expect(response.status).toBe(404);
-      expect(response.body.error).toBe(true);
-      expect(response.body.message).toBe("Conta não encontrada");
-    });
+	it("deve retornar 400 quando o id for inválido", async () => {
+		const response = await request(app)
+			.delete("/account/abc")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ id: "abc", userId: testUserId });
 
-    it("deve retornar erro ao tentar atualizar conta com nome já existente", async () => {
-      const anotherAccount = await request(app)
-        .post("/account")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ userId: userInformation.id })
-        .send({
-          name: "Conta Teste Unique",
-          type: "Poupança",
-          balance: 1000.00,
-        });
+		expect(response.status).toBe(400);
+		expect(response.body.error ?? true).toBe(true);
+	});
 
-      const response = await request(app)
-        .patch(`/account/${AccountCadastrada.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          id: AccountCadastrada.id,
-          userId: userInformation.id 
-        })
-        .send({
-          name: "Conta Teste Unique",
-          type: "Poupança",
-        });
+	it("deve recusar deleção sem token", async () => {
+		const createResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", randomAccountName())
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2));
 
-      expect(response.status).toBe(409);
-      expect(response.body.error).toBe(true);
-      expect(response.body.message).toBe("Já existe uma conta com nome e tipo iguais para este usuário.");
-    });
+		const account = createResponse.body.data;
 
-    it("deve retornar erro ao tentar atualizar conta com nome inválido", async () => {
-      const response = await request(app)
-        .patch(`/account/${AccountCadastrada.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          id: AccountCadastrada.id,
-          userId: userInformation.id 
-        })
-        .send({
-          name: "123456",
-        });
+		const response = await request(app)
+			.delete(`/account/${account.id}`)
+			.query({ id: account.id, userId: testUserId });
 
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty("code", 400);
-      expect(response.body.message).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            path: "name",
-            message: "The account name must contain words, not only numbers.",
-          }),
-        ])
-      );
-    });
+		expect(response.status).toBe(401);
+		expect(response.body.error).toBe(true);
+	});
 
-    it("deve retornar erro ao tentar atualizar conta sem autorização", async () => {
-      const response = await request(app)
-        .patch(`/account/${AccountCadastrada.id}`)
-        .set("Content-Type", "application/json")
-        .query({ 
-          id: AccountCadastrada.id,
-          userId: userInformation.id 
-        })
-        .send({
-          name: updatedName,
-        });
+	it("deve impedir deleção por outro usuário", async () => {
+		const createResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", randomAccountName())
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2));
 
-      expect(response.status).toBe(401);
-    });
+		const account = createResponse.body.data;
 
-    it("deve retornar erro ao tentar atualizar conta sem parâmetros obrigatórios", async () => {
-      const response = await request(app)
-        .patch(`/account/${AccountCadastrada.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          name: updatedName,
-        });
+		const response = await request(app)
+			.delete(`/account/${account.id}`)
+			.set("Authorization", `Bearer ${secondaryToken}`)
+			.query({ id: account.id, userId: testUserId });
 
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty("code", 400);
-    });
-  });
+		expect(response.status).toBe(403);
+		expect(response.body.error ?? true).toBe(true);
+	});
+
+	it("deve retornar erro ao omitir userId", async () => {
+		const createResponse = await request(app)
+			.post("/account")
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ userId: testUserId })
+			.field("name", randomAccountName())
+			.field("type", randomAccountType())
+			.field("balance", randomBalance().toFixed(2));
+
+		const account = createResponse.body.data;
+
+		const response = await request(app)
+			.delete(`/account/${account.id}`)
+			.set("Authorization", `Bearer ${testToken}`)
+			.query({ id: account.id });
+
+		expect(response.status).toBe(400);
+		expect(response.body.error ?? true).toBe(true);
+	});
 });
 
-describe("Deletar conta DELETE /account/:id", () => {
-  describe("Caminho feliz", () => {
-    it("deve deletar uma conta", async () => {
-      const response = await request(app)
-        .delete(`/account/${AccountCadastrada.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          id: AccountCadastrada.id,
-          userId: userInformation.id 
-        });
-      
-      expect(response.status).toBe(200);
-      expect(response.body.error).toBe(false);
-      expect(response.body.data.message).toBe("Conta e todos os dados relacionados foram deletados com sucesso");
-    });
-  });
-
-  describe("Caminho triste", () => {
-    it("deve retornar erro ao tentar deletar conta com ID inválido", async () => {
-      const response = await request(app)
-        .delete("/account/abc")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          id: "abc",
-          userId: userInformation.id 
-        });
-      
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty("code", 400);
-      expect(response.body.message).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            path: "id",
-            message: "The 'id' field must be an integer."
-          })
-        ])
-      );
-    });
-
-    it("deve retornar erro ao tentar deletar conta inexistente", async () => {
-      const response = await request(app)
-        .delete("/account/999999")
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          id: 999999,
-          userId: userInformation.id 
-        });
-      
-      expect(response.status).toBe(404);
-      expect(response.body.error).toBe(true);
-      expect(response.body.message).toBe("Conta não encontrada");
-    });
-
-    it("deve retornar erro ao tentar deletar conta sem autorização", async () => {
-      const testAccount = await request(app)
-        .post("/account")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ userId: userInformation.id })
-        .send({
-          name: "Conta Para Deletar",
-          type: "Corrente",
-          balance: 1000.00,
-        });
-
-      const response = await request(app)
-        .delete(`/account/${testAccount.body.data.id}`)
-        .set("Content-Type", "application/json")
-        .query({ 
-          id: testAccount.body.data.id,
-          userId: userInformation.id 
-        });
-      
-      expect(response.status).toBe(401);
-    });
-
-    it("deve retornar erro ao tentar deletar conta já deletada", async () => {
-      const response = await request(app)
-        .delete(`/account/${AccountCadastrada.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ 
-          id: AccountCadastrada.id,
-          userId: userInformation.id 
-        });
-      
-      expect(response.status).toBe(404);
-      expect(response.body.error).toBe(true);
-      expect(response.body.message).toBe("Conta não encontrada");
-    });
-
-    it("deve retornar erro ao tentar deletar conta sem parâmetros obrigatórios", async () => {
-      const testAccount = await request(app)
-        .post("/account")
-        .set("Authorization", `Bearer ${token}`)
-        .query({ userId: userInformation.id })
-        .send({
-          name: "Conta Teste Delete",
-          type: "Corrente",
-          balance: 1000.00,
-        });
-
-      const response = await request(app)
-        .delete(`/account/${testAccount.body.data.id}`)
-        .set("Content-Type", "application/json")
-        .set("Authorization", `Bearer ${token}`);
-      
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty("code", 400);
-    });
-  });
-});

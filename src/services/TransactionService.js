@@ -47,8 +47,8 @@ class TransactionService {
     };
   }
   /**
-   * Calcula os valores das parcelas para transações parceladas
    * @private
+   * @_calculateInstallmentValues Calcula os valores das parcelas para transações parceladas
    */
   static _calculateInstallmentValues(validTransaction) {
     if (validTransaction.number_installments && validTransaction.number_installments > 1) {

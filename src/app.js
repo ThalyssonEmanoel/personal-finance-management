@@ -20,7 +20,7 @@ const app = express();
  * "" * /25 * * * * *" = A cada 25 segundos (para testes)
  */
 // const job = new CronJob("0 1 * * *", async () => {
-const job = new CronJob("*/25 * * * * *", async () => {
+const job = new CronJob("0 1 * * *", async () => {
   await TransactionService.processRecurringTransactions();
   await TransactionService.processInstallmentsTransactions();
 });
