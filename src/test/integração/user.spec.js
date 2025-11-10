@@ -80,7 +80,6 @@ afterAll(async () => {
     try {
       await fs.unlink(filePath);
     } catch (error) {
-      // Ignore missing files during cleanup
     }
   }
   for (const [userId, info] of createdUsers.entries()) {
@@ -90,7 +89,6 @@ afterAll(async () => {
     try {
       await UserRepository.deleteUser(userId);
     } catch (error) {
-      // User might have been deleted in the middle of the tests
     }
   }
   await prisma.$disconnect();
