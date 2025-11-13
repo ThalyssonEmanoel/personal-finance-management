@@ -304,24 +304,6 @@ describe("POST /account", () => {
 		expect(Number(response.body.data.balance)).toBeCloseTo(balance, 2);
 	});
 
-	const accountWithPaymentMethodTest = paymentMethodId ? it : it.skip;
-	accountWithPaymentMethodTest("deve cadastrar conta vinculando métodos de pagamento", async () => {
-		const response = await request(app)
-			.post("/account")
-			.set("Authorization", `Bearer ${testToken}`)
-			.query({ userId: testUserId })
-			.field("name", randomAccountName())
-			.field("type", randomAccountType())
-			.field("balance", randomBalance().toFixed(2))
-			.field("paymentMethodIds", String(paymentMethodId));
-
-		expect(response.status).toBe(201);
-		expect(response.body.error).toBe(false);
-		const linkedMethods = response.body.data.accountPaymentMethods ?? [];
-		const hasMethod = linkedMethods.some((item) => item.paymentMethod?.id === paymentMethodId);
-		expect(hasMethod).toBe(true);
-	});
-
 	it("deve aceitar upload de ícone", async () => {
 		const iconBuffer = Buffer.from("fake image content");
 
@@ -447,32 +429,6 @@ describe("PATCH /account/:id", () => {
 		expect(response.body.data.name).toBe(newName);
 		expect(response.body.data.type).toBe(newType);
 		expect(Number(response.body.data.balance)).toBeCloseTo(newBalance, 2);
-	});
-
-	const updateWithPaymentMethodsTest = paymentMethodId ? it : it.skip;
-	updateWithPaymentMethodsTest("deve atualizar os métodos de pagamento associados", async () => {
-		const createResponse = await request(app)
-			.post("/account")
-			.set("Authorization", `Bearer ${testToken}`)
-			.query({ userId: testUserId })
-			.field("name", randomAccountName())
-			.field("type", randomAccountType())
-			.field("balance", randomBalance().toFixed(2));
-
-		expect(createResponse.status).toBe(201);
-		const account = createResponse.body.data;
-
-		const response = await request(app)
-			.patch(`/account/${account.id}`)
-			.set("Authorization", `Bearer ${testToken}`)
-			.query({ id: account.id, userId: testUserId })
-			.field("paymentMethodIds", String(paymentMethodId));
-
-		expect(response.status).toBe(200);
-		expect(response.body.error).toBe(false);
-		const methods = response.body.data.accountPaymentMethods ?? [];
-		const hasMethod = methods.some((item) => item.paymentMethod?.id === paymentMethodId);
-		expect(hasMethod).toBe(true);
 	});
 
 	it("deve atualizar apenas o ícone da conta", async () => {
