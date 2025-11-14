@@ -17,14 +17,19 @@ const app = express();
  * Cron job que executa todos os dias às 01:00 para processar transações recorrentes
  * Formato: "segundo minuto hora dia mês dia-da-semana"
  * "0 1 * * *" = Todo dia às 01:00
- * "" * /25 * * * * *" = A cada 25 segundos (para testes)
+ * "ASTERISCO/25 * * * * *" = A cada 25 segundos (para testes)
  */
-// const job = new CronJob("0 1 * * *", async () => {
 const job = new CronJob("0 1 * * *", async () => {
-  await TransactionService.processRecurringTransactions();
-  await TransactionService.processInstallmentsTransactions();
+  job.start();
+  try {
+    console.log('[CRON] Iniciando processamento de transações...');
+    await TransactionService.processRecurringTransactions();
+    await TransactionService.processInstallmentsTransactions();
+    console.log('[CRON] Processamento concluído com sucesso!');
+  } catch (error) {
+    console.error('[CRON] Erro ao processar transações:', error);
+  }
 });
-job.start();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

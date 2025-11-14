@@ -121,47 +121,6 @@ export function requestGoalPost() {
   return { parameters, requestBody };
 }
 
-
-export function requestGoalsByMonth() {
-  const parameters = [
-    {
-      "name": "userId",
-      "in": "query",
-      "description": "ID of the user",
-      "required": true,
-      "schema": {
-        "type": "integer",
-        "minimum": 1
-      }
-    },
-    {
-      "name": "year",
-      "in": "query",
-      "description": "Year for filtering goals",
-      "required": true,
-      "schema": {
-        "type": "integer",
-        "minimum": 1900,
-        "maximum": 2100,
-        "example": 2024
-      }
-    },
-    {
-      "name": "month",
-      "in": "query",
-      "description": "Month for filtering goals (1-12)",
-      "required": true,
-      "schema": {
-        "type": "integer",
-        "minimum": 1,
-        "maximum": 12,
-        "example": 1
-      }
-    }
-  ];
-  
-  return { parameters };
-}
 const GoalRequest = {
   UpdateGoalRequest: {
     title: "UpdateGoalRequest",
