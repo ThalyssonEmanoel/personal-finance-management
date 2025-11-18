@@ -69,7 +69,7 @@ const expectUnauthorized = (response) => {
 };
 
 beforeAll(async () => {
-  const response = await loginUser("thalysson140105@gmail.com", "Senha@12345");
+  const response = await loginUser("dev12AB@gmail.com", "Senha@12345");
   expect(response.status).toBe(200);
   adminToken = response.body.data.accessToken;
   adminUser = response.body.data.usuario;

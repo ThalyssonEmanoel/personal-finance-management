@@ -8,7 +8,7 @@ const AuthRequests = {
         type: "string",
         format: "Email",
         description: "Email do usuário para autenticação",
-        example: "thalysson140105@gmail.com"
+        example: "dev12AB@gmail.com"
       },
       password: {
         type: "string",
@@ -19,7 +19,7 @@ const AuthRequests = {
     },
     description: "Schema para requisição de login",
     example: {
-      email: "thalysson140105@gmail.com",
+      email: "dev12AB@gmail.com",
       password: "Senha@12345"
     }
   },
@@ -81,12 +81,12 @@ const AuthRequests = {
         type: "string",
         format: "Email",
         description: "Email do usuário para recuperação de senha",
-        example: "thalysson140105@gmail.com"
+        example: "dev12AB@gmail.com"
       }
     },
     description: "Schema para requisição de recuperação de senha",
     example: {
-      email: "thalysson140105@gmail.com"
+      email: "dev12AB@gmail.com"
     }
   },
   ResetPasswordRequest: {
@@ -98,7 +98,7 @@ const AuthRequests = {
         type: "string",
         format: "Email",
         description: "Email do usuário para recuperação de senha",
-        example: "thalysson140105@gmail.com"
+        example: "dev12AB@gmail.com"
       },
       code: {
         type: "string",
@@ -116,7 +116,7 @@ const AuthRequests = {
     },
     description: "Schema para requisição de redefinição de senha",
     example: {
-      email: "thalysson140105@gmail.com",
+      email: "dev12AB@gmail.com",
       code: "123456",
       password: "NovaSenha@123"
     }

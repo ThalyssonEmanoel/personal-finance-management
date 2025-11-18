@@ -44,7 +44,7 @@ async function seedDatabase() {
 
   // --- 1. Criar os usuários ---
   const usersData = [
-    { name: "Thalysson", email: "thalysson140105@gmail.com", password: senhaHash, avatar: "src/uploads/avatar1.png" },
+    { name: "Thalysson", email: "dev12AB@gmail.com", password: senhaHash, avatar: "src/uploads/avatar1.png" },
     { name: "Gilberto", email: "gilberto.silva@ifro.edu.br", password: senhaHash, avatar: "src/uploads/avatar1.png" }
   ]
   await prisma.users.createMany({ data: usersData });

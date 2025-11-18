@@ -22,7 +22,7 @@ const createdGoalIds = new Set();
 const createdUserIds = new Set();
 
 const adminCredentials = {
-  email: "thalysson140105@gmail.com",
+  email: "dev12AB@gmail.com",
   password: "Senha@12345"
 };
 
