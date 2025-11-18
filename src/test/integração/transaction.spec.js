@@ -888,3 +888,89 @@ describe("GET /transactions/download", () => {
     expect(response.body.error).toBeDefined();
   });
 });
+
+describe("Recurring and Installment Transactions", () => {
+  it("deve processar transação recorrente mensal corretamente", async () => {
+    // Criar uma transação recorrente mensal do mês passado
+    const lastMonth = new Date();
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    lastMonth.setDate(15);
+    
+    const recurringTransaction = await createTransactionForUser({
+      name: "Assinatura Netflix",
+      type: "expense",
+      category: "Lazer",
+      value: 55.90,
+      release_date: lastMonth.toISOString().split('T')[0],
+      recurring: true,
+      recurring_type: "monthly"
+    });
+
+    expect(recurringTransaction.recurring).toBe(true);
+    expect(recurringTransaction.recurring_type).toBe("monthly");
+    
+    // Verificar que foi criada
+    const response = await request(app)
+      .get("/transactions")
+      .set("Authorization", `Bearer ${testToken}`)
+      .query({ 
+        userId: testUserId, 
+        name: "Assinatura Netflix",
+        recurring: true
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.transactions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "Assinatura Netflix",
+          recurring: true,
+          recurring_type: "monthly"
+        })
+      ])
+    );
+  });
+
+  it("deve criar transação parcelada e calcular valor da parcela", async () => {
+    const totalValue = 900;
+    const installments = 3;
+    
+    const installmentTransaction = await createTransactionForUser({
+      name: "Notebook",
+      type: "expense",
+      category: "Educação",
+      value: totalValue,
+      release_date: generateDate(),
+      number_installments: installments
+    });
+
+    expect(installmentTransaction.number_installments).toBe(installments);
+    expect(Number(installmentTransaction.value_installment)).toBeCloseTo(totalValue / installments, 2);
+    expect(installmentTransaction.current_installment).toBe(1);
+  });
+
+  it("deve listar transações parceladas corretamente", async () => {
+    await createTransactionForUser({
+      name: "Geladeira",
+      type: "expense",
+      category: "Casa",
+      value: 2400,
+      release_date: generateDate(-5),
+      number_installments: 12
+    });
+
+    const response = await request(app)
+      .get("/transactions")
+      .set("Authorization", `Bearer ${testToken}`)
+      .query({ 
+        userId: testUserId,
+        name: "Geladeira"
+      });
+
+    expect(response.status).toBe(200);
+    const geladeira = response.body.data.transactions.find(t => t.name === "Geladeira");
+    expect(geladeira).toBeDefined();
+    expect(geladeira.number_installments).toBe(12);
+    expect(Number(geladeira.value_installment)).toBeCloseTo(200, 2);
+  });
+});

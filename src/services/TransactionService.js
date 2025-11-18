@@ -371,32 +371,11 @@ class TransactionService {
 
   /**
    * Busca o dia original de uma transação recorrente mensal
-   * Procura pela transação mais antiga da mesma série recorrente
+   * Usa o dia da transação atual, NÃO o dia da primeira transação da série
    */
   static async _findOriginalDayForMonthlyRecurring(transaction) {
-    const oldestTransaction = await prisma.transactions.findFirst({
-      where: {
-        userId: transaction.userId,
-        name: transaction.name,
-        category: transaction.category,
-        type: transaction.type,
-        accountId: transaction.accountId,
-        paymentMethodId: transaction.paymentMethodId,
-        recurring: true,
-        recurring_type: 'monthly'
-      },
-      orderBy: {
-        release_date: 'asc'
-      },
-      select: {
-        release_date: true
-      }
-    });
-    
-    if (oldestTransaction) {
-      return new Date(oldestTransaction.release_date).getUTCDate();
-    }
-    
+    // Para recorrências mensais, usar o dia da própria transação
+    // Isso permite que cada transação recorrente mantenha seu próprio dia
     return new Date(transaction.release_date).getUTCDate();
   }
 
@@ -405,24 +384,18 @@ class TransactionService {
    * Procura pela primeira parcela da mesma série
    */
   static async _findOriginalDayForInstallment(transaction) {
-    const firstInstallment = await prisma.transactions.findFirst({
-      where: {
-        userId: transaction.userId,
-        name: transaction.name,
-        category: transaction.category,
-        type: transaction.type,
-        accountId: transaction.accountId,
-        paymentMethodId: transaction.paymentMethodId,
-        number_installments: transaction.number_installments,
-        current_installment: 1 // Primeira parcela
-      },
-      select: {
-        release_date: true
-      }
+    const firstInstallmentReleaseDate = await TransactionRepository.getFirstInstallmentReleaseDate({
+      userId: transaction.userId,
+      name: transaction.name,
+      category: transaction.category,
+      type: transaction.type,
+      accountId: transaction.accountId,
+      paymentMethodId: transaction.paymentMethodId,
+      number_installments: transaction.number_installments
     });
     
-    if (firstInstallment) {
-      return new Date(firstInstallment.release_date).getUTCDate();
+    if (firstInstallmentReleaseDate) {
+      return new Date(firstInstallmentReleaseDate).getUTCDate();
     }
     
     return new Date(transaction.release_date).getUTCDate();
@@ -538,6 +511,7 @@ class TransactionService {
     if (transactionMonth !== previousMonth || transactionYear !== previousYear) {
       return false;
     }
+    
     // Buscar o dia original da primeira transação desta série
     const originalDay = await this._findOriginalDayForMonthlyRecurring(transaction);
     

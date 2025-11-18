@@ -15,6 +15,7 @@ function errorHandler(err, req, res, next) {
     }));
     
     return res.status(400).json({
+      error: true,
       code: 400,
       message: zodErrors || err.message || "Erro de validação dos dados",
     });

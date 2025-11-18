@@ -10,7 +10,8 @@ jobs:
   testar-app:
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')) 
+      (github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'master'))
 
     services:
       mysql:
