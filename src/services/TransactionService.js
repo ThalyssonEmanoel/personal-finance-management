@@ -209,15 +209,11 @@ class TransactionService {
     if (!recurringTransactions || recurringTransactions.length === 0) {
       return;
     }
-
     const today = new Date();
     const rondonia = new Date(today.getTime() - (4 * 60 * 60 * 1000)); // UTC-4, se eu não deixar dessa forma buga horário de rondônia
 
-    console.log("----------------------------------------------------------------------------------------------------------------------------");
-    console.log(`[RECORRENTE] Processando ${recurringTransactions.length} transações recorrentes para ${rondonia.toISOString().split('T')[0]}`);
-
     for (const transaction of recurringTransactions) {
-      const recurringType = transaction.recurring_type || 'monthly'; // Default para monthly para compatibilidade
+      const recurringType = transaction.recurring_type || 'monthly'; 
       
       try {
         let shouldCreateTransaction = false;
@@ -241,18 +237,16 @@ class TransactionService {
             newReleaseDate = this._calculateYearlyNextDate(transaction, rondonia);
             break;
           default:
-            console.log(`[RECORRENTE] Tipo de recorrência desconhecido: ${recurringType} para transação ${transaction.name}`);
-            continue;
+          continue;
         }
 
         if (shouldCreateTransaction && newReleaseDate) {
           await this._createRecurringTransaction(transaction, newReleaseDate, recurringType);
         }
       } catch (error) {
-        console.error(`[RECORRENTE] Erro ao processar transação ${transaction.name}:`, error);
+        throw{ code: 500, message: `Erro ao processar transação recorrente ${transaction.name}: ${error.message}` };
       }
     }
-    console.log('[RECORRENTE] Processamento de transações recorrentes concluído');
   }
 
   /**
@@ -273,31 +267,16 @@ class TransactionService {
     const rondonia = new Date(today.getTime() - (4 * 60 * 60 * 1000));
     const currentMonth = rondonia.getUTCMonth() + 1;
     const currentYear = rondonia.getUTCFullYear();
-
-    console.log("----------------------------------------------------------------------------------------------------------------------------");
-    console.log(`[PARCELA] Processando ${installmentTransactions.length} transações parceladas para ${rondonia.toISOString().split('T')[0]}`);
-
-    // Filtrar apenas transações que ainda têm parcelas pendentes
     const pendingInstallments = installmentTransactions.filter(
       transaction => transaction.current_installment < transaction.number_installments
     );
     for (const transaction of pendingInstallments) {
-      if (transaction.current_installment >= transaction.number_installments) {
-        console.log(`[PARCELA] AVISO: Transação ${transaction.name} já está completa (${transaction.current_installment}/${transaction.number_installments}) - pulando`);
-        continue;
-      }
-
       try {
         // Usar a nova lógica inteligente
         const shouldCreate = await this._shouldCreateNextInstallment(transaction, rondonia);
         
         if (shouldCreate) {
           const nextInstallment = transaction.current_installment + 1;
-
-          if (nextInstallment > transaction.number_installments) {
-            console.log(`[PARCELA] Ignorando transação ${transaction.name}: próxima parcela (${nextInstallment}) excederia o máximo (${transaction.number_installments})`);
-            continue;
-          }
 
           const existsInCurrentMonth = await TransactionRepository.checkInstallmentExistsInMonth(
             transaction.userId,
@@ -326,10 +305,6 @@ class TransactionService {
               const paidSoFar = currentInstallmentValue.mul(previousInstallments);
               const lastInstallmentValue = totalValue.minus(paidSoFar);
               installmentValue = lastInstallmentValue.toNumber();
-
-              console.log(`[PARCELA] Última parcela ${nextInstallment}/${transaction.number_installments}: ajustando valor para R$ ${installmentValue}`);
-            } else {
-              console.log(`[PARCELA] Parcela ${nextInstallment}/${transaction.number_installments}: valor padrão R$ ${installmentValue}`);
             }
 
             const newInstallmentData = {
@@ -338,7 +313,7 @@ class TransactionService {
               category: transaction.category,
               value: transaction.value,
               value_installment: installmentValue,
-              release_date: nextInstallmentDate, // Usar a data calculada corretamente
+              release_date: nextInstallmentDate,
               number_installments: transaction.number_installments,
               current_installment: nextInstallment,
               recurring: false,
@@ -351,21 +326,13 @@ class TransactionService {
               newInstallmentData.description = transaction.description;
             }
 
-            const newTransaction = await this.createTransaction(newInstallmentData);
-            if (!newTransaction) {
-              throw { code: 500, message: "Erro ao criar próxima parcela" };
-            }
-
-            console.log(`[PARCELA] Nova parcela criada: ${transaction.name} - Parcela ${nextInstallment}/${transaction.number_installments} - R$ ${installmentValue} para ${nextInstallmentDate}`);
-          } else {
-            console.log(`[PARCELA] Parcela já existe para o mês atual: ${transaction.name} - Parcela ${nextInstallment}/${transaction.number_installments}`);
+            await this.createTransaction(newInstallmentData);
           }
         }
       } catch (error) {
-        console.error(`[PARCELA] Erro ao processar parcela ${transaction.name}:`, error);
+        throw { code: 500, message: `Erro ao processar parcela da transação ${transaction.name}: ${error.message}` };
       }
     }
-    console.log('[PARCELA] Processamento de transações parceladas concluído');
   }
 
 
@@ -643,14 +610,7 @@ class TransactionService {
         newTransactionData.current_installment = originalTransaction.current_installment;
       }
 
-      const newTransaction = await this.createTransaction(newTransactionData);
-      if (!newTransaction) {
-        throw { code: 500, message: "Erro ao criar transação recorrente" };
-      }
-
-      console.log(`[RECORRENTE-${recurringType.toUpperCase()}] Nova transação criada: ${originalTransaction.name} - R$ ${originalTransaction.value} para ${newReleaseDate}`);
-    } else {
-      console.log(`[RECORRENTE-${recurringType.toUpperCase()}] Transação já existe para o período: ${originalTransaction.name}`);
+      await this.createTransaction(newTransactionData);
     }
   }
 }

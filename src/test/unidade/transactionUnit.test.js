@@ -16,6 +16,7 @@ const mockCheckTransactionExistsInPeriod = jest.fn();
 const mockCheckInstallmentExistsInMonth = jest.fn();
 const mockFindOriginalDayForMonthlyRecurring = jest.fn();
 const mockFindOriginalDayForInstallment = jest.fn();
+const mockGetFirstInstallmentReleaseDate = jest.fn();
 const mockUpdateAccount = jest.fn();
 const mockListAccounts = jest.fn();
 const mockUpdateAccountBalance = jest.fn();
@@ -37,7 +38,8 @@ jest.unstable_mockModule('../../repositories/TransactionRepository.js', () => ({
     checkTransactionExistsInPeriod: mockCheckTransactionExistsInPeriod,
     checkInstallmentExistsInMonth: mockCheckInstallmentExistsInMonth,
     findOriginalDayForMonthlyRecurring: mockFindOriginalDayForMonthlyRecurring,
-    findOriginalDayForInstallment: mockFindOriginalDayForInstallment
+    findOriginalDayForInstallment: mockFindOriginalDayForInstallment,
+    getFirstInstallmentReleaseDate: mockGetFirstInstallmentReleaseDate
   }
 }));
 
@@ -535,33 +537,6 @@ describe('TransactionService', () => {
 
       expect(mockCheckTransactionExistsInPeriod).not.toHaveBeenCalled();
     });
-
-    it('deve tratar erro ao processar transação', async () => {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-      mockGetRecurringTransactions.mockResolvedValue([
-        {
-          id: 1,
-          name: 'Test Error',
-          recurring_type: 'daily',
-          type: 'expense',
-          category: 'test',
-          value: new Decimal(100),
-          release_date: yesterdayStr,
-          accountId: 1,
-          paymentMethodId: 1,
-          userId: 1
-        }
-      ]);
-
-      mockCheckTransactionExistsInPeriod.mockRejectedValue(new Error('Database error'));
-
-      await TransactionService.processRecurringTransactions();
-
-      expect(mockCreateTransaction).not.toHaveBeenCalled();
-    });
   });
 
   describe('processInstallmentsTransactions', () => {
@@ -629,35 +604,6 @@ describe('TransactionService', () => {
       await TransactionService.processInstallmentsTransactions();
 
       expect(mockCreateTransaction).not.toHaveBeenCalled();
-    });
-
-    it('deve tratar erro ao processar parcela', async () => {
-      const lastMonth = new Date();
-      lastMonth.setMonth(lastMonth.getMonth() - 1);
-      const lastMonthStr = lastMonth.toISOString().split('T')[0];
-
-      mockGetInstallmentTransactions.mockResolvedValue([
-        {
-          id: 1,
-          name: 'Test Error',
-          type: 'expense',
-          category: 'test',
-          value: new Decimal(300),
-          number_installments: 3,
-          current_installment: 1,
-          value_installment: new Decimal(100),
-          release_date: lastMonthStr,
-          accountId: 1,
-          paymentMethodId: 1,
-          userId: 1
-        }
-      ]);
-
-      mockCreateTransaction.mockRejectedValue(new Error('Database error'));
-
-      await TransactionService.processInstallmentsTransactions();
-
-      expect(mockUpdateTransaction).not.toHaveBeenCalled();
     });
 
     it('deve processar parcela intermediária com valor padrão', async () => {
@@ -1076,6 +1022,596 @@ describe('TransactionService', () => {
       expect(result).toBe('2024-02-29'); // 2024 é bissexto
 
       mockFindOriginal.mockRestore();
+    });
+  });
+
+  describe('processRecurringTransactions - Cobertura Completa', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('deve processar recorrência diária e criar nova transação', async () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+      mockGetRecurringTransactions.mockResolvedValue([
+        {
+          id: 1,
+          name: 'Daily Expense',
+          recurring_type: 'daily',
+          type: 'expense',
+          category: 'Food',
+          value: 50,
+          release_date: yesterdayStr,
+          accountId: 1,
+          paymentMethodId: 1,
+          userId: 1,
+          recurring: true
+        }
+      ]);
+
+      mockCheckTransactionExistsInPeriod.mockResolvedValue(false);
+      mockParse.mockReturnValue({
+        name: 'Daily Expense',
+        type: 'expense',
+        category: 'Food',
+        value: 50,
+        release_date: new Date().toISOString().split('T')[0],
+        recurring: true,
+        recurring_type: 'daily',
+        accountId: 1,
+        paymentMethodId: 1,
+        userId: 1
+      });
+      mockCreateTransaction.mockResolvedValue({ id: 2 });
+
+      await TransactionService.processRecurringTransactions();
+
+      expect(mockCheckTransactionExistsInPeriod).toHaveBeenCalled();
+      expect(mockCreateTransaction).toHaveBeenCalled();
+    });
+
+    it('deve processar recorrência semanal e criar nova transação', async () => {
+      const lastWeek = new Date();
+      lastWeek.setDate(lastWeek.getDate() - 7);
+      const lastWeekStr = lastWeek.toISOString().split('T')[0];
+
+      mockGetRecurringTransactions.mockResolvedValue([
+        {
+          id: 1,
+          name: 'Weekly Expense',
+          recurring_type: 'weekly',
+          type: 'expense',
+          category: 'Transport',
+          value: 100,
+          release_date: lastWeekStr,
+          accountId: 1,
+          paymentMethodId: 1,
+          userId: 1,
+          recurring: true
+        }
+      ]);
+
+      mockCheckTransactionExistsInPeriod.mockResolvedValue(false);
+      mockParse.mockReturnValue({
+        name: 'Weekly Expense',
+        type: 'expense',
+        category: 'Transport',
+        value: 100,
+        release_date: new Date().toISOString().split('T')[0],
+        recurring: true,
+        recurring_type: 'weekly',
+        accountId: 1,
+        paymentMethodId: 1,
+        userId: 1
+      });
+      mockCreateTransaction.mockResolvedValue({ id: 2 });
+
+      await TransactionService.processRecurringTransactions();
+
+      expect(mockCheckTransactionExistsInPeriod).toHaveBeenCalled();
+      expect(mockCreateTransaction).toHaveBeenCalled();
+    });
+
+    it('deve processar recorrência anual e criar nova transação', async () => {
+      const today = new Date();
+      const lastYear = new Date(today);
+      lastYear.setFullYear(lastYear.getFullYear() - 1);
+      const lastYearStr = lastYear.toISOString().split('T')[0];
+
+      mockGetRecurringTransactions.mockResolvedValue([
+        {
+          id: 1,
+          name: 'Yearly Subscription',
+          recurring_type: 'yearly',
+          type: 'expense',
+          category: 'Services',
+          value: 1200,
+          release_date: lastYearStr,
+          accountId: 1,
+          paymentMethodId: 1,
+          userId: 1,
+          recurring: true
+        }
+      ]);
+
+      mockCheckTransactionExistsInPeriod.mockResolvedValue(false);
+      mockParse.mockReturnValue({
+        name: 'Yearly Subscription',
+        type: 'expense',
+        category: 'Services',
+        value: 1200,
+        release_date: today.toISOString().split('T')[0],
+        recurring: true,
+        recurring_type: 'yearly',
+        accountId: 1,
+        paymentMethodId: 1,
+        userId: 1
+      });
+      mockCreateTransaction.mockResolvedValue({ id: 2 });
+
+      await TransactionService.processRecurringTransactions();
+
+      expect(mockCheckTransactionExistsInPeriod).toHaveBeenCalled();
+      expect(mockCreateTransaction).toHaveBeenCalled();
+    });
+
+    it('deve lançar erro quando createTransaction falha na recorrência', async () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+      mockGetRecurringTransactions.mockResolvedValue([
+        {
+          id: 1,
+          name: 'Daily Test',
+          recurring_type: 'daily',
+          type: 'expense',
+          category: 'Test',
+          value: 50,
+          release_date: yesterdayStr,
+          accountId: 1,
+          paymentMethodId: 1,
+          userId: 1,
+          recurring: true
+        }
+      ]);
+
+      mockCheckTransactionExistsInPeriod.mockResolvedValue(false);
+      mockParse.mockReturnValue({
+        name: 'Daily Test',
+        type: 'expense',
+        category: 'Test',
+        value: 50,
+        release_date: new Date().toISOString().split('T')[0],
+        recurring: true,
+        recurring_type: 'daily',
+        accountId: 1,
+        paymentMethodId: 1,
+        userId: 1
+      });
+      mockCreateTransaction.mockResolvedValue(null);
+
+      await expect(TransactionService.processRecurringTransactions()).rejects.toEqual({
+        code: 500,
+        message: expect.stringContaining('Erro ao processar transação recorrente')
+      });
+    });
+  });
+
+  describe('_createRecurringTransaction - Cobertura Completa', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('deve criar transação recorrente diária quando não existe no período', async () => {
+      const transaction = {
+        id: 1,
+        name: 'Daily Transaction',
+        type: 'expense',
+        category: 'Food',
+        value: 50,
+        release_date: '2024-01-15',
+        recurring: true,
+        recurring_type: 'daily',
+        accountId: 1,
+        paymentMethodId: 1,
+        userId: 1
+      };
+
+      mockCheckTransactionExistsInPeriod.mockResolvedValue(false);
+      mockParse.mockReturnValue({
+        ...transaction,
+        release_date: '2024-01-16'
+      });
+      mockCreateTransaction.mockResolvedValue({ id: 2 });
+
+      await TransactionService._createRecurringTransaction(transaction, '2024-01-16', 'daily');
+
+      expect(mockCheckTransactionExistsInPeriod).toHaveBeenCalled();
+      expect(mockCreateTransaction).toHaveBeenCalledWith(expect.objectContaining({
+        name: 'Daily Transaction',
+        recurring_type: 'daily'
+      }));
+    });
+
+    it('deve criar transação recorrente semanal quando não existe no período', async () => {
+      const transaction = {
+        id: 1,
+        name: 'Weekly Transaction',
+        type: 'income',
+        category: 'Salary',
+        value: 1000,
+        release_date: '2024-01-08',
+        recurring: true,
+        recurring_type: 'weekly',
+        accountId: 1,
+        paymentMethodId: 1,
+        userId: 1
+      };
+
+      mockCheckTransactionExistsInPeriod.mockResolvedValue(false);
+      mockParse.mockReturnValue({
+        ...transaction,
+        release_date: '2024-01-15'
+      });
+      mockCreateTransaction.mockResolvedValue({ id: 2 });
+
+      await TransactionService._createRecurringTransaction(transaction, '2024-01-15', 'weekly');
+
+      expect(mockCheckTransactionExistsInPeriod).toHaveBeenCalled();
+      expect(mockCreateTransaction).toHaveBeenCalledWith(expect.objectContaining({
+        name: 'Weekly Transaction',
+        recurring_type: 'weekly'
+      }));
+    });
+
+    it('deve criar transação recorrente mensal quando não existe no período', async () => {
+      const transaction = {
+        id: 1,
+        name: 'Monthly Transaction',
+        type: 'expense',
+        category: 'Rent',
+        value: 2000,
+        release_date: '2024-01-10',
+        recurring: true,
+        recurring_type: 'monthly',
+        accountId: 1,
+        paymentMethodId: 1,
+        userId: 1
+      };
+
+      mockCheckTransactionExistsInPeriod.mockResolvedValue(false);
+      mockParse.mockReturnValue({
+        ...transaction,
+        release_date: '2024-02-10'
+      });
+      mockCreateTransaction.mockResolvedValue({ id: 2 });
+
+      await TransactionService._createRecurringTransaction(transaction, '2024-02-10', 'monthly');
+
+      expect(mockCheckTransactionExistsInPeriod).toHaveBeenCalled();
+      expect(mockCreateTransaction).toHaveBeenCalledWith(expect.objectContaining({
+        name: 'Monthly Transaction',
+        recurring_type: 'monthly'
+      }));
+    });
+
+    it('deve criar transação recorrente anual quando não existe no período', async () => {
+      const transaction = {
+        id: 1,
+        name: 'Yearly Subscription',
+        type: 'expense',
+        category: 'Services',
+        value: 1200,
+        release_date: '2023-05-20',
+        recurring: true,
+        recurring_type: 'yearly',
+        accountId: 1,
+        paymentMethodId: 1,
+        userId: 1
+      };
+
+      mockCheckTransactionExistsInPeriod.mockResolvedValue(false);
+      mockParse.mockReturnValue({
+        ...transaction,
+        release_date: '2024-05-20'
+      });
+      mockCreateTransaction.mockResolvedValue({ id: 2 });
+
+      await TransactionService._createRecurringTransaction(transaction, '2024-05-20', 'yearly');
+
+      expect(mockCheckTransactionExistsInPeriod).toHaveBeenCalled();
+      expect(mockCreateTransaction).toHaveBeenCalledWith(expect.objectContaining({
+        name: 'Yearly Subscription',
+        recurring_type: 'yearly'
+      }));
+    });
+
+    it('não deve criar transação quando já existe no período', async () => {
+      const transaction = {
+        id: 1,
+        name: 'Monthly Transaction',
+        type: 'expense',
+        category: 'Rent',
+        value: 2000,
+        release_date: '2024-01-10',
+        recurring: true,
+        recurring_type: 'monthly',
+        accountId: 1,
+        paymentMethodId: 1,
+        userId: 1
+      };
+
+      mockCheckTransactionExistsInPeriod.mockResolvedValue(true);
+
+      await TransactionService._createRecurringTransaction(transaction, '2024-02-10', 'monthly');
+
+      expect(mockCheckTransactionExistsInPeriod).toHaveBeenCalled();
+      expect(mockCreateTransaction).not.toHaveBeenCalled();
+    });
+
+    it('deve lançar erro quando createTransaction retorna null', async () => {
+      const transaction = {
+        id: 1,
+        name: 'Test Transaction',
+        type: 'expense',
+        category: 'Test',
+        value: 100,
+        release_date: '2024-01-10',
+        recurring: true,
+        recurring_type: 'monthly',
+        accountId: 1,
+        paymentMethodId: 1,
+        userId: 1
+      };
+
+      mockCheckTransactionExistsInPeriod.mockResolvedValue(false);
+      mockParse.mockReturnValue({
+        ...transaction,
+        release_date: '2024-02-10'
+      });
+      mockCreateTransaction.mockResolvedValue(null);
+
+      await expect(
+        TransactionService._createRecurringTransaction(transaction, '2024-02-10', 'monthly')
+      ).rejects.toEqual({ code: 404 });
+    });
+
+    it('deve lançar erro para tipo de recorrência não suportado', async () => {
+      const transaction = {
+        id: 1,
+        name: 'Test Transaction',
+        type: 'expense',
+        category: 'Test',
+        value: 100,
+        release_date: '2024-01-10',
+        recurring: true,
+        recurring_type: 'invalid',
+        accountId: 1,
+        paymentMethodId: 1,
+        userId: 1
+      };
+
+      await expect(
+        TransactionService._createRecurringTransaction(transaction, '2024-02-10', 'invalid')
+      ).rejects.toThrow('Tipo de recorrência não suportado: invalid');
+    });
+
+    it('deve retornar quando data é inválida', async () => {
+      const transaction = {
+        id: 1,
+        name: 'Test Transaction',
+        type: 'expense',
+        category: 'Test',
+        value: 100,
+        release_date: '2024-01-10',
+        recurring: true,
+        recurring_type: 'monthly',
+        accountId: 1,
+        paymentMethodId: 1,
+        userId: 1
+      };
+
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      await TransactionService._createRecurringTransaction(transaction, 'invalid-date', 'monthly');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('[RECORRENTE] Data inválida'));
+      expect(mockCreateTransaction).not.toHaveBeenCalled();
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('deve incluir number_installments quando presente na transação original', async () => {
+      const transaction = {
+        id: 1,
+        name: 'Monthly Transaction',
+        type: 'expense',
+        category: 'Rent',
+        value: 2000,
+        release_date: '2024-01-10',
+        recurring: true,
+        recurring_type: 'monthly',
+        accountId: 1,
+        paymentMethodId: 1,
+        userId: 1,
+        number_installments: 12,
+        current_installment: 1
+      };
+
+      mockCheckTransactionExistsInPeriod.mockResolvedValue(false);
+      mockParse.mockReturnValue({
+        ...transaction,
+        release_date: '2024-02-10'
+      });
+      mockCreateTransaction.mockResolvedValue({ id: 2 });
+
+      await TransactionService._createRecurringTransaction(transaction, '2024-02-10', 'monthly');
+
+      expect(mockCreateTransaction).toHaveBeenCalledWith(expect.objectContaining({
+        number_installments: 12,
+        current_installment: 1
+      }));
+    });
+  });
+
+  describe('processInstallmentsTransactions - Cobertura Completa', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('deve processar parcela com description', async () => {
+      const lastMonth = new Date();
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+      const lastMonthStr = lastMonth.toISOString().split('T')[0];
+
+      mockGetInstallmentTransactions.mockResolvedValue([
+        {
+          id: 1,
+          name: 'Installment Transaction',
+          type: 'expense',
+          category: 'Purchase',
+          value: 300,
+          value_installment: 100,
+          release_date: lastMonthStr,
+          number_installments: 3,
+          current_installment: 1,
+          description: 'Test Description',
+          accountId: 1,
+          paymentMethodId: 1,
+          userId: 1
+        }
+      ]);
+
+      mockGetFirstInstallmentReleaseDate.mockResolvedValue(lastMonthStr);
+      mockCheckInstallmentExistsInMonth.mockResolvedValue(false);
+      mockParse.mockReturnValue({
+        name: 'Installment Transaction',
+        type: 'expense',
+        category: 'Purchase',
+        value: 300,
+        value_installment: 100,
+        release_date: new Date().toISOString().split('T')[0],
+        number_installments: 3,
+        current_installment: 2,
+        description: 'Test Description',
+        accountId: 1,
+        paymentMethodId: 1,
+        userId: 1,
+        recurring: false
+      });
+      mockListAccounts.mockResolvedValue([{ id: 1, balance: 1000 }]);
+      mockUpdateAccount.mockResolvedValue({ id: 1, balance: 900 });
+      mockCreateTransaction.mockResolvedValue({ id: 2 });
+
+      await TransactionService.processInstallmentsTransactions();
+
+      expect(mockCreateTransaction).toHaveBeenCalledWith(expect.objectContaining({
+        description: 'Test Description'
+      }));
+    });
+
+    it('deve lançar erro quando createTransaction falha no processamento de parcelas', async () => {
+      const lastMonth = new Date();
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+      const lastMonthStr = lastMonth.toISOString().split('T')[0];
+
+      mockGetInstallmentTransactions.mockResolvedValue([
+        {
+          id: 1,
+          name: 'Installment Transaction',
+          type: 'expense',
+          category: 'Purchase',
+          value: 300,
+          value_installment: 100,
+          release_date: lastMonthStr,
+          number_installments: 3,
+          current_installment: 1,
+          accountId: 1,
+          paymentMethodId: 1,
+          userId: 1
+        }
+      ]);
+
+      mockGetFirstInstallmentReleaseDate.mockResolvedValue(lastMonthStr);
+      mockCheckInstallmentExistsInMonth.mockResolvedValue(false);
+      mockParse.mockReturnValue({
+        name: 'Installment Transaction',
+        type: 'expense',
+        category: 'Purchase',
+        value: 300,
+        value_installment: 100,
+        release_date: new Date().toISOString().split('T')[0],
+        number_installments: 3,
+        current_installment: 2,
+        accountId: 1,
+        paymentMethodId: 1,
+        userId: 1,
+        recurring: false
+      });
+      mockListAccounts.mockResolvedValue([{ id: 1, balance: 1000 }]);
+      mockUpdateAccount.mockResolvedValue({ id: 1, balance: 900 });
+      mockCreateTransaction.mockResolvedValue(null);
+
+      await expect(TransactionService.processInstallmentsTransactions()).rejects.toEqual({
+        code: 500,
+        message: expect.stringContaining('Erro ao processar parcela')
+      });
+    });
+  });
+
+  describe('_findOriginalDayForInstallment - Cobertura Completa', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('deve retornar dia original quando encontrar primeira parcela', async () => {
+      const transaction = {
+        userId: 1,
+        name: 'Test',
+        category: 'Test',
+        type: 'expense',
+        accountId: 1,
+        paymentMethodId: 1,
+        number_installments: 3,
+        release_date: '2024-02-15'
+      };
+
+      mockGetFirstInstallmentReleaseDate.mockResolvedValue('2024-01-31');
+
+      const result = await TransactionService._findOriginalDayForInstallment(transaction);
+
+      expect(result).toBe(31);
+      expect(mockGetFirstInstallmentReleaseDate).toHaveBeenCalledWith({
+        userId: 1,
+        name: 'Test',
+        category: 'Test',
+        type: 'expense',
+        accountId: 1,
+        paymentMethodId: 1,
+        number_installments: 3
+      });
+    });
+
+    it('deve usar dia da transação atual quando não encontrar primeira parcela', async () => {
+      const transaction = {
+        userId: 1,
+        name: 'Test',
+        category: 'Test',
+        type: 'expense',
+        accountId: 1,
+        paymentMethodId: 1,
+        number_installments: 3,
+        release_date: '2024-02-15'
+      };
+
+      mockGetFirstInstallmentReleaseDate.mockResolvedValue(null);
+
+      const result = await TransactionService._findOriginalDayForInstallment(transaction);
+
+      expect(result).toBe(15);
     });
   });
 });
