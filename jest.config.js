@@ -17,5 +17,11 @@ export default {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  verbose: true
+  verbose: true,
+  // Configurações para evitar que os testes fiquem travados
+  testTimeout: 30000,
+  detectOpenHandles: true,
+  forceExit: true,
+  // Executar testes sequencialmente para evitar sobrecarga
+  maxWorkers: 1
 };

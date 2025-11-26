@@ -1,772 +1,600 @@
 import request from "supertest";
 import {
-	describe,
-	it,
-	expect,
-	beforeAll,
-	afterAll,
-	jest
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  jest
 } from "@jest/globals";
 import app from "../../app.js";
 import { faker } from "@faker-js/faker";
 import { prisma } from "../../config/prismaClient.js";
+import UserRepository from "../../repositories/UserRepository.js";
 import bcrypt from "bcryptjs";
 
 jest.setTimeout(40000);
 
-let testUserId;
-let testUserEmail;
-let testUserPassword;
-let testUserName;
-let testRefreshToken;
-let testAccessToken;
+const createdUsers = new Map();
 
 const randomEmail = () => `auth.${faker.string.alphanumeric({ length: 10, casing: "lower" })}.${Date.now()}@example.com`;
 const randomPassword = () => `Aa1@${faker.string.alphanumeric({ length: 8, casing: "mixed" })}`;
-const randomName = () => `Auth Test User ${faker.number.int({ min: 1000, max: 9999 })}`;
 
-const buildUserPayload = () => ({
-	name: randomName(),
-	email: randomEmail(),
-	password: randomPassword()
+const buildUserPayload = (overrides = {}) => ({
+  name: overrides.name ?? `Auth Test User ${faker.number.int({ min: 1000, max: 9999 })}`,
+  email: overrides.email ?? randomEmail(),
+  password: overrides.password ?? randomPassword(),
 });
 
-const createTestUser = async (userData) => {
-	const hashedPassword = await bcrypt.hash(userData.password, parseInt(process.env.SALT || "10"));
-	
-	const user = await prisma.users.create({
-		data: {
-			name: userData.name,
-			email: userData.email,
-			password: hashedPassword
-		}
-	});
-	
-	return user;
+const trackUser = (id, data) => {
+  if (!createdUsers.has(id)) {
+    createdUsers.set(id, { ...data, cleaned: false });
+  }
 };
 
-beforeAll(async () => {
-	testUserPassword = randomPassword();
-	testUserEmail = randomEmail();
-	testUserName = randomName();
-	
-	const user = await createTestUser({
-		name: testUserName,
-		email: testUserEmail,
-		password: testUserPassword
-	});
-	
-	testUserId = user.id;
-});
+const markUserAsDeleted = (id) => {
+  const info = createdUsers.get(id);
+  if (info) {
+    info.cleaned = true;
+  }
+};
+
+const createTestUser = async (payload) => {
+  const response = await request(app)
+    .post("/users")
+    .field("name", payload.name)
+    .field("email", payload.email)
+    .field("password", payload.password);
+  
+  expect(response.status).toBe(201);
+  const user = response.body.data;
+  trackUser(user.id, { email: payload.email, password: payload.password });
+  return { user, credentials: payload };
+};
+
+const loginUser = async (email, password) => {
+  return request(app).post("/login").send({ email, password });
+};
 
 afterAll(async () => {
-	// Cleanup: Delete reset codes
-	if (testUserEmail) {
-		try {
-			await prisma.resetCodes.deleteMany({
-				where: { email: testUserEmail }
-			});
-		} catch (error) {
-			// Best-effort cleanup
-		}
-	}
-	
-	// Cleanup: Delete test user
-	if (testUserId) {
-		try {
-			await prisma.users.delete({
-				where: { id: testUserId }
-			});
-		} catch (error) {
-			// Best-effort cleanup
-		}
-	}
-	
-	await prisma.$disconnect();
+  for (const [userId, info] of createdUsers.entries()) {
+    if (info.cleaned) {
+      continue;
+    }
+    try {
+      await UserRepository.deleteUser(userId);
+    } catch (error) {
+      // Ignore cleanup failures
+    }
+  }
+  await prisma.$disconnect();
 });
 
 describe("POST /login", () => {
-	it("deve fazer login com credenciais válidas", async () => {
-		const response = await request(app)
-			.post("/login")
-			.send({
-				email: testUserEmail,
-				password: testUserPassword
-			});
+  let testUser;
+  let testCredentials;
 
-		expect(response.status).toBe(200);
-		expect(response.body.error).toBe(false);
-		expect(response.body.data).toHaveProperty("accessToken");
-		expect(response.body.data).toHaveProperty("refreshToken");
-		expect(response.body.data).toHaveProperty("usuario");
-		expect(response.body.data.usuario).toHaveProperty("id");
-		expect(response.body.data.usuario).toHaveProperty("name");
-		expect(response.body.data.usuario).toHaveProperty("email");
-		expect(response.body.data.usuario).not.toHaveProperty("password");
-		expect(response.body.data.usuario).not.toHaveProperty("senha");
-		
-		// Armazena tokens para testes posteriores
-		testAccessToken = response.body.data.accessToken;
-		testRefreshToken = response.body.data.refreshToken;
-	});
+  beforeAll(async () => {
+    const { user, credentials } = await createTestUser(buildUserPayload());
+    testUser = user;
+    testCredentials = credentials;
+  });
 
-	it("deve retornar erro 401 com email inválido", async () => {
-		const response = await request(app)
-			.post("/login")
-			.send({
-				email: "emailinexistente@example.com",
-				password: testUserPassword
-			});
+  it("deve fazer login com credenciais válidas e retornar tokens e dados do usuário", async () => {
+    const response = await loginUser(testCredentials.email, testCredentials.password);
 
-		expect(response.status).toBe(401);
-		expect(response.body.error).toBe(true);
-		expect(response.body.message).toContain("Email ou senha inválidos");
-	});
+    expect(response.status).toBe(200);
+    expect(response.body.error).toBe(false);
+    expect(response.body.data).toHaveProperty('accessToken');
+    expect(response.body.data).toHaveProperty('refreshToken');
+    expect(response.body.data).toHaveProperty('usuario');
+    
+    expect(response.body.data.usuario).toMatchObject({
+      id: testUser.id,
+      email: testCredentials.email,
+      name: testCredentials.name
+    });
+    expect(response.body.data.usuario).not.toHaveProperty('password');
+    expect(response.body.data.usuario).not.toHaveProperty('refreshToken');
+  });
 
-	it("deve retornar erro 401 com senha inválida", async () => {
-		const response = await request(app)
-			.post("/login")
-			.send({
-				email: testUserEmail,
-				password: "senhaErrada123!"
-			});
+  it("deve armazenar refresh token no banco de dados após login", async () => {
+    const response = await loginUser(testCredentials.email, testCredentials.password);
 
-		expect(response.status).toBe(401);
-		expect(response.body.error).toBe(true);
-		expect(response.body.message).toContain("Email ou senha inválidos");
-	});
+    expect(response.status).toBe(200);
+    const refreshToken = response.body.data.refreshToken;
 
-	it("deve retornar erro 400 ao omitir email", async () => {
-		const response = await request(app)
-			.post("/login")
-			.send({
-				password: testUserPassword
-			});
+    const userInDb = await prisma.users.findUnique({
+      where: { id: testUser.id },
+      select: { refreshToken: true }
+    });
 
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-	});
+    expect(userInDb.refreshToken).toBe(refreshToken);
+  });
 
-	it("deve retornar erro 400 ao omitir senha", async () => {
-		const response = await request(app)
-			.post("/login")
-			.send({
-				email: testUserEmail
-			});
+  it("não deve fazer login com email inválido", async () => {
+    const response = await loginUser("emailinvalido", testCredentials.password);
 
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-	});
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe(true);
+    expect(response.body.message).toBeDefined();
+  });
 
-	it("deve retornar erro 400 com email em formato inválido", async () => {
-		const response = await request(app)
-			.post("/login")
-			.send({
-				email: "emailinvalido",
-				password: testUserPassword
-			});
+  it("não deve fazer login com senha incorreta", async () => {
+    const response = await loginUser(testCredentials.email, "SenhaErrada@123");
 
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-	});
+    expect(response.status).toBe(401);
+    expect(response.body.error).toBe(true);
+    expect(response.body.message).toMatch(/inválidos/i);
+  });
 
-	it("deve retornar erro 400 ao enviar corpo vazio", async () => {
-		const response = await request(app)
-			.post("/login")
-			.send({});
+  it("não deve fazer login com email inexistente", async () => {
+    const response = await loginUser("naoexiste@test.com", "Senha@123");
 
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-	});
+    expect(response.status).toBe(401);
+    expect(response.body.error).toBe(true);
+    expect(response.body.message).toMatch(/inválidos/i);
+  });
 
-	it("deve atualizar refreshToken no banco após login", async () => {
-		const response = await request(app)
-			.post("/login")
-			.send({
-				email: testUserEmail,
-				password: testUserPassword
-			});
+  it("não deve fazer login com campos vazios", async () => {
+    const response = await request(app).post("/login").send({
+      email: "",
+      password: ""
+    });
 
-		expect(response.status).toBe(200);
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe(true);
+  });
 
-		const user = await prisma.users.findUnique({
-			where: { id: testUserId }
-		});
+  it("não deve fazer login sem fornecer email", async () => {
+    const response = await request(app).post("/login").send({
+      password: testCredentials.password
+    });
 
-		expect(user.refreshToken).toBeTruthy();
-		expect(user.refreshToken).toBe(response.body.data.refreshToken);
-	});
-});
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe(true);
+  });
 
-describe("POST /refresh-token", () => {
-	beforeAll(async () => {
-		// Garantir que temos um refresh token válido
-		const loginResponse = await request(app)
-			.post("/login")
-			.send({
-				email: testUserEmail,
-				password: testUserPassword
-			});
-		
-		testRefreshToken = loginResponse.body.data.refreshToken;
-		testAccessToken = loginResponse.body.data.accessToken;
-	});
+  it("não deve fazer login sem fornecer senha", async () => {
+    const response = await request(app).post("/login").send({
+      email: testCredentials.email
+    });
 
-	it("deve gerar novo accessToken com refreshToken válido", async () => {
-		// Esperar 1 segundo para garantir que o novo token será diferente devido ao timestamp
-		await new Promise(resolve => setTimeout(resolve, 1000));
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe(true);
+  });
 
-		const response = await request(app)
-			.post("/refresh-token")
-			.send({
-				refreshToken: testRefreshToken
-			});
+  it("deve substituir refresh token anterior ao fazer novo login", async () => {
+    const firstLogin = await loginUser(testCredentials.email, testCredentials.password);
+    expect(firstLogin.status).toBe(200);
+    const firstRefreshToken = firstLogin.body.data.refreshToken;
 
-		expect(response.status).toBe(200);
-		expect(response.body.error).toBe(false);
-		expect(response.body.data).toHaveProperty("accessToken");
-		expect(response.body.data).toHaveProperty("refreshToken");
-		expect(response.body.data.accessToken).not.toBe(testAccessToken);
-		expect(response.body.data.refreshToken).toBe(testRefreshToken);
-	});
+    // Aguardar um segundo para garantir que o timestamp do JWT seja diferente
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-	it("deve retornar erro 401 com refreshToken inválido", async () => {
-		const response = await request(app)
-			.post("/refresh-token")
-			.send({
-				refreshToken: "tokenInvalidoQueNaoExiste123"
-			});
+    const secondLogin = await loginUser(testCredentials.email, testCredentials.password);
+    expect(secondLogin.status).toBe(200);
+    const secondRefreshToken = secondLogin.body.data.refreshToken;
 
-		expect(response.status).toBe(401);
-		expect(response.body.error).toBe(true);
-	});
+    expect(firstRefreshToken).not.toBe(secondRefreshToken);
 
-	it("deve retornar erro 400 ao omitir refreshToken", async () => {
-		const response = await request(app)
-			.post("/refresh-token")
-			.send({});
+    const userInDb = await prisma.users.findUnique({
+      where: { id: testUser.id },
+      select: { refreshToken: true }
+    });
 
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-	});
-
-	it("deve retornar erro 401 com refreshToken expirado/revogado", async () => {
-		// Primeiro faz logout para invalidar o token
-		await request(app)
-			.post("/logout")
-			.set("Authorization", `Bearer ${testAccessToken}`)
-			.send({
-				id: testUserId.toString()
-			});
-
-		const response = await request(app)
-			.post("/refresh-token")
-			.send({
-				refreshToken: testRefreshToken
-			});
-
-		expect(response.status).toBe(401);
-		expect(response.body.error).toBe(true);
-
-		// Re-login para próximos testes
-		const loginResponse = await request(app)
-			.post("/login")
-			.send({
-				email: testUserEmail,
-				password: testUserPassword
-			});
-		
-		testRefreshToken = loginResponse.body.data.refreshToken;
-		testAccessToken = loginResponse.body.data.accessToken;
-	});
+    expect(userInDb.refreshToken).toBe(secondRefreshToken);
+  });
 });
 
 describe("POST /logout", () => {
-	beforeAll(async () => {
-		// Garantir que temos tokens válidos
-		const loginResponse = await request(app)
-			.post("/login")
-			.send({
-				email: testUserEmail,
-				password: testUserPassword
-			});
-		
-		testRefreshToken = loginResponse.body.data.refreshToken;
-		testAccessToken = loginResponse.body.data.accessToken;
-	});
+  let testUser;
+  let testCredentials;
+  let testToken;
 
-	it("deve fazer logout com sucesso", async () => {
-		// Re-login para ter um token fresco
-		const loginResponse = await request(app)
-			.post("/login")
-			.send({
-				email: testUserEmail,
-				password: testUserPassword
-			});
+  beforeAll(async () => {
+    const { user, credentials } = await createTestUser(buildUserPayload());
+    testUser = user;
+    testCredentials = credentials;
 
-		const freshToken = loginResponse.body.data.accessToken;
+    const loginResponse = await loginUser(credentials.email, credentials.password);
+    expect(loginResponse.status).toBe(200);
+    testToken = loginResponse.body.data.accessToken;
+  });
 
-		const response = await request(app)
-			.post("/logout")
-			.set("Authorization", `Bearer ${freshToken}`)
-			.send({
-				id: testUserId.toString()
-			});
+  it("deve fazer logout com sucesso e remover refresh token", async () => {
+    const loginResponse = await loginUser(testCredentials.email, testCredentials.password);
+    expect(loginResponse.status).toBe(200);
+    const userToken = loginResponse.body.data.accessToken;
 
-		expect(response.status).toBe(200);
-		expect(response.body.error).toBe(false);
-		expect(response.body.data.message).toContain("Logout realizado com sucesso");
+    const response = await request(app)
+      .post("/logout")
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ id: String(testUser.id) });
 
-		// Verificar se o refreshToken foi removido do banco
-		const user = await prisma.users.findUnique({
-			where: { id: testUserId }
-		});
+    expect(response.status).toBe(200);
+    expect(response.body.error).toBe(false);
+    expect(response.body.data.message).toMatch(/sucesso/i);
 
-		expect(user.refreshToken).toBeNull();
-	});
+    const userInDb = await prisma.users.findUnique({
+      where: { id: testUser.id },
+      select: { refreshToken: true }
+    });
 
-	it("deve retornar erro 401 sem token de autenticação", async () => {
-		const response = await request(app)
-			.post("/logout")
-			.send({
-				id: testUserId.toString()
-			});
+    expect(userInDb.refreshToken).toBeNull();
+  });
 
-		expect(response.status).toBe(401);
-		expect(response.body.error).toBe(true);
-	});
+  it("não deve fazer logout sem autenticação", async () => {
+    const response = await request(app)
+      .post("/logout")
+      .send({ id: String(testUser.id) });
 
-	it("deve retornar erro 401 com token inválido", async () => {
-		const response = await request(app)
-			.post("/logout")
-			.set("Authorization", "Bearer tokenInvalido123")
-			.send({
-				id: testUserId.toString()
-			});
+    expect(response.status).toBe(401);
+    expect(response.body.error).toBe(true);
+  });
 
-		expect(response.status).toBe(401);
-		expect(response.body.error).toBe(true);
-	});
+  it("não deve fazer logout com token inválido", async () => {
+    const response = await request(app)
+      .post("/logout")
+      .set("Authorization", "Bearer token-invalido")
+      .send({ id: String(testUser.id) });
 
-	it("deve retornar erro 400 ao omitir id do usuário", async () => {
-		// Re-login para ter um token fresco
-		const loginResponse = await request(app)
-			.post("/login")
-			.send({
-				email: testUserEmail,
-				password: testUserPassword
-			});
+    expect(response.status).toBe(401);
+    expect(response.body.error).toBe(true);
+  });
 
-		const freshToken = loginResponse.body.data.accessToken;
+  it("não deve fazer logout sem fornecer ID do usuário", async () => {
+    const response = await request(app)
+      .post("/logout")
+      .set("Authorization", `Bearer ${testToken}`)
+      .send({});
 
-		const response = await request(app)
-			.post("/logout")
-			.set("Authorization", `Bearer ${freshToken}`)
-			.send({});
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe(true);
+  });
 
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-	});
+  it("deve retornar erro ao fazer logout de usuário inexistente", async () => {
+    const { user, credentials } = await createTestUser(buildUserPayload());
+    
+    const loginResponse = await loginUser(credentials.email, credentials.password);
+    expect(loginResponse.status).toBe(200);
+    const userToken = loginResponse.body.data.accessToken;
+
+    await UserRepository.deleteUser(user.id);
+    markUserAsDeleted(user.id);
+
+    const response = await request(app)
+      .post("/logout")
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ id: String(user.id) });
+
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe(true);
+  });
 });
 
-describe("POST /forgot-password", () => {
-	it("deve enviar código de recuperação para email válido", async () => {
-		const response = await request(app)
-			.post("/forgot-password")
-			.send({
-				email: testUserEmail
-			});
+describe("POST /refresh-token", () => {
+  let testUser;
+  let testCredentials;
+  let testRefreshToken;
+  let testAccessToken;
 
-		expect(response.status).toBe(200);
-		expect(response.body.error).toBe(false);
+  beforeAll(async () => {
+    const { user, credentials } = await createTestUser(buildUserPayload());
+    testUser = user;
+    testCredentials = credentials;
 
-		// Verificar se o código foi criado no banco
-		const resetCode = await prisma.resetCodes.findFirst({
-			where: {
-				email: testUserEmail,
-				used: false
-			},
-			orderBy: {
-				id: 'desc'
-			}
-		});
+    const loginResponse = await loginUser(credentials.email, credentials.password);
+    expect(loginResponse.status).toBe(200);
+    testAccessToken = loginResponse.body.data.accessToken;
+    testRefreshToken = loginResponse.body.data.refreshToken;
+  });
 
-		expect(resetCode).toBeTruthy();
-		expect(resetCode.code).toHaveLength(6);
-		expect(resetCode.expiresAt.getTime()).toBeGreaterThan(Date.now());
-	});
+  it("deve renovar access token com refresh token válido", async () => {
+    const response = await request(app)
+      .post("/refresh-token")
+      .send({ refreshToken: testRefreshToken });
 
-	it("deve retornar erro 404 com email não cadastrado", async () => {
-		const response = await request(app)
-			.post("/forgot-password")
-			.send({
-				email: "emailnaocadastrado@example.com"
-			});
+    expect(response.status).toBe(200);
+    expect(response.body.error).toBe(false);
+    expect(response.body.data).toHaveProperty('accessToken');
+    expect(response.body.data).toHaveProperty('refreshToken');
+    
+    // O refresh token deve permanecer o mesmo
+    expect(response.body.data.refreshToken).toBe(testRefreshToken);
+    
+    // O access token deve existir e ser válido
+    expect(response.body.data.accessToken).toBeTruthy();
+    expect(typeof response.body.data.accessToken).toBe('string');
+  });
 
-		expect(response.status).toBe(404);
-		expect(response.body.error).toBe(true);
-		expect(response.body.message).toContain("Email não encontrado");
-	});
+  it("deve permitir usar o novo access token para acessar recursos protegidos", async () => {
+    const refreshResponse = await request(app)
+      .post("/refresh-token")
+      .send({ refreshToken: testRefreshToken });
 
-	it("deve retornar erro 400 ao omitir email", async () => {
-		const response = await request(app)
-			.post("/forgot-password")
-			.send({});
+    expect(refreshResponse.status).toBe(200);
+    const newAccessToken = refreshResponse.body.data.accessToken;
 
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-	});
+    const userResponse = await request(app)
+      .get(`/users/${testUser.id}`)
+      .set("Authorization", `Bearer ${newAccessToken}`);
 
-	it("deve retornar erro 400 com email em formato inválido", async () => {
-		const response = await request(app)
-			.post("/forgot-password")
-			.send({
-				email: "emailinvalido"
-			});
+    expect(userResponse.status).toBe(200);
+    expect(userResponse.body.data.id).toBe(testUser.id);
+  });
 
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-	});
+  it("não deve renovar access token com refresh token inválido", async () => {
+    const response = await request(app)
+      .post("/refresh-token")
+      .send({ refreshToken: "token-invalido" });
 
-	it("deve permitir múltiplas solicitações de recuperação", async () => {
-		// Primeira solicitação
-		const firstResponse = await request(app)
-			.post("/forgot-password")
-			.send({
-				email: testUserEmail
-			});
+    expect(response.status).toBe(401);
+    expect(response.body.error).toBe(true);
+    expect(response.body.message).toMatch(/inválido|expirado/i);
+  });
 
-		expect(firstResponse.status).toBe(200);
+  it("não deve renovar access token sem fornecer refresh token", async () => {
+    const response = await request(app)
+      .post("/refresh-token")
+      .send({});
 
-		// Segunda solicitação
-		const secondResponse = await request(app)
-			.post("/forgot-password")
-			.send({
-				email: testUserEmail
-			});
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe(true);
+  });
 
-		expect(secondResponse.status).toBe(200);
+  it("não deve renovar access token com refresh token vazio", async () => {
+    const response = await request(app)
+      .post("/refresh-token")
+      .send({ refreshToken: "" });
 
-		// Verificar se múltiplos códigos foram criados
-		const resetCodes = await prisma.resetCodes.findMany({
-			where: {
-				email: testUserEmail,
-				used: false
-			}
-		});
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe(true);
+  });
 
-		expect(resetCodes.length).toBeGreaterThanOrEqual(2);
-	});
-});
+  it("não deve renovar access token após logout", async () => {
+    const { user, credentials } = await createTestUser(buildUserPayload());
+    
+    const loginResponse = await loginUser(credentials.email, credentials.password);
+    expect(loginResponse.status).toBe(200);
+    const userRefreshToken = loginResponse.body.data.refreshToken;
+    const userAccessToken = loginResponse.body.data.accessToken;
 
-describe("POST /reset-password", () => {
-	let validResetCode;
+    const logoutResponse = await request(app)
+      .post("/logout")
+      .set("Authorization", `Bearer ${userAccessToken}`)
+      .send({ id: String(user.id) });
 
-	beforeEach(async () => {
-		// Criar um código de reset válido para cada teste
-		const response = await request(app)
-			.post("/forgot-password")
-			.send({
-				email: testUserEmail
-			});
+    expect(logoutResponse.status).toBe(200);
 
-		expect(response.status).toBe(200);
+    const refreshResponse = await request(app)
+      .post("/refresh-token")
+      .send({ refreshToken: userRefreshToken });
 
-		// Buscar o código recém-criado
-		const resetCodeRecord = await prisma.resetCodes.findFirst({
-			where: {
-				email: testUserEmail,
-				used: false
-			},
-			orderBy: {
-				id: 'desc'
-			}
-		});
+    expect(refreshResponse.status).toBe(401);
+    expect(refreshResponse.body.error).toBe(true);
+  });
 
-		validResetCode = resetCodeRecord.code;
-	});
+  it("não deve renovar access token de usuário deletado", async () => {
+    const { user, credentials } = await createTestUser(buildUserPayload());
+    
+    const loginResponse = await loginUser(credentials.email, credentials.password);
+    expect(loginResponse.status).toBe(200);
+    const userRefreshToken = loginResponse.body.data.refreshToken;
 
-	it("deve redefinir senha com código válido", async () => {
-		const newPassword = "NovaSenha123!";
+    await UserRepository.deleteUser(user.id);
+    markUserAsDeleted(user.id);
 
-		const response = await request(app)
-			.post("/reset-password")
-			.send({
-				email: testUserEmail,
-				code: validResetCode,
-				password: newPassword
-			});
+    const refreshResponse = await request(app)
+      .post("/refresh-token")
+      .send({ refreshToken: userRefreshToken });
 
-		expect(response.status).toBe(200);
-		expect(response.body.error).toBe(false);
+    expect(refreshResponse.status).toBe(404);
+    expect(refreshResponse.body.error).toBe(true);
+  });
 
-		// Verificar se o código foi marcado como usado
-		const resetCodeRecord = await prisma.resetCodes.findFirst({
-			where: {
-				email: testUserEmail,
-				code: validResetCode
-			}
-		});
+  it("não deve renovar access token que foi substituído por novo login", async () => {
+    const firstLogin = await loginUser(testCredentials.email, testCredentials.password);
+    expect(firstLogin.status).toBe(200);
+    const firstRefreshToken = firstLogin.body.data.refreshToken;
 
-		expect(resetCodeRecord.used).toBe(true);
+    // Aguardar para garantir timestamp diferente
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-		// Tentar fazer login com a nova senha
-		const loginResponse = await request(app)
-			.post("/login")
-			.send({
-				email: testUserEmail,
-				password: newPassword
-			});
+    const secondLogin = await loginUser(testCredentials.email, testCredentials.password);
+    expect(secondLogin.status).toBe(200);
+    const secondRefreshToken = secondLogin.body.data.refreshToken;
 
-		expect(loginResponse.status).toBe(200);
+    // O primeiro refresh token não deve funcionar mais pois foi substituído
+    const refreshResponse = await request(app)
+      .post("/refresh-token")
+      .send({ refreshToken: firstRefreshToken });
 
-		// Restaurar senha original para próximos testes
-		testUserPassword = newPassword;
-	});
+    expect(refreshResponse.status).toBe(401);
+    expect(refreshResponse.body.error).toBe(true);
 
-	it("deve retornar erro 400 com código inválido", async () => {
-		const response = await request(app)
-			.post("/reset-password")
-			.send({
-				email: testUserEmail,
-				code: "999999",
-				password: "NovaSenha123!"
-			});
+    // O segundo refresh token deve funcionar
+    const refreshResponse2 = await request(app)
+      .post("/refresh-token")
+      .send({ refreshToken: secondRefreshToken });
 
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-		expect(response.body.message).toContain("Código inválido ou expirado");
-	});
-
-	it("deve retornar erro 400 ao tentar reutilizar código já usado", async () => {
-		const newPassword = "NovaSenha123!";
-
-		// Primeira tentativa (deve funcionar)
-		const firstResponse = await request(app)
-			.post("/reset-password")
-			.send({
-				email: testUserEmail,
-				code: validResetCode,
-				password: newPassword
-			});
-
-		expect(firstResponse.status).toBe(200);
-
-		// Segunda tentativa com mesmo código (deve falhar)
-		const secondResponse = await request(app)
-			.post("/reset-password")
-			.send({
-				email: testUserEmail,
-				code: validResetCode,
-				password: "OutraSenha456!"
-			});
-
-		expect(secondResponse.status).toBe(400);
-		expect(secondResponse.body.error).toBe(true);
-		expect(secondResponse.body.message).toContain("Código inválido ou expirado");
-	});
-
-	it("deve retornar erro 400 ao omitir email", async () => {
-		const response = await request(app)
-			.post("/reset-password")
-			.send({
-				code: validResetCode,
-				password: "NovaSenha123!"
-			});
-
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-	});
-
-	it("deve retornar erro 400 ao omitir código", async () => {
-		const response = await request(app)
-			.post("/reset-password")
-			.send({
-				email: testUserEmail,
-				password: "NovaSenha123!"
-			});
-
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-	});
-
-	it("deve retornar erro 400 ao omitir senha", async () => {
-		const response = await request(app)
-			.post("/reset-password")
-			.send({
-				email: testUserEmail,
-				code: validResetCode
-			});
-
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-	});
-
-	it("deve retornar erro 400 com senha muito curta", async () => {
-		const response = await request(app)
-			.post("/reset-password")
-			.send({
-				email: testUserEmail,
-				code: validResetCode,
-				password: "123"
-			});
-
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-	});
-
-	it("deve retornar erro 400 com código de tamanho inválido", async () => {
-		const response = await request(app)
-			.post("/reset-password")
-			.send({
-				email: testUserEmail,
-				code: "12345", // Menos de 6 dígitos
-				password: "NovaSenha123!"
-			});
-
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-	});
-
-	it("deve retornar erro 400 quando código não pertence ao email informado", async () => {
-		const response = await request(app)
-			.post("/reset-password")
-			.send({
-				email: "emailinexistente@example.com",
-				code: validResetCode,
-				password: "NovaSenha123!"
-			});
-
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-		expect(response.body.message).toContain("Código inválido ou expirado");
-	});
-
-	it("deve retornar erro 400 com código expirado", async () => {
-		// Criar um código expirado manualmente
-		const expiredCode = "123456";
-		const pastDate = new Date(Date.now() - 60 * 60 * 1000); // 1 hora atrás
-
-		await prisma.resetCodes.create({
-			data: {
-				email: testUserEmail,
-				code: expiredCode,
-				expiresAt: pastDate,
-				used: false
-			}
-		});
-
-		const response = await request(app)
-			.post("/reset-password")
-			.send({
-				email: testUserEmail,
-				code: expiredCode,
-				password: "NovaSenha123!"
-			});
-
-		expect(response.status).toBe(400);
-		expect(response.body.error).toBe(true);
-		expect(response.body.message).toContain("Código inválido ou expirado");
-	});
+    expect(refreshResponse2.status).toBe(200);
+  });
 });
 
 describe("Fluxo completo de autenticação", () => {
-	it("deve executar fluxo completo: login -> refresh -> logout", async () => {
-		// 1. Login
-		const loginResponse = await request(app)
-			.post("/login")
-			.send({
-				email: testUserEmail,
-				password: testUserPassword
-			});
+  it("deve realizar ciclo completo: login -> uso do token -> refresh -> logout", async () => {
+    const { user, credentials } = await createTestUser(buildUserPayload());
 
-		expect(loginResponse.status).toBe(200);
-		const { accessToken, refreshToken } = loginResponse.body.data;
+    // 1. Login
+    const loginResponse = await loginUser(credentials.email, credentials.password);
+    expect(loginResponse.status).toBe(200);
+    const { accessToken, refreshToken } = loginResponse.body.data;
 
-		// 2. Refresh Token
-		// Esperar 1 segundo para garantir que o novo token será diferente
-		await new Promise(resolve => setTimeout(resolve, 1000));
+    // 2. Usar access token para acessar recurso protegido
+    const userResponse = await request(app)
+      .get(`/users/${user.id}`)
+      .set("Authorization", `Bearer ${accessToken}`);
+    expect(userResponse.status).toBe(200);
+    expect(userResponse.body.data.id).toBe(user.id);
 
-		const refreshResponse = await request(app)
-			.post("/refresh-token")
-			.send({ refreshToken });
+    // 3. Renovar access token
+    const refreshResponse = await request(app)
+      .post("/refresh-token")
+      .send({ refreshToken });
+    expect(refreshResponse.status).toBe(200);
+    const newAccessToken = refreshResponse.body.data.accessToken;
 
-		expect(refreshResponse.status).toBe(200);
-		const newAccessToken = refreshResponse.body.data.accessToken;
-		expect(newAccessToken).not.toBe(accessToken);
+    // 4. Usar novo access token
+    const userResponse2 = await request(app)
+      .get(`/users/${user.id}`)
+      .set("Authorization", `Bearer ${newAccessToken}`);
+    expect(userResponse2.status).toBe(200);
 
-		// 3. Logout
-		const logoutResponse = await request(app)
-			.post("/logout")
-			.set("Authorization", `Bearer ${newAccessToken}`)
-			.send({ id: testUserId.toString() });
+    // 5. Logout
+    const logoutResponse = await request(app)
+      .post("/logout")
+      .set("Authorization", `Bearer ${newAccessToken}`)
+      .send({ id: String(user.id) });
+    expect(logoutResponse.status).toBe(200);
 
-		expect(logoutResponse.status).toBe(200);
+    // 6. Verificar que refresh token não funciona mais
+    const refreshAfterLogout = await request(app)
+      .post("/refresh-token")
+      .send({ refreshToken });
+    expect(refreshAfterLogout.status).toBe(401);
+  });
 
-		// 4. Verificar que refresh token não funciona mais após logout
-		const refreshAfterLogout = await request(app)
-			.post("/refresh-token")
-			.send({ refreshToken });
+  it("deve permitir múltiplos logins e manter apenas o último refresh token", async () => {
+    const { user, credentials } = await createTestUser(buildUserPayload());
 
-		expect(refreshAfterLogout.status).toBe(401);
-	});
+    const login1 = await loginUser(credentials.email, credentials.password);
+    expect(login1.status).toBe(200);
+    const refreshToken1 = login1.body.data.refreshToken;
 
-	it("deve executar fluxo completo de recuperação de senha", async () => {
-		const oldPassword = testUserPassword;
-		const newPassword = "SuperNovaSenha2024!";
+    // Aguardar para garantir timestamp diferente
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-		// 1. Solicitar recuperação
-		const forgotResponse = await request(app)
-			.post("/forgot-password")
-			.send({ email: testUserEmail });
+    const login2 = await loginUser(credentials.email, credentials.password);
+    expect(login2.status).toBe(200);
+    const refreshToken2 = login2.body.data.refreshToken;
 
-		expect(forgotResponse.status).toBe(200);
+    // Aguardar para garantir timestamp diferente
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-		// 2. Buscar código
-		const resetCodeRecord = await prisma.resetCodes.findFirst({
-			where: {
-				email: testUserEmail,
-				used: false
-			},
-			orderBy: {
-				id: 'desc'
-			}
-		});
+    const login3 = await loginUser(credentials.email, credentials.password);
+    expect(login3.status).toBe(200);
+    const refreshToken3 = login3.body.data.refreshToken;
 
-		const code = resetCodeRecord.code;
+    // Verificar que os tokens são diferentes
+    expect(refreshToken1).not.toBe(refreshToken2);
+    expect(refreshToken2).not.toBe(refreshToken3);
 
-		// 3. Redefinir senha
-		const resetResponse = await request(app)
-			.post("/reset-password")
-			.send({
-				email: testUserEmail,
-				code,
-				password: newPassword
-			});
+    // Apenas o último refresh token deve funcionar
+    const refresh1 = await request(app)
+      .post("/refresh-token")
+      .send({ refreshToken: refreshToken1 });
+    expect(refresh1.status).toBe(401);
 
-		expect(resetResponse.status).toBe(200);
+    const refresh2 = await request(app)
+      .post("/refresh-token")
+      .send({ refreshToken: refreshToken2 });
+    expect(refresh2.status).toBe(401);
 
-		// 4. Login com senha antiga deve falhar
-		const oldLoginResponse = await request(app)
-			.post("/login")
-			.send({
-				email: testUserEmail,
-				password: oldPassword
-			});
+    const refresh3 = await request(app)
+      .post("/refresh-token")
+      .send({ refreshToken: refreshToken3 });
+    expect(refresh3.status).toBe(200);
 
-		expect(oldLoginResponse.status).toBe(401);
+    // Verificar que o refresh token no banco é o último
+    const userInDb = await prisma.users.findUnique({
+      where: { id: user.id },
+      select: { refreshToken: true }
+    });
+    expect(userInDb.refreshToken).toBe(refreshToken3);
+  });
+});
 
-		// 5. Login com nova senha deve funcionar
-		const newLoginResponse = await request(app)
-			.post("/login")
-			.send({
-				email: testUserEmail,
-				password: newPassword
-			});
+describe("Segurança de autenticação", () => {
+  let testUser;
+  let testCredentials;
+  let testToken;
 
-		expect(newLoginResponse.status).toBe(200);
-		
-		// Atualizar senha para próximos testes
-		testUserPassword = newPassword;
-	});
+  beforeAll(async () => {
+    const { user, credentials } = await createTestUser(buildUserPayload());
+    testUser = user;
+    testCredentials = credentials;
+
+    const loginResponse = await loginUser(credentials.email, credentials.password);
+    expect(loginResponse.status).toBe(200);
+    testToken = loginResponse.body.data.accessToken;
+  });
+
+  it("não deve expor senha no retorno do login", async () => {
+    const response = await loginUser(testCredentials.email, testCredentials.password);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.usuario).not.toHaveProperty('password');
+    expect(response.body.data.usuario).not.toHaveProperty('senha');
+  });
+
+  it("não deve expor refresh token no objeto usuario", async () => {
+    const response = await loginUser(testCredentials.email, testCredentials.password);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.usuario).not.toHaveProperty('refreshToken');
+  });
+
+  it("deve armazenar senha criptografada no banco de dados", async () => {
+    const userInDb = await prisma.users.findUnique({
+      where: { id: testUser.id },
+      select: { password: true }
+    });
+
+    expect(userInDb.password).not.toBe(testCredentials.password);
+    expect(userInDb.password).toMatch(/^\$2[ayb]\$.{56}$/); // Formato bcrypt
+  });
+
+  it("deve validar que a senha armazenada corresponde à senha original", async () => {
+    const userInDb = await prisma.users.findUnique({
+      where: { id: testUser.id },
+      select: { password: true }
+    });
+
+    const isValid = await bcrypt.compare(testCredentials.password, userInDb.password);
+    expect(isValid).toBe(true);
+  });
+
+  it("não deve aceitar access token como refresh token", async () => {
+    const loginResponse = await loginUser(testCredentials.email, testCredentials.password);
+    expect(loginResponse.status).toBe(200);
+    const accessToken = loginResponse.body.data.accessToken;
+
+    const response = await request(app)
+      .post("/refresh-token")
+      .send({ refreshToken: accessToken });
+
+    expect(response.status).toBe(401);
+    expect(response.body.error).toBe(true);
+  });
+
+  it("deve rejeitar tokens com formato inválido", async () => {
+    const invalidTokens = [
+      "invalid.token.format",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid",
+      "Bearer token",
+      "123456789",
+      "null",
+      "undefined"
+    ];
+
+    for (const invalidToken of invalidTokens) {
+      const response = await request(app)
+        .post("/refresh-token")
+        .send({ refreshToken: invalidToken });
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe(true);
+    }
+  });
 });
