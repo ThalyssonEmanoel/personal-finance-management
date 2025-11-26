@@ -7,6 +7,7 @@ const router = e.Router();
 
 router
   .post("/login", AuthController.Login, errorHandler)
+  .post("/oauth/login", AuthController.OAuthLogin, errorHandler)
   .post("/logout", authMiddleware, AuthController.Logout, errorHandler)
   .post("/refresh-token", AuthController.RefreshToken, errorHandler)
   .post("/forgot-password", AuthController.forgotPassword, errorHandler)

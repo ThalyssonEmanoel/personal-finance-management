@@ -184,6 +184,67 @@ class AuthService {
     return updatedUser;
   }
 
+  static async oauthLogin(data) {
+    const { email, name, avatar } = AuthSchema.oauthLogin.parse(data);
+
+    // Verificar se o usuário já existe
+    let usuario = await UserRepository.findByEmail(email);
+
+    // Se não existe, criar novo usuário
+    if (!usuario) {
+      const newUserData = {
+        name,
+        email,
+        password: await bcrypt.hash(Math.random().toString(36), parseInt(process.env.SALT)), // Senha aleatória
+        avatar: avatar || null
+      };
+      
+      usuario = await UserRepository.createUser(newUserData);
+      
+      // Criar conta "Carteira" para o novo usuário
+      const AccountService = (await import('./AccountService.js')).default;
+      await AccountService.createAccount({ 
+        name: "Carteira", 
+        type: "Carteira", 
+        balance: 0, 
+        icon: "uploads/carteira-icon.png", 
+        paymentMethodIds: [1], 
+        userId: usuario.id 
+      });
+    }
+
+    const accessTokenExpiration = process.env.JWT_EXPIRATION_ACCESS_TOKEN || "15m";
+    const refreshTokenExpiration = process.env.JWT_EXPIRATION_REFRESH_TOKEN || "7d";
+
+    // Gerar tokens
+    const accessToken = jwt.sign(
+      {
+        id: usuario.id,
+        name: usuario.name,
+        email: usuario.email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: accessTokenExpiration }
+    );
+
+    const refreshToken = jwt.sign(
+      {
+        id: usuario.id,
+        email: usuario.email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: refreshTokenExpiration }
+    );
+
+    // Atualizar refresh token
+    await AuthRepository.updateTokens(usuario.id, refreshToken);
+
+    // Remove a senha do objeto usuario para não retornar na response
+    const { password, ...usuarioSemSenha } = usuario;
+
+    return { accessToken, refreshToken, usuario: usuarioSemSenha };
+  }
+
 }
 
 export default AuthService;

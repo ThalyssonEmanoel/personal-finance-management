@@ -70,6 +70,19 @@ class AuthController {
     }
   }
 
+  static OAuthLogin = async (req, res, next) => {
+    try {
+      const response = await AuthService.oauthLogin(req.body);
+      res.status(200).json(CommonResponse.success({
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        usuario: response.usuario
+      }));
+    } catch (error) {
+      next(error);
+    }
+  };
+
 }
 
 export default AuthController;

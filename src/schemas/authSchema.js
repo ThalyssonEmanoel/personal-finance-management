@@ -27,6 +27,12 @@ class AuthSchema {
     code: z.string().length(6, "Código deve ter exatamente 6 dígitos"),
     password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   });
+
+  static oauthLogin = z.object({
+    email: z.string().email("Email deve ter um formato válido"),
+    name: z.string().min(1, "Nome é obrigatório"),
+    avatar: z.string().optional(),
+  });
 };
 
 export default AuthSchema;

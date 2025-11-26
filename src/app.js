@@ -19,15 +19,9 @@ const app = express();
  * "0 1 * * *" = Todo dia às 01:00
  * "ASTERISITCO/25 * * * * *" = A cada 25 segundos (para testes)
  */
-const job = new CronJob("0 1 * * *", async () => {
-  try {
-    console.log('[CRON] Iniciando processamento de transações...');
-    await TransactionService.processRecurringTransactions();
-    await TransactionService.processInstallmentsTransactions();
-    console.log('[CRON] Processamento concluído com sucesso!');
-  } catch (error) {
-    console.error('[CRON] Erro ao processar transações:', error);
-  }
+const job = new CronJob("*/25 * * * * *", async () => {
+  await TransactionService.processRecurringTransactions();
+  await TransactionService.processInstallmentsTransactions();
 });
 
 job.start();
