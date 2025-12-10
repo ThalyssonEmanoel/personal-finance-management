@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id           Int     @id @default(autoincrement())
+  name         String  @db.VarChar(45)
+  email        String  @unique(map: "Email_UNIQUE") @db.VarChar(45)
+  password     String  @db.VarChar(255)
+  avatar       String? @db.VarChar(100)
+  refreshToken String? @db.Text
+
+  accounts      Accounts[]
+  transactions  Transactions[]
+  bankTransfers BankTransfers[]
+  goals         Goals[]
+}
+
+model Accounts {
+  id      Int     @id @default(autoincrement())
+  name    String  @db.VarChar(100)
+  type    String  @db.VarChar(45)
+  balance Decimal @db.Decimal(10, 2)
+  icon    String? @db.VarChar(100)
+
+  userId Int
+  user   Users @relation(fields: [userId], references: [id])
+
+  transactions               Transactions[]
+  accountPaymentMethods      AccountPaymentMethods[]
+  sourceTransfers            BankTransfers[] @relation("SourceAccount")
+  destinationTransfers       BankTransfers[] @relation("DestinationAccount")
+}
+
+model PaymentMethods {
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(100)
+
+  accountPaymentMethods AccountPaymentMethods[]
+  transactions          Transactions[]
+  bankTransfers         BankTransfers[]
+}
+
+model AccountPaymentMethods {
+  id Int @id @default(autoincrement())
+
+  accountId Int
+  account   Accounts @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  paymentMethodId Int
+  paymentMethod   PaymentMethods @relation(fields: [paymentMethodId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, paymentMethodId])
+}
+
+model Transactions {
+  id                  Int             @id @default(autoincrement())
+  type                TransactionType
+  name                String          @db.VarChar(255)
+  category            String          @db.VarChar(100)
+  value               Decimal         @db.Decimal(10, 2)
+  value_installment   Decimal?        @db.Decimal(10, 2)
+  release_date        DateTime        @db.Date
+  number_installments Int?
+  current_installment Int?
+  description         String?         @db.Text
+  recurring           Boolean         @default(false)
+  recurring_type      RecurringType?
+
+  accountId Int
+  account   Accounts @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  paymentMethodId Int
+  paymentMethod   PaymentMethods @relation(fields: [paymentMethodId], references: [id])
+
+  userId Int
+  user   Users @relation(fields: [userId], references: [id])
+}
+
+model BankTransfers {
+  id                  Int      @id @default(autoincrement())
+  amount              Decimal  @db.Decimal(10, 2)
+  transfer_date       DateTime @db.Date
+  description         String?  @db.Text
+
+  sourceAccountId Int
+  sourceAccount   Accounts @relation("SourceAccount", fields: [sourceAccountId], references: [id], onDelete: Cascade)
+
+  destinationAccountId Int
+  destinationAccount   Accounts @relation("DestinationAccount", fields: [destinationAccountId], references: [id], onDelete: Cascade)
+
+  paymentMethodId Int
+  paymentMethod   PaymentMethods @relation(fields: [paymentMethodId], references: [id])
+
+  userId Int
+  user   Users @relation(fields: [userId], references: [id])
+}
+
+model Goals {
+  id               Int             @id @default(autoincrement())
+  name             String          @db.VarChar(255)
+  date             DateTime        @db.Date
+  transaction_type TransactionType
+  value            Decimal         @db.Decimal(10, 2)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  userId Int
+  user   Users @relation(fields: [userId], references: [id])
+}
+
+model ResetCodes {
+  id        Int      @id @default(autoincrement())
+  email     String   @db.VarChar(45)
+  code      String   @db.Char(6)
+  expiresAt DateTime @db.DateTime
+  used      Boolean  @default(false)
+
+  @@unique([email, code])
+}
+
+enum TransactionType {
+  expense
+  income
+}
+
+enum RecurringType {
+  daily
+  weekly
+  monthly
+  yearly
+}

@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: personal-finance-api
+spec:
+  selector:
+    matchLabels:
+      app: personal-finance-api
+  template:
+    metadata:
+      labels:
+        app: personal-finance-api
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: personal-finance-api
+        image: thalyssoemanoel/personal-finance-api:latest
+        resources: {}
+        ports:
+        - containerPort: 8080
+        env:
+          - name: DEBUGLOG
+            value: "false"
+          - name: SWAGGER_PROD_URL
+            value: "https://personal-finance-api.app.fslab.dev"
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: personal-finance-secrets
+                key: DATABASE_URL
+          - name: PORT
+            value: "8080"
+          - name: SALT
+            valueFrom:
+              secretKeyRef:
+                name: personal-finance-secrets
+                key: SALT
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: personal-finance-secrets
+                key: JWT_SECRET
+          - name: JWT_EXPIRATION_ACCESS_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: personal-finance-secrets
+                key: JWT_EXPIRATION_ACCESS_TOKEN
+          - name: JWT_EXPIRATION_REFRESH_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: personal-finance-secrets
+                key: JWT_EXPIRATION_REFRESH_TOKEN
+          - name: HOST
+            valueFrom:
+              secretKeyRef:
+                name: personal-finance-secrets
+                key: HOST
+          - name: PASS
+            valueFrom:
+              secretKeyRef:
+                name: personal-finance-secrets
+                key: PASS
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: personal-finance-api
+spec:
+  type: ClusterIP
+  selector:
+    app: personal-finance-api
+  ports:
+  - port: 80
+    targetPort: 8080

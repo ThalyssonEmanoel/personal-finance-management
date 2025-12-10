@@ -211,6 +211,7 @@ PublishScripts/
 # Microsoft Azure Build Output
 csx/
 *.build.csdef
+mysql.yaml
 
 # Microsoft Azure Emulator
 ecf/
@@ -398,3 +399,16 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+#Cusom settings
+.env
+data/
+/src/generated/
+
+/coverage
+
+/.vscode
+
+# Ignorar somente os arquivos de secrets
+configmap/mysql-secrets.yaml
+configmap/api-secrets.yaml

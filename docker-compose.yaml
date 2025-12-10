@@ -1,0 +1,34 @@
+#Nem precisa de secretos, só precisa criar o arquivo .env com as variáveis de ambiente ou chumbar ai mesmo ksskks
+services:
+  financas-db-web:
+    restart: always
+    image: mysql:latest
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_TCP_PORT: 3396
+    expose:
+      - "3396"
+    ports:
+      - "3396:3396"
+    volumes:
+      - ./data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: financas-db-web
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - '5001:80'
+
+volumes:
+  data:
+
+#Rodando comando:
+#docker-compose up -d
+#sudo kill -9 $(sudo lsof -t -i:3051) -> Derruba a porta caso o container ocupe ela
+#sudo docker rm 4edeb0ba295a -> ID do container que deseja derrubar caso de duplicação ou erro de url
